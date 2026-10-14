@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\MasukStafController;
 use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\Staf\BankSoalController;
 use App\Http\Controllers\Staf\ImporController;
+use App\Http\Controllers\Staf\JadwalUjianController;
 use App\Http\Controllers\Staf\ImporSoalController;
 use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
@@ -77,6 +78,22 @@ Route::prefix('staf')->group(function () {
         Route::put('/pengaturan', [PengaturanSekolahController::class, 'update'])->name('staf.pengaturan.simpan');
 
         Route::get('/impor/sandi/{token}', [ImporController::class, 'unduhSandi'])->name('staf.impor.sandi');
+
+        Route::prefix('jadwal-ujian')->name('staf.jadwal.')->group(function () {
+            Route::get('/', [JadwalUjianController::class, 'index'])->name('index');
+            Route::get('/tambah', [JadwalUjianController::class, 'create'])->name('create');
+            Route::post('/', [JadwalUjianController::class, 'store'])->name('store');
+            Route::prefix('{jadwal}')->whereNumber('jadwal')->group(function () {
+                Route::get('/', [JadwalUjianController::class, 'show'])->name('show');
+                Route::get('/ubah', [JadwalUjianController::class, 'edit'])->name('edit');
+                Route::put('/', [JadwalUjianController::class, 'update'])->name('update');
+                Route::delete('/', [JadwalUjianController::class, 'destroy'])->name('destroy');
+                Route::post('/aktifkan', [JadwalUjianController::class, 'aktifkan'])->name('aktifkan');
+                Route::post('/batalkan', [JadwalUjianController::class, 'batalkan'])->name('batalkan');
+                Route::post('/token', [JadwalUjianController::class, 'regenerasiToken'])->name('token');
+                Route::post('/selesaikan', [JadwalUjianController::class, 'selesaikan'])->name('selesaikan');
+            });
+        });
 
         Route::prefix('penyedia-otomatis')->name('staf.penyedia.')->group(function () {
             Route::get('/', [PenyediaOtomatisController::class, 'index'])->name('index');

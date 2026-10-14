@@ -45,6 +45,12 @@
 
             @if ($admin || $pengguna->role === 'guru')
                 <div class="sisi-seksi"><span>Ujian</span></div>
+                @if ($admin)
+                    <a href="{{ route('staf.jadwal.index') }}" data-tip="Jadwal Ujian"
+                       class="sisi-a {{ request()->routeIs('staf.jadwal.*') ? 'aktif' : '' }}">
+                        <x-ikon nama="jam" /><span class="sisi-lbl">Jadwal Ujian</span>
+                    </a>
+                @endif
                 <a href="{{ route('staf.bank-soal.index') }}" data-tip="Bank Soal"
                    class="sisi-a {{ request()->routeIs('staf.bank-soal.*', 'staf.soal.*') ? 'aktif' : '' }}">
                     <x-ikon nama="bank-soal" /><span class="sisi-lbl">Bank Soal</span>
