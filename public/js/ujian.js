@@ -19,6 +19,7 @@
         perangkat: akar.dataset.perangkat,
         paket: akar.dataset.paket,
         sinkron: akar.dataset.sinkron,
+        pelanggaran: akar.dataset.pelanggaran,
         kirim: akar.dataset.kirim,
         hasil: akar.dataset.hasil
     };
@@ -309,6 +310,8 @@
         S.alasanKunci = blokir ? 'blokir' : 'lain';
         akar.classList.add('terkunci');
         document.querySelectorAll('#formSoal input, #formSoal textarea').forEach(function (e) { e.disabled = true; });
+        // Gerbang layar penuh tidak boleh menutupi pesan blokir / waktu habis.
+        var gerbang = $('gerbang'); if (gerbang) gerbang.hidden = true;
         lapisan(judul, isi, []);
     }
     function bukaKunci() {
@@ -349,6 +352,8 @@
             $('formSoal').hidden = false;
             $('areaKirim').hidden = false;
             buatSoal(S.soal);
+            // Sesi yang sudah diblokir saat halaman dimuat: soal baru dirender, jadi kunci ulang masukannya.
+            if (S.terkunci) document.querySelectorAll('#formSoal input, #formSoal textarea').forEach(function (e) { e.disabled = true; });
             tikTok();
             setInterval(tikTok, 1000);
             if (adaKotor()) sinkron();

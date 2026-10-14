@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="@yield('viewport', 'width=device-width, initial-scale=1')">
     <meta name="robots" content="noindex, nofollow">
     <meta name="theme-color" content="#3960FB">
     <title>@yield('judul', 'Ujian') — {{ config('ujian.merek') }}</title>

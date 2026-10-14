@@ -424,3 +424,18 @@ h1, h2, h3 { color: var(--teks); }
     .simpan { display: none; }
     .soal-ujian { padding: 18px; }
 }
+
+/* ── Anti curang: gerbang, perisai, peringatan ──────────────────────── */
+.lapisan-gerbang { z-index: 2500; background: rgba(16, 29, 99, .97); backdrop-filter: blur(8px); }
+.lapisan-perisai { z-index: 2400; background: rgba(8, 12, 40, .97); }
+.lapisan-gerbang .lapisan-kotak, .lapisan-perisai .lapisan-kotak { max-width: 460px; }
+.ikon-lapisan { color: var(--kuning); background: var(--biru-gelap); border-radius: 50%; padding: 12px; width: 64px; height: 64px; margin-bottom: 12px; }
+.durasi-perisai { margin-top: 12px; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 2.2rem; font-weight: 800; color: var(--biru); }
+.peringatan { position: fixed; top: 76px; left: 50%; transform: translateX(-50%); z-index: 2600; width: calc(100% - 32px); max-width: 520px; display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; background: var(--kuning-muda); color: var(--kuning-tua); border: 2px solid var(--kuning); border-radius: 14px; box-shadow: 0 12px 40px rgba(0, 0, 0, .25); }
+.peringatan[hidden] { display: none; }
+.peringatan strong { display: block; color: var(--teks); }
+.peringatan p { font-size: .88rem; margin-top: 2px; }
+.peringatan .tombol { flex: none; align-self: center; }
+.penjaga-tepi { position: fixed; top: var(--tinggi-atas); bottom: 0; width: 18px; z-index: 90; background: transparent; }
+.penjaga-tepi.kiri { left: 0; }
+.penjaga-tepi.kanan { right: 0; }

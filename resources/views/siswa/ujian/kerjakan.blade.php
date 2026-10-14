@@ -1,5 +1,6 @@
 @extends('layouts.dasar')
 @section('judul', $jadwal->mapel->nama)
+@section('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
 
 @section('isi')
 <div id="ujian"
@@ -7,6 +8,7 @@
      data-perangkat="{{ $perangkat }}"
      data-paket="{{ $alamat['paket'] }}"
      data-sinkron="{{ $alamat['sinkron'] }}"
+     data-pelanggaran="{{ $alamat['pelanggaran'] }}"
      data-kirim="{{ $alamat['kirim'] }}"
      data-hasil="{{ $alamat['hasil'] }}">
 
@@ -46,9 +48,39 @@
             <div class="aksi-form" id="lapisanAksi" style="justify-content:center"></div>
         </div>
     </div>
+
+    {{-- Gerbang layar penuh: tampil sejak awal; modul pengaman (ujian-pengaman.js) membukanya bila tidak diperlukan. --}}
+    <div id="gerbang" class="lapisan lapisan-gerbang" role="dialog" aria-modal="true" aria-labelledby="gerbangJudul">
+        <div class="lapisan-kotak">
+            <x-ikon nama="peringatan" :ukuran="40" class="ikon-lapisan" />
+            <h2 id="gerbangJudul">Mode layar penuh diperlukan</h2>
+            <p id="gerbangAlasan">Ujian ini wajib dikerjakan dalam layar penuh. Selama ujian, jangan membuka aplikasi atau tab lain.</p>
+            <div class="aksi-form" style="justify-content:center">
+                <button type="button" id="gerbangMulai" class="tombol kecil" disabled>Memuat pengaman…</button>
+            </div>
+            <noscript><p class="galat-bidang">JavaScript harus aktif untuk mengerjakan ujian ini.</p></noscript>
+        </div>
+    </div>
+
+    {{-- Perisai: tampil saat aplikasi atau jendela lain terdeteksi menutupi ujian. --}}
+    <div id="perisai" class="lapisan lapisan-perisai" role="alert" hidden>
+        <div class="lapisan-kotak">
+            <x-ikon nama="peringatan" :ukuran="40" class="ikon-lapisan" />
+            <h2>Aplikasi lain terdeteksi</h2>
+            <p>Kalkulator, asisten, atau aplikasi mengambang terdeteksi. Tutup semua aplikasi lain untuk melanjutkan ujian. Kejadian ini dicatat.</p>
+            <div id="perisaiDurasi" class="durasi-perisai">0 dtk</div>
+        </div>
+    </div>
+
+    <div id="peringatan" class="peringatan" role="alert" hidden>
+        <x-ikon nama="peringatan" :ukuran="22" />
+        <div><strong id="peringatanJudul"></strong><p id="peringatanIsi"></p></div>
+        <button type="button" id="peringatanTutup" class="tombol kecil garis">Mengerti</button>
+    </div>
 </div>
 @endsection
 
 @push('skrip')
 <script src="{{ asset('js/ujian.js') }}?v={{ filemtime(public_path('js/ujian.js')) }}" defer></script>
+<script src="{{ asset('js/ujian-pengaman.js') }}?v={{ filemtime(public_path('js/ujian-pengaman.js')) }}" defer></script>
 @endpush

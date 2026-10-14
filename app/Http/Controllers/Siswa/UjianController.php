@@ -146,6 +146,7 @@ class UjianController extends Controller
             'alamat' => [
                 'paket' => url("api/ujian/{$sesi->id}/paket"),
                 'sinkron' => url("api/ujian/{$sesi->id}/sinkron"),
+                'pelanggaran' => url("api/ujian/{$sesi->id}/pelanggaran"),
                 'kirim' => url("api/ujian/{$sesi->id}/kirim"),
                 'hasil' => route('siswa.ujian.hasil', $jadwal),
             ],
