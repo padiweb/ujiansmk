@@ -433,21 +433,36 @@ class JadwalUjianTest extends TestCase
         $this->assertSame(1, $jadwal->sesi()->count());
     }
 
-    public function test_selesaikan_jadwal_dan_penolakan_saat_masih_ada_yang_mengerjakan(): void
+    public function test_selesaikan_jadwal_memaksa_sesi_berjalan_selesai_dan_menilainya(): void
     {
         $this->soal('pg');
-        $this->siswaDiKelas($this->kelasA, 2);
+        $this->siswaDiKelas($this->kelasA, 3);
         $jadwal = $this->buat();
         $this->post("/staf/jadwal-ujian/{$jadwal->id}/aktifkan");
-        $sesi = $jadwal->sesi()->first();
-        $sesi->update(['status' => 'berlangsung']);
+        [$berjalan, $terblokir, $belum] = $jadwal->sesi()->get()->all();
+        $berjalan->update(['status' => 'berlangsung', 'mulai_pada' => now(), 'batas_selesai' => now()->addHour()]);
+        $terblokir->update(['status' => 'diblokir', 'mulai_pada' => now(), 'batas_selesai' => now()->addHour()]);
+
+        $this->post("/staf/jadwal-ujian/{$jadwal->id}/selesaikan")->assertSessionHas('berhasil');
+
+        $this->assertSame('selesai', $jadwal->fresh()->status);
+        foreach ([$berjalan, $terblokir] as $s) {
+            $s->refresh();
+            $this->assertSame('selesai', $s->status);
+            $this->assertSame('dipaksa', $s->alasan_selesai);
+            $this->assertNotNull($s->hasil);
+        }
+        $this->assertSame('belum', $belum->fresh()->status);
+        $this->assertNull($belum->fresh()->hasil);
+    }
+
+    public function test_selesaikan_jadwal_yang_tidak_aktif_ditolak(): void
+    {
+        $jadwal = $this->buat();
 
         $this->post("/staf/jadwal-ujian/{$jadwal->id}/selesaikan")->assertSessionHas('gagal');
-        $this->assertSame('aktif', $jadwal->fresh()->status);
 
-        $sesi->update(['status' => 'selesai']);
-        $this->post("/staf/jadwal-ujian/{$jadwal->id}/selesaikan")->assertSessionHas('berhasil');
-        $this->assertSame('selesai', $jadwal->fresh()->status);
+        $this->assertSame('draf', $jadwal->fresh()->status);
     }
 
     public function test_jadwal_selesai_tidak_bisa_diubah_dan_jadwal_aktif_tidak_bisa_dihapus(): void

@@ -16,7 +16,7 @@ class JadwalUjian extends Model
     public const SELESAI = 'selesai';
 
     protected $fillable = [
-        'periode_id', 'mapel_id', 'nama', 'durasi_menit', 'mulai_pada', 'tutup_pada', 'token', 'status',
+        'periode_id', 'mapel_id', 'nama', 'durasi_menit', 'mulai_pada', 'tutup_pada', 'token', 'media_kode', 'status',
         'acak_soal', 'acak_opsi', 'batas_pelanggaran', 'bobot_pg', 'tampilkan_hasil', 'dibuat_oleh', 'diaktifkan_pada',
     ];
 

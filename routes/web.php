@@ -11,6 +11,7 @@ use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
 use App\Http\Controllers\Staf\PenyediaOtomatisController;
 use App\Http\Controllers\Staf\PengaturanSekolahController;
+use App\Http\Controllers\Siswa\UjianController;
 use App\Http\Controllers\Staf\SoalController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,7 +22,16 @@ Route::middleware('guest:siswa')->group(function () {
 });
 
 Route::middleware('auth:siswa')->group(function () {
-    Route::get('/beranda', [BerandaController::class, 'siswa'])->name('siswa.beranda');
+    Route::get('/beranda', [UjianController::class, 'beranda'])->name('siswa.beranda');
+
+    Route::prefix('ujian/{jadwal}')->whereNumber('jadwal')->name('siswa.ujian.')->group(function () {
+        Route::get('/', [UjianController::class, 'token'])->name('token');
+        Route::post('/token', [UjianController::class, 'verifikasiToken'])->name('token.kirim');
+        Route::get('/siap', [UjianController::class, 'siap'])->name('siap');
+        Route::post('/mulai', [UjianController::class, 'mulai'])->name('mulai');
+        Route::get('/kerjakan', [UjianController::class, 'kerjakan'])->name('kerjakan');
+        Route::get('/hasil', [UjianController::class, 'hasil'])->name('hasil');
+    });
     Route::post('/keluar', [MasukSiswaController::class, 'keluar'])->name('siswa.keluar');
 });
 

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SesiUjian extends Model
 {
@@ -30,6 +32,16 @@ class SesiUjian extends Model
             'terakhir_aktif' => 'datetime',
             'susunan' => 'array',
         ];
+    }
+
+    public function hasil(): HasOne
+    {
+        return $this->hasOne(HasilUjian::class, 'sesi_id');
+    }
+
+    public function jawaban(): HasMany
+    {
+        return $this->hasMany(Jawaban::class, 'sesi_id');
     }
 
     public function jadwal(): BelongsTo

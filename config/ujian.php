@@ -10,4 +10,9 @@ return [
     // Penyusun soal otomatis: batas permintaan per pengguna per hari dan soal per permintaan.
     'batas_otomatis_harian' => (int) env('UJIAN_BATAS_OTOMATIS_HARIAN', 30),
     'maks_soal_otomatis' => 10,
+
+    // Pelaksanaan ujian.
+    'toleransi_kirim_detik' => 90, // sinkron terakhir masih diterima sekian detik setelah batas waktu
+    'jalur_media' => env('UJIAN_JALUR_MEDIA'),   // folder gambar statis; kosong = public/media/u
+    'url_media' => env('UJIAN_URL_MEDIA'),       // alamat dasar gambar statis; kosong = {url}/media/u
 ];

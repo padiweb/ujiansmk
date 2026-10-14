@@ -14,6 +14,12 @@ class LayananJadwal
 {
     private const ALFABET_TOKEN = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
+    public function __construct(
+        private LayananGambarUjian $gambar,
+        private LayananPaket $paket,
+        private LayananSesi $sesi,
+    ) {}
+
     /** Peserta yang berhak: siswa aktif di kelas-kelas jadwal. @return Collection<int,int> id siswa */
     public function pesertaBerhak(JadwalUjian $jadwal): Collection
     {
@@ -117,6 +123,10 @@ class LayananJadwal
             $jadwal->update(['status' => JadwalUjian::AKTIF, 'token' => $this->tokenBaru(), 'diaktifkan_pada' => $sekarang]);
         });
 
+        // Di luar transaksi: menyalin berkas bukan bagian dari basis data. Paket soal dibangun saat dibutuhkan.
+        $this->paket->lupakan($jadwal);
+        $this->gambar->salinKePublik($jadwal->refresh());
+
         return ['pg' => $soal['pg']->count(), 'esai' => $soal['esai']->count(), 'peserta' => $peserta->count()];
     }
 
@@ -130,10 +140,13 @@ class LayananJadwal
             throw new KesalahanJadwal('Sudah ada siswa yang memulai ujian, aktivasi tidak bisa dibatalkan.');
         }
 
+        $this->gambar->bersihkan($jadwal);
+        $this->paket->lupakan($jadwal);
+
         DB::transaction(function () use ($jadwal) {
             $jadwal->sesi()->delete();
             $jadwal->soalBeku()->delete();
-            $jadwal->update(['status' => JadwalUjian::DRAF, 'token' => null, 'diaktifkan_pada' => null]);
+            $jadwal->update(['status' => JadwalUjian::DRAF, 'token' => null, 'media_kode' => null, 'diaktifkan_pada' => null]);
         });
     }
 
@@ -148,17 +161,29 @@ class LayananJadwal
         return $jadwal->token;
     }
 
-    /** Akhiri jadwal. Sesi yang masih berlangsung ditangani di tahap pelaksanaan. */
-    public function selesaikan(JadwalUjian $jadwal): void
+    /**
+     * Akhiri jadwal. Sesi yang masih berlangsung atau terblokir dipaksa selesai dan dinilai dari jawaban
+     * yang sudah tersinkron. Sesi yang belum pernah dimulai tetap berstatus belum.
+     *
+     * @return int jumlah sesi yang dipaksa selesai
+     */
+    public function selesaikan(JadwalUjian $jadwal): int
     {
         if (! $jadwal->berstatus(JadwalUjian::AKTIF)) {
             throw new KesalahanJadwal('Jadwal ini tidak sedang aktif.');
         }
-        if ($jadwal->sesi()->whereIn('status', [SesiUjian::BERLANGSUNG, SesiUjian::DIBLOKIR])->exists()) {
-            throw new KesalahanJadwal('Masih ada siswa yang sedang mengerjakan atau terblokir. Selesaikan atau aktifkan kembali sesinya dulu.');
-        }
+
+        $dipaksa = 0;
+        $jadwal->sesi()->whereIn('status', [SesiUjian::BERLANGSUNG, SesiUjian::DIBLOKIR])->each(function (SesiUjian $s) use (&$dipaksa) {
+            $this->sesi->selesaikan($s, 'dipaksa');
+            $dipaksa++;
+        });
 
         $jadwal->update(['status' => JadwalUjian::SELESAI]);
+        $this->gambar->bersihkan($jadwal);
+        $this->paket->lupakan($jadwal);
+
+        return $dipaksa;
     }
 
     public function tokenBaru(): string

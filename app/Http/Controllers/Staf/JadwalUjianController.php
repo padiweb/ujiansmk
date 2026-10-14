@@ -145,9 +145,11 @@ class JadwalUjianController extends Controller
     public function selesaikan(Request $request, JadwalUjian $jadwal): RedirectResponse
     {
         return $this->jalankan($request, $jadwal, 'selesaikan', function () use ($jadwal) {
-            $this->layanan->selesaikan($jadwal);
+            $dipaksa = $this->layanan->selesaikan($jadwal);
 
-            return 'Jadwal ditandai selesai.';
+            return $dipaksa > 0
+                ? "Jadwal ditandai selesai. {$dipaksa} siswa yang masih mengerjakan dipaksa selesai dan dinilai dari jawaban yang sudah tersimpan."
+                : 'Jadwal ditandai selesai.';
         });
     }
 

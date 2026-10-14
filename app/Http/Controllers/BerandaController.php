@@ -8,11 +8,6 @@ use Illuminate\View\View;
 
 class BerandaController extends Controller
 {
-    public function siswa(Request $request): View
-    {
-        return view('siswa.beranda', ['siswa' => $request->user('siswa')]);
-    }
-
     public function staf(Request $request): View
     {
         $user = $request->user('web');
