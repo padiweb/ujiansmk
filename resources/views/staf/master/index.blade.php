@@ -11,9 +11,9 @@
     @unless ($terkunci)
         <div class="aksi-halaman">
             @if ($pengimpor)
-                <a class="tombol kecil garis" href="{{ route('staf.impor.form', $def->slug()) }}">Impor Excel</a>
+                <a class="tombol kecil garis" href="{{ route('staf.impor.form', $def->slug()) }}"><x-ikon nama="unggah" :ukuran="16" />Impor Excel</a>
             @endif
-            <a class="tombol kecil" href="{{ route('staf.master.create', $def->slug()) }}">Tambah</a>
+            <a class="tombol kecil" href="{{ route('staf.master.create', $def->slug()) }}"><x-ikon nama="tambah" :ukuran="16" />Tambah</a>
         </div>
     @endunless
 </div>

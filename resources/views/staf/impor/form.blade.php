@@ -9,7 +9,7 @@
     <h2 class="judul-kartu">1. Unduh templat</h2>
     <p>Isi templat ini mulai baris kedua. Kolom bertanda <strong>*</strong> wajib diisi.</p>
     <p style="margin-top:12px">
-        <a class="tombol kecil garis" href="{{ $rute['templat'] }}">Unduh templat .xlsx</a>
+        <a class="tombol kecil garis" href="{{ $rute['templat'] }}"><x-ikon nama="unduh" :ukuran="16" />Unduh templat .xlsx</a>
     </p>
     @if ($p->petunjuk())
         <ul class="petunjuk">
@@ -30,7 +30,7 @@
         <small class="bantuan">Maksimal 2 MB dan {{ number_format(\App\Impor\Pengimpor::MAKS_BARIS, 0, ',', '.') }} baris.</small>
     </div>
     <div class="aksi-form">
-        <button class="tombol kecil" type="submit">Periksa berkas</button>
+        <button class="tombol kecil" type="submit"><x-ikon nama="cari" :ukuran="16" />Periksa berkas</button>
         <a class="tombol kecil garis" href="{{ $rute['kembali'] }}">Batal</a>
     </div>
 </form>

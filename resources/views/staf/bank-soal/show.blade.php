@@ -8,15 +8,15 @@
         <p class="sub">{{ $bank->mapel->nama }} · Kelas {{ $bank->tingkat }} · dibuat oleh {{ $bank->pembuat->nama }}</p>
     </div>
     <div class="aksi-halaman">
-        <a class="tombol kecil garis" href="{{ route('staf.bank-soal.edit', $bank) }}">Ubah</a>
+        <a class="tombol kecil garis" href="{{ route('staf.bank-soal.edit', $bank) }}"><x-ikon nama="ubah" :ukuran="16" />Ubah</a>
         <form method="POST" action="{{ route('staf.bank-soal.salin', $bank) }}">
             @csrf
-            <button class="tombol kecil garis" type="submit">Salin bank</button>
+            <button class="tombol kecil garis" type="submit"><x-ikon nama="salin" :ukuran="16" />Salin bank</button>
         </form>
         <form method="POST" action="{{ route('staf.bank-soal.destroy', $bank) }}" onsubmit="return confirm('Hapus bank soal ini beserta seluruh soalnya?')">
             @csrf
             @method('DELETE')
-            <button class="tombol kecil garis" type="submit">Hapus</button>
+            <button class="tombol kecil bahaya" type="submit"><x-ikon nama="hapus" :ukuran="16" />Hapus</button>
         </form>
     </div>
 </div>
@@ -28,9 +28,9 @@
         <div><strong>{{ $ringkasan['draf'] }}</strong><span>masih draf</span></div>
     </div>
     <div class="aksi-form">
-        <a class="tombol kecil" href="{{ route('staf.soal.create', [$bank, 'tipe' => 'pg']) }}">+ Pilihan ganda</a>
-        <a class="tombol kecil" href="{{ route('staf.soal.create', [$bank, 'tipe' => 'esai']) }}">+ Esai</a>
-        <a class="tombol kecil garis" href="{{ route('staf.bank-soal.impor.form', $bank) }}">Impor Excel</a>
+        <a class="tombol kecil" href="{{ route('staf.soal.create', [$bank, 'tipe' => 'pg']) }}"><x-ikon nama="tambah" :ukuran="16" />Pilihan ganda</a>
+        <a class="tombol kecil" href="{{ route('staf.soal.create', [$bank, 'tipe' => 'esai']) }}"><x-ikon nama="tambah" :ukuran="16" />Esai</a>
+        <a class="tombol kecil garis" href="{{ route('staf.bank-soal.impor.form', $bank) }}"><x-ikon nama="unggah" :ukuran="16" />Impor Excel</a>
         @if ($ringkasan['draf'] > 0)
             <form method="POST" action="{{ route('staf.bank-soal.siapkan-semua', $bank) }}">
                 @csrf

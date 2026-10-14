@@ -8,7 +8,7 @@
         <p class="sub">{{ number_format($banks->total(), 0, ',', '.') }} bank</p>
     </div>
     <div class="aksi-halaman">
-        <a class="tombol kecil" href="{{ route('staf.bank-soal.create') }}">Buat bank soal</a>
+        <a class="tombol kecil" href="{{ route('staf.bank-soal.create') }}"><x-ikon nama="tambah" :ukuran="16" />Buat bank soal</a>
     </div>
 </div>
 
