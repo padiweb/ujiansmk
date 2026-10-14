@@ -56,6 +56,10 @@
                         <x-ikon nama="jam" /><span class="sisi-lbl">Jadwal Ujian</span>
                     </a>
                 @endif
+                <a href="{{ route('staf.koreksi.index') }}" data-tip="Koreksi Esai"
+                   class="sisi-a {{ request()->routeIs('staf.koreksi.*') ? 'aktif' : '' }}">
+                    <x-ikon nama="koreksi" /><span class="sisi-lbl">Koreksi Esai</span>
+                </a>
                 <a href="{{ route('staf.bank-soal.index') }}" data-tip="Bank Soal"
                    class="sisi-a {{ request()->routeIs('staf.bank-soal.*', 'staf.soal.*') ? 'aktif' : '' }}">
                     <x-ikon nama="bank-soal" /><span class="sisi-lbl">Bank Soal</span>

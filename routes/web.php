@@ -6,6 +6,7 @@ use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\Staf\BankSoalController;
 use App\Http\Controllers\Staf\ImporController;
 use App\Http\Controllers\Staf\JadwalUjianController;
+use App\Http\Controllers\Staf\KoreksiController;
 use App\Http\Controllers\Staf\ImporSoalController;
 use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\MonitorController;
@@ -91,6 +92,17 @@ Route::prefix('staf')->group(function () {
                 Route::delete('/soal/{soal}', [SoalController::class, 'destroy'])->whereNumber('soal')->name('staf.soal.destroy');
                 Route::post('/soal/{soal}/status', [SoalController::class, 'status'])->whereNumber('soal')->name('staf.soal.status');
             });
+        });
+    });
+
+    // Koreksi esai: admin semua jadwal, guru hanya mapel yang diampunya (dicek di pengendali).
+    Route::middleware(['auth:web', 'peran:admin,guru'])->prefix('koreksi')->name('staf.koreksi.')->group(function () {
+        Route::get('/', [KoreksiController::class, 'index'])->name('index');
+        Route::prefix('{jadwal}')->whereNumber('jadwal')->group(function () {
+            Route::get('/', [KoreksiController::class, 'show'])->name('show');
+            Route::get('/soal/{soal}', [KoreksiController::class, 'soal'])->whereNumber('soal')->name('soal');
+            Route::post('/soal/{soal}/saran', [KoreksiController::class, 'saran'])->whereNumber('soal')->middleware('throttle:20,1')->name('saran');
+            Route::post('/jawaban/{jawaban}/nilai', [KoreksiController::class, 'nilai'])->whereNumber('jawaban')->middleware('throttle:240,1')->name('nilai');
         });
     });
 

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BankSoal;
+use App\Models\Soal;
 use App\Models\LogOtomatis;
 use App\Models\PenyediaOtomatis;
 use App\Models\User;
@@ -16,6 +17,9 @@ use Throwable;
 
 class LayananOtomatis
 {
+    /** Jawaban per permintaan saran nilai. */
+    public const MAKS_SARAN = 10;
+
     public function __construct(private LayananSoal $layananSoal, private PenyaringHasil $penyaring) {}
 
     public function batasHarian(): int
@@ -92,6 +96,80 @@ class LayananOtomatis
         $this->catat($user, $penyedia, $bank, $permintaan, count($soal), 'berhasil', null);
 
         return count($soal);
+    }
+
+    /**
+     * Minta saran nilai untuk beberapa jawaban esai satu soal. Hanya mengembalikan saran
+     * (id jawaban => [nilai 0-100, catatan]); tidak mengubah nilai resmi.
+     *
+     * @param  list<array{id:int,teks:string}>  $jawaban  maksimal MAKS_SARAN butir
+     * @return array<int,array{nilai:float,catatan:?string}>
+     *
+     * @throws KesalahanOtomatis
+     */
+    public function sarankanNilai(User $user, Soal $soal, string $mapel, array $jawaban): array
+    {
+        $penyedia = PenyediaOtomatis::aktif()
+            ?? throw new KesalahanOtomatis('Belum ada penyedia otomatis yang aktif. Minta admin mengaturnya di Pengaturan → Penyedia Otomatis.');
+
+        if ($jawaban === [] || count($jawaban) > self::MAKS_SARAN) {
+            throw new KesalahanOtomatis('Pilih 1 sampai '.self::MAKS_SARAN.' jawaban untuk dimintakan saran.');
+        }
+
+        if ($this->sisaHariIni($user) <= 0) {
+            throw new KesalahanOtomatis("Batas {$this->batasHarian()} permintaan per hari sudah tercapai. Coba lagi besok.");
+        }
+
+        $kunciLaju = "otomatis:{$user->id}";
+        if (RateLimiter::tooManyAttempts($kunciLaju, 5)) {
+            throw new KesalahanOtomatis('Terlalu sering meminta. Tunggu sebentar, lalu coba lagi.');
+        }
+        RateLimiter::hit($kunciLaju, 60);
+
+        set_time_limit(180);
+        $diminta = array_column($jawaban, 'id');
+
+        try {
+            $mentah = PenyusunSoal::untuk($penyedia)->nilaiEsai($mapel, $soal->pertanyaan, $soal->rubrik_esai, $jawaban);
+            $saran = [];
+            foreach ($mentah as $butir) {
+                $id = $butir['id'] ?? null;
+                $nilai = $butir['nilai'] ?? null;
+                if (! is_int($id) && ! (is_string($id) && ctype_digit($id)) || ! in_array((int) $id, $diminta, true) || ! is_numeric($nilai)) {
+                    continue;
+                }
+                $catatan = is_string($butir['catatan'] ?? null) ? mb_substr(trim(preg_replace('/[\x00-\x1F\x7F]/u', ' ', $butir['catatan']) ?? ''), 0, 300) : null;
+                $saran[(int) $id] = ['nilai' => round(max(0.0, min(100.0, (float) $nilai)), 2), 'catatan' => $catatan ?: null];
+            }
+
+            if ($saran === []) {
+                throw new KesalahanOtomatis('Tidak ada saran yang valid dari penyedia. Coba lagi.');
+            }
+        } catch (KesalahanOtomatis $e) {
+            $this->catatSaran($user, $penyedia, $soal, count($jawaban), 0, 'gagal', $e->getMessage());
+            throw $e;
+        } catch (Throwable $e) {
+            report($e);
+            $this->catatSaran($user, $penyedia, $soal, count($jawaban), 0, 'gagal', 'Galat tak terduga.');
+            throw new KesalahanOtomatis('Terjadi galat tak terduga saat meminta saran. Coba lagi.');
+        }
+
+        $this->catatSaran($user, $penyedia, $soal, count($jawaban), count($saran), 'berhasil', null);
+
+        return $saran;
+    }
+
+    private function catatSaran(User $user, PenyediaOtomatis $penyedia, Soal $soal, int $diminta, int $hasil, string $status, ?string $pesan): void
+    {
+        LogOtomatis::create([
+            'user_id' => $user->id,
+            'penyedia_id' => $penyedia->id,
+            'bank_soal_id' => $soal->bank_soal_id,
+            'jumlah_diminta' => $diminta,
+            'jumlah_dihasilkan' => $hasil,
+            'status' => $status,
+            'pesan' => $pesan !== null ? mb_substr('[saran nilai] '.$pesan, 0, 250) : '[saran nilai]',
+        ]);
     }
 
     private function catat(User $user, PenyediaOtomatis $penyedia, BankSoal $bank, PermintaanSoal $p, int $hasil, string $status, ?string $pesan): void

@@ -353,7 +353,8 @@ class AlurUjianSiswaTest extends TestCase
         $this->siapkanUjian(denganEsai: true);
         $token = $this->mulaiSesi($this->siswa[0]);
         $sesi = $this->sesiDari($this->siswa[0]);
-        $this->postJson("/api/ujian/{$sesi->id}/kirim", ['jawaban' => $this->jawabanBenar()], $this->header($token));
+        $jawaban = $this->jawabanBenar() + [$this->soal['esai']->id => ['t' => 'Jawaban esai siswa.', 'w' => now()->getTimestampMs()]];
+        $this->postJson("/api/ujian/{$sesi->id}/kirim", ['jawaban' => $jawaban], $this->header($token));
 
         $this->masuk($this->siswa[0])->get(route('siswa.ujian.hasil', $this->jadwal))->assertOk()->assertSee('menunggu koreksi guru');
     }
