@@ -61,6 +61,10 @@
                 @endforeach
 
                 <div class="sisi-seksi"><span>Sistem</span></div>
+                <a href="{{ route('staf.penyedia.index') }}" data-tip="Penyedia Otomatis"
+                   class="sisi-a {{ request()->routeIs('staf.penyedia.*') ? 'aktif' : '' }}">
+                    <x-ikon nama="otomatis" /><span class="sisi-lbl">Penyedia Otomatis</span>
+                </a>
                 <a href="{{ route('staf.pengaturan') }}" data-tip="Pengaturan Sekolah"
                    class="sisi-a {{ request()->routeIs('staf.pengaturan') ? 'aktif' : '' }}">
                     <x-ikon nama="pengaturan" /><span class="sisi-lbl">Pengaturan Sekolah</span>

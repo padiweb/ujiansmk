@@ -7,6 +7,8 @@ use App\Http\Controllers\Staf\BankSoalController;
 use App\Http\Controllers\Staf\ImporController;
 use App\Http\Controllers\Staf\ImporSoalController;
 use App\Http\Controllers\Staf\MasterDataController;
+use App\Http\Controllers\Staf\OtomatisSoalController;
+use App\Http\Controllers\Staf\PenyediaOtomatisController;
 use App\Http\Controllers\Staf\PengaturanSekolahController;
 use App\Http\Controllers\Staf\SoalController;
 use Illuminate\Support\Facades\Route;
@@ -56,6 +58,9 @@ Route::prefix('staf')->group(function () {
                 Route::post('/impor', [ImporSoalController::class, 'pratinjau'])->name('staf.bank-soal.impor.pratinjau');
                 Route::post('/impor/{token}', [ImporSoalController::class, 'simpan'])->name('staf.bank-soal.impor.simpan');
 
+                Route::get('/otomatis', [OtomatisSoalController::class, 'form'])->name('staf.bank-soal.otomatis');
+                Route::post('/otomatis', [OtomatisSoalController::class, 'proses'])->name('staf.bank-soal.otomatis.proses');
+
                 Route::get('/soal/tambah', [SoalController::class, 'create'])->name('staf.soal.create');
                 Route::post('/soal', [SoalController::class, 'store'])->name('staf.soal.store');
                 Route::get('/soal/{soal}/ubah', [SoalController::class, 'edit'])->whereNumber('soal')->name('staf.soal.edit');
@@ -72,6 +77,17 @@ Route::prefix('staf')->group(function () {
         Route::put('/pengaturan', [PengaturanSekolahController::class, 'update'])->name('staf.pengaturan.simpan');
 
         Route::get('/impor/sandi/{token}', [ImporController::class, 'unduhSandi'])->name('staf.impor.sandi');
+
+        Route::prefix('penyedia-otomatis')->name('staf.penyedia.')->group(function () {
+            Route::get('/', [PenyediaOtomatisController::class, 'index'])->name('index');
+            Route::get('/tambah', [PenyediaOtomatisController::class, 'create'])->name('create');
+            Route::post('/', [PenyediaOtomatisController::class, 'store'])->name('store');
+            Route::get('/{penyedia}/ubah', [PenyediaOtomatisController::class, 'edit'])->whereNumber('penyedia')->name('edit');
+            Route::put('/{penyedia}', [PenyediaOtomatisController::class, 'update'])->whereNumber('penyedia')->name('update');
+            Route::delete('/{penyedia}', [PenyediaOtomatisController::class, 'destroy'])->whereNumber('penyedia')->name('destroy');
+            Route::post('/{penyedia}/aktifkan', [PenyediaOtomatisController::class, 'aktifkan'])->whereNumber('penyedia')->name('aktifkan');
+            Route::post('/{penyedia}/nonaktifkan', [PenyediaOtomatisController::class, 'nonaktifkan'])->whereNumber('penyedia')->name('nonaktifkan');
+        });
 
         Route::prefix('master/{entitas}')->where(['entitas' => '[a-z-]+'])->group(function () {
             Route::get('/', [MasterDataController::class, 'index'])->name('staf.master.index');
