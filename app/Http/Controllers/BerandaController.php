@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Master\DefinisiMaster;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+class BerandaController extends Controller
+{
+    public function siswa(Request $request): View
+    {
+        return view('siswa.beranda', ['siswa' => $request->user('siswa')]);
+    }
+
+    public function staf(Request $request): View
+    {
+        $user = $request->user('web');
+        $langkah = [];
+
+        if ($user->role === 'admin') {
+            $urutan = ['tahun-ajaran', 'periode', 'jurusan', 'staf', 'kelas', 'mapel', 'siswa', 'pengampu', 'ruang'];
+            foreach ($urutan as $slug) {
+                $def = DefinisiMaster::temukan($slug);
+                $kueri = $def->model()::query();
+                if ($slug === 'staf') {
+                    $kueri->where('role', 'guru');
+                }
+                $langkah[] = ['slug' => $slug, 'jumlah' => $kueri->count(),
+                    'label' => $slug === 'staf' ? 'Guru' : $def->judul()];
+            }
+        }
+
+        return view('staf.beranda', ['user' => $user, 'langkah' => $langkah]);
+    }
+}
