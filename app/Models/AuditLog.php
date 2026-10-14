@@ -10,7 +10,7 @@ class AuditLog extends Model
 
     protected $table = 'audit_log';
 
-    protected $fillable = ['pelaku_tipe', 'pelaku_id', 'aksi', 'detail', 'ip'];
+    protected $fillable = ['pelaku_tipe', 'pelaku_id', 'aksi', 'detail', 'ip', 'created_at'];
 
     protected function casts(): array
     {
@@ -32,6 +32,7 @@ class AuditLog extends Model
             'aksi' => $aksi,
             'detail' => $detail !== null ? mb_substr($detail, 0, 1000) : null,
             'ip' => request()?->ip(),
+            'created_at' => now(),
         ]);
     }
 }

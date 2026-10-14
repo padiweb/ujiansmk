@@ -11,6 +11,14 @@ return [
     'batas_otomatis_harian' => (int) env('UJIAN_BATAS_OTOMATIS_HARIAN', 30),
     'maks_soal_otomatis' => 10,
 
+    // Hitungan pelanggaran (detik / jumlah).
+    'pelanggaran' => [
+        'jeda_sejenis' => 8,   // pelanggaran sejenis dalam jeda ini tidak dihitung dua kali
+        'jeda_semua' => 3,     // satu kejadian fisik sering memicu beberapa sensor: maksimal satu hitungan per jeda ini
+        'abaikan_awal' => 5,   // peralihan ke layar penuh di awal tidak dihitung
+        'maks_catatan_per_menit' => 20, // pelindung dari banjir catatan
+    ],
+
     // Pelaksanaan ujian.
     'toleransi_kirim_detik' => 90, // sinkron terakhir masih diterima sekian detik setelah batas waktu
     'jalur_media' => env('UJIAN_JALUR_MEDIA'),   // folder gambar statis; kosong = public/media/u

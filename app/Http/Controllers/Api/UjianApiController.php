@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pelanggaran;
 use App\Models\SesiUjian;
 use App\Services\LayananPaket;
+use App\Services\LayananPelanggaran;
 use App\Services\LayananSesi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * Titik akhir pelaksanaan ujian. Sengaja ringan: tanpa sesi/cookie, sedikit kueri per permintaan.
@@ -15,7 +18,7 @@ use Illuminate\Http\Request;
  */
 class UjianApiController extends Controller
 {
-    public function __construct(private LayananSesi $layanan, private LayananPaket $paket) {}
+    public function __construct(private LayananSesi $layanan, private LayananPaket $paket, private LayananPelanggaran $pelanggaran) {}
 
     /** Paket soal tanpa kunci, sudah diurutkan untuk siswa ini, plus jawaban yang pernah tersimpan. */
     public function paket(Request $request): JsonResponse
@@ -62,6 +65,43 @@ class UjianApiController extends Controller
         $keadaan = $this->layanan->sinkron($request->attributes->get('sesi'), (array) $request->input('jawaban', []));
 
         return response()->json($keadaan)->header('Cache-Control', 'no-store');
+    }
+
+    /** Laporan pelanggaran dari peramban. Hitungan dan blokir diputuskan server (LayananPelanggaran). */
+    public function pelanggaran(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'jenis' => ['required', 'string', Rule::in(array_keys(Pelanggaran::JENIS))],
+            'keterangan' => ['nullable', 'string', 'max:255'],
+            'info' => ['nullable', 'array'],
+        ]);
+
+        $keadaan = $this->pelanggaran->catat(
+            $request->attributes->get('sesi'),
+            $data['jenis'],
+            $data['keterangan'] ?? null,
+            $this->saringInfo($data['info'] ?? []),
+        );
+
+        return response()->json($keadaan)->header('Cache-Control', 'no-store');
+    }
+
+    /** Hanya kunci dan nilai sederhana yang diizinkan; sisanya dibuang. */
+    private function saringInfo(array $info): array
+    {
+        $diizinkan = ['durasi', 'lebar', 'tinggi', 'layar_lebar', 'layar_tinggi', 'rasio', 'alasan'];
+        $bersih = [];
+
+        foreach ($diizinkan as $kunci) {
+            $nilai = $info[$kunci] ?? null;
+            if (is_int($nilai) || is_float($nilai)) {
+                $bersih[$kunci] = round((float) $nilai, 3);
+            } elseif (is_string($nilai)) {
+                $bersih[$kunci] = mb_substr($nilai, 0, 60);
+            }
+        }
+
+        return $bersih;
     }
 
     public function kirim(Request $request): JsonResponse

@@ -11,7 +11,13 @@ class LogOtomatis extends Model
 
     protected $table = 'log_otomatis';
 
-    protected $fillable = ['user_id', 'penyedia_id', 'bank_soal_id', 'jumlah_diminta', 'jumlah_dihasilkan', 'status', 'pesan'];
+    protected $fillable = ['user_id', 'penyedia_id', 'bank_soal_id', 'jumlah_diminta', 'jumlah_dihasilkan', 'status', 'pesan', 'created_at'];
+
+    protected static function booted(): void
+    {
+        // Jam aplikasi (zona waktu sekolah), bukan jam basis data: batas harian dihitung dari awal hari aplikasi.
+        static::creating(fn (self $m) => $m->created_at ??= now());
+    }
 
     protected function casts(): array
     {

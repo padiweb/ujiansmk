@@ -11,5 +11,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('perangkat.ujian')->prefix('{sesi}')->whereNumber('sesi')->group(function () {
     Route::get('/paket', [UjianApiController::class, 'paket']);
     Route::post('/sinkron', [UjianApiController::class, 'sinkron']);
+    Route::post('/pelanggaran', [UjianApiController::class, 'pelanggaran']);
     Route::post('/kirim', [UjianApiController::class, 'kirim']);
 });
