@@ -15,6 +15,7 @@ use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
 use App\Http\Controllers\Staf\PenyediaOtomatisController;
 use App\Http\Controllers\Staf\PengaturanSekolahController;
+use App\Http\Controllers\Staf\SinkronEduwebController;
 use App\Http\Controllers\Staf\RekapController;
 use App\Http\Controllers\Siswa\UjianController;
 use App\Http\Controllers\Staf\SoalController;
@@ -153,6 +154,14 @@ Route::prefix('staf')->group(function () {
             Route::get('/', [KartuUjianController::class, 'index'])->name('index');
             Route::post('/cetak', [KartuUjianController::class, 'cetak'])->name('cetak');
             Route::post('/sandi', [KartuUjianController::class, 'sandi'])->middleware('throttle:6,1')->name('sandi');
+        });
+
+        Route::prefix('sinkron-eduweb')->name('staf.sinkron.')->group(function () {
+            Route::get('/', [SinkronEduwebController::class, 'index'])->name('index');
+            Route::post('/uji', [SinkronEduwebController::class, 'uji'])->middleware('throttle:10,1')->name('uji');
+            Route::post('/penuh', [SinkronEduwebController::class, 'penuh'])->middleware('throttle:5,1')->name('penuh');
+            Route::post('/kejadian', [SinkronEduwebController::class, 'kejadian'])->middleware('throttle:10,1')->name('kejadian');
+            Route::get('/sandi/{token}', [SinkronEduwebController::class, 'unduhSandi'])->name('sandi');
         });
 
         Route::prefix('denah')->name('staf.denah.')->group(function () {

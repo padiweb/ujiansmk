@@ -10,12 +10,12 @@ class PengaturanSekolah extends Model
 
     protected $fillable = [
         'nama', 'alamat', 'kota', 'provinsi', 'npsn', 'kepala_sekolah', 'nip_kepala_sekolah',
-        'kurikulum', 'mode_sinkron_eduweb',
+        'kurikulum', 'mode_sinkron_eduweb', 'eduweb_kejadian_terakhir', 'eduweb_sinkron_penuh_pada',
     ];
 
     protected function casts(): array
     {
-        return ['mode_sinkron_eduweb' => 'boolean'];
+        return ['mode_sinkron_eduweb' => 'boolean', 'eduweb_sinkron_penuh_pada' => 'datetime'];
     }
 
     /** Pengaturan selalu satu baris; dibuat bila belum ada. */
