@@ -1,6 +1,6 @@
 # Rancangan Jadwal, Pelaksanaan Ujian, Anti Curang, dan Monitor (Tahap 1, langkah 4–7)
 
-Status: **DISETUJUI (revisi 3).** Memasukkan jawaban pemilik (bagian 2), target kapasitas di shared hosting (bagian 9), kebijakan **tanpa cron** (bagian 5), dan aplikasi ujian di **akun hosting terpisah** dari EduWeb (bagian 12).
+Status: **DISETUJUI (revisi 3).** Memasukkan jawaban pemilik (bagian 2), target kapasitas di shared hosting (bagian 9), kebijakan **tanpa cron** (bagian 5), dan aplikasi ujian di **akun hosting yang sama** dengan EduWeb (bagian 12).
 
 ## 1. Hasil baca aplikasi lama
 
@@ -133,7 +133,7 @@ Semua kejadian dikirim lewat sinkron/endpoint pelanggaran, dihitung di server, d
 | 800–2.000+ | **Tidak realistis** di shared hosting | Bagi ke beberapa **gelombang** (maks ±500–800 serentak), atau pindah ke **VPS** |
 
 Hal lain yang perlu diperhatikan:
-- **Berbagi kuota dengan EduWeb:** bila aplikasi ujian dan EduWeb ada di satu akun hosting, hari ujian bisa memperlambat EduWeb atau memicu pembatasan akun oleh penyedia hosting.
+- **Berbagi kuota dengan EduWeb (berlaku, karena satu akun):** CPU, RAM, dan jumlah proses PHP dibagi dua aplikasi. Hari ujian bisa memperlambat EduWeb (absensi, jadwal, dll.), dan sebaliknya; bila melewati batas, penyedia hosting dapat membatasi seluruh akun. Karena itu angka aman **dikurangi dari perkiraan** (anggap sekitar **200–300 siswa serentak** sampai diukur), dan ujian sebaiknya **tidak dijadwalkan bersamaan dengan jam sibuk EduWeb** (mis. saat absensi pagi).
 - **Tidak bergantung pada cron** (lihat bagian 5).
 - **Hostinger Premium adalah paket entry-level**, dengan batas CPU/proses paling kecil di antara paket Hostinger. Anggap angka aman awalnya **sekitar 300 siswa serentak**; batas sebenarnya diukur di tahap F. Naik ke paket Business/Cloud atau VPS bila perlu.
 - Kode ditulis agar **pindah ke VPS tidak perlu mengubah aplikasi**: cukup mengganti cache/sesi ke Redis dan menambah proses PHP.
@@ -155,9 +155,9 @@ Hal lain yang perlu diperhatikan:
 3. Untuk > 800 siswa serentak di shared hosting, **ujian dibagi gelombang atau pindah VPS**. Setuju sebagai kebijakan?
 4. Tolong cek di hPanel: **nama paket hosting** (mis. Premium/Business/Cloud), apakah **cron job** tersedia, dan apakah aplikasi ujian akan berada di **akun yang sama dengan EduWeb**.
 
-## 12. Terpisah dari EduWeb tetapi tetap terintegrasi
-Aplikasi ujian di **akun hosting dan domain sendiri**. Ini justru bagus: beban ujian tidak mengganggu EduWeb, dan sebaliknya. Integrasi memang dirancang lewat **API server-ke-server di internet (HTTPS)**, bukan berbagi database atau folder, sehingga **tidak ada syarat satu server**:
-- EduWeb memanggil API aplikasi ujian (kirim master data, kenaikan kelas, absensi, hash kata sandi) dengan kunci rahasia; aplikasi ujian memanggil/dipanggil EduWeb untuk rapor dan nilai (read-only).
-- Setiap aplikasi punya database dan kata sandi sendiri; tidak saling membaca database.
-- Kunci API dan alamat dasar disimpan di `.env` masing-masing; semua panggilan dicatat; sinkron idempoten dan aman diulang bila salah satu sedang mati.
-- Konsekuensi biaya: dua paket hosting. Konsekuensi teknis: pastikan kedua domain memakai HTTPS yang valid dan batas waktu panggilan diatur.
+## 12. Satu akun hosting dengan EduWeb, tetap dua aplikasi terpisah
+Aplikasi ujian dan EduWeb berada di **akun hosting yang sama**, tetapi **tetap dua aplikasi**: domain/folder sendiri, database sendiri, pengguna database sendiri dengan hak minimum, `.env` sendiri. Integrasi tetap lewat **API server-ke-server** dengan kunci rahasia, bukan membaca database satu sama lain. Alasannya: batas yang jelas, mudah dipindah ke akun/VPS lain kelak tanpa mengubah aplikasi, dan satu aplikasi yang bermasalah tidak langsung merusak data yang lain.
+- EduWeb memanggil API aplikasi ujian (master data, kenaikan kelas, absensi, hash kata sandi); aplikasi ujian dipanggil EduWeb untuk rapor dan nilai (read-only). Semua panggilan memakai HTTPS, kunci di `.env`, dicatat, dan idempoten.
+- **Jebakan satu server:** bila satu aplikasi memanggil alamat aplikasi lainnya di server yang sama, **satu permintaan memakai dua proses PHP sekaligus** (penelepon menunggu yang dipanggil). Maka panggilan antar-aplikasi dibuat **singkat, tanpa menahan permintaan siswa**, dengan batas waktu pendek, dan sinkron besar dijalankan di luar jam ujian.
+- **Hari ujian:** jangan jalankan sinkron massal EduWeb ↔ ujian saat ujian berlangsung.
+- **Jalur keluar:** bila beban ujian mengganggu EduWeb, pindahkan aplikasi ujian ke akun atau VPS sendiri. Karena integrasinya sudah lewat API, perpindahan itu hanya mengganti alamat dan kunci.
