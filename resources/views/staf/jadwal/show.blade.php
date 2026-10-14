@@ -114,6 +114,14 @@
 @endif
 
 <div class="kartu">
+    <h2 class="judul-kartu">Kartu dan daftar hadir</h2>
+    <div class="aksi-form" style="margin-top:10px">
+        <a class="tombol kecil garis" href="{{ route('staf.kartu.index', $j) }}">Kartu ujian</a>
+        <a class="tombol kecil garis" href="{{ route('staf.hadir', $j) }}" target="_blank" rel="noopener">Daftar hadir</a>
+    </div>
+</div>
+
+<div class="kartu">
     <h2 class="judul-kartu">Tindakan</h2>
     <div class="aksi-form" style="margin-top:10px">
         @if ($j->status === 'draf')

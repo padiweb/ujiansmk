@@ -10,6 +10,9 @@
     </div>
     <div class="aksi-halaman">
         <a class="tombol kecil garis" href="{{ route('staf.monitor.index') }}"><x-ikon nama="panah-kiri" :ukuran="16" />Daftar</a>
+        @if ($bolehBertindak)
+            <a class="tombol kecil garis" href="{{ route('staf.hadir', $j) }}" target="_blank" rel="noopener">Daftar hadir</a>
+        @endif
         <button type="button" id="monBunyi" class="tombol kecil garis" aria-pressed="false">Bunyi: mati</button>
     </div>
 </div>

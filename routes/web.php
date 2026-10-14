@@ -6,6 +6,7 @@ use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\Staf\BankSoalController;
 use App\Http\Controllers\Staf\DenahController;
 use App\Http\Controllers\Staf\ImporController;
+use App\Http\Controllers\Staf\KartuUjianController;
 use App\Http\Controllers\Staf\JadwalUjianController;
 use App\Http\Controllers\Staf\KoreksiController;
 use App\Http\Controllers\Staf\ImporSoalController;
@@ -49,6 +50,9 @@ Route::prefix('staf')->group(function () {
     Route::middleware(['auth:web', 'peran:admin,guru,pengawas'])->group(function () {
         Route::get('/', [BerandaController::class, 'staf'])->name('staf.beranda');
         Route::post('/keluar', [MasukStafController::class, 'keluar'])->name('staf.keluar');
+
+        // Daftar hadir: admin, atau pengawas yang ditugaskan (dicek di pengendali).
+        Route::get('/hadir/{jadwal}', [KartuUjianController::class, 'hadir'])->whereNumber('jadwal')->name('staf.hadir');
 
         // Monitor ujian: hak akses per jadwal dicek di pengendali (admin semua, pengawas yang ditugaskan, guru mapelnya).
         Route::prefix('monitor')->name('staf.monitor.')->group(function () {
@@ -143,6 +147,12 @@ Route::prefix('staf')->group(function () {
                 Route::post('/selesaikan', [JadwalUjianController::class, 'selesaikan'])->name('selesaikan');
                 Route::post('/pengawas-ruang', [JadwalUjianController::class, 'pengawasRuang'])->name('pengawas-ruang');
             });
+        });
+
+        Route::prefix('kartu/{jadwal}')->whereNumber('jadwal')->name('staf.kartu.')->group(function () {
+            Route::get('/', [KartuUjianController::class, 'index'])->name('index');
+            Route::post('/cetak', [KartuUjianController::class, 'cetak'])->name('cetak');
+            Route::post('/sandi', [KartuUjianController::class, 'sandi'])->middleware('throttle:6,1')->name('sandi');
         });
 
         Route::prefix('denah')->name('staf.denah.')->group(function () {

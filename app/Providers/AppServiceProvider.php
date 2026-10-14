@@ -19,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Nama bulan/hari pada tanggal yang dicetak (kartu, daftar hadir) dalam Bahasa Indonesia.
+        \Illuminate\Support\Carbon::setLocale('id');
     }
 }

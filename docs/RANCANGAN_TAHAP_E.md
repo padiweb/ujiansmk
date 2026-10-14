@@ -1,6 +1,6 @@
 # Rancangan Tahap E: koreksi esai, rekap nilai, penempatan ruang, kartu ujian
 
-Status: **menunggu persetujuan** (belum ada kode). Turunan dari `RANCANGAN_UJIAN.md` §6 dan §10.
+Status: **disetujui dan selesai dikerjakan (E1-E4)**. Turunan dari `RANCANGAN_UJIAN.md` §6 dan §10.
 
 ## 1. Koreksi esai (guru)
 - Halaman **Koreksi** per jadwal: daftar soal esai → daftar jawaban siswa. Guru melihat pertanyaan, **rubrik/jawaban acuan** bank soal, jawaban siswa, lalu mengisi nilai 0–100 per jawaban (kolom `jawaban.nilai_esai`, sudah ada).
