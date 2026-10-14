@@ -22,10 +22,10 @@
             @endif
         @else
             <p>Semua baris valid. Belum ada yang disimpan.</p>
-            <form method="POST" action="{{ route('staf.impor.simpan', [$entitas, $token]) }}" class="aksi-form">
+            <form method="POST" action="{{ str_replace(':token', $token, $rute['simpan']) }}" class="aksi-form">
                 @csrf
                 <button class="tombol kecil" type="submit">Simpan {{ $hasil->total() }} data</button>
-                <a class="tombol kecil garis" href="{{ route('staf.impor.form', $entitas) }}">Batal</a>
+                <a class="tombol kecil garis" href="{{ $rute['form'] }}">Batal</a>
             </form>
         @endif
     </div>
@@ -46,8 +46,8 @@
     @if (count($hasil->galat) > 200)
         <p class="sub">Menampilkan 200 galat pertama dari {{ count($hasil->galat) }}.</p>
     @endif
-    <p style="margin-top:16px"><a class="tombol kecil garis" href="{{ route('staf.impor.form', $entitas) }}">Unggah ulang</a></p>
+    <p style="margin-top:16px"><a class="tombol kecil garis" href="{{ $rute['form'] }}">Unggah ulang</a></p>
 @endif
 
-<p style="margin-top:20px"><a href="{{ route('staf.master.index', $entitas) }}">← Kembali ke {{ $p->judul() }}</a></p>
+<p style="margin-top:20px"><a href="{{ $rute['kembali'] }}">← Kembali ke {{ $rute['kembaliLabel'] }}</a></p>
 @endsection

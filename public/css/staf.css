@@ -103,3 +103,55 @@
     .menu-judul { display: none; }
     .isi { padding: 20px 16px 48px; }
 }
+
+/* ── Bank soal ───────────────────────────────────────────────────────── */
+.bidang textarea {
+    width: 100%; padding: 13px 15px; font: inherit; color: var(--teks); resize: vertical;
+    background: var(--putih); border: 2px solid var(--garis); border-radius: 10px; outline: none;
+}
+.bidang textarea:focus { border-color: var(--biru); box-shadow: 0 0 0 4px var(--biru-muda); }
+.bidang.salah textarea { border-color: var(--kuning); }
+.bidang input[disabled] { background: var(--latar); color: var(--teks-redup); }
+
+.aksi-halaman form, .ringkasan-bank form { margin: 0; }
+.ringkasan-bank { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+.ringkasan-bank .ringkasan { margin-bottom: 0; }
+.ringkasan-bank .aksi-form { margin-top: 0; flex-wrap: wrap; }
+
+.lencana.kuning { background: var(--kuning-muda); color: var(--kuning-tua); border: 1px solid var(--kuning); }
+.lencana.pucat { background: var(--biru-muda); color: var(--biru-tua); }
+.tabel .lencana { text-transform: none; }
+
+.soal-kartu { background: var(--putih); border: 1px solid var(--garis); border-radius: var(--radius); padding: 18px 20px; margin-top: 14px; }
+.soal-kepala { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.soal-no { width: 30px; height: 30px; border-radius: 50%; background: var(--biru); color: #fff; display: grid; place-items: center; font-size: .82rem; font-weight: 800; }
+.soal-bobot { margin-left: auto; font-size: .8rem; color: var(--teks-redup); }
+.soal-teks { line-height: 1.6; word-break: break-word; }
+.soal-gambar { display: block; max-width: 100%; max-height: 320px; margin: 12px 0; border-radius: 10px; border: 1px solid var(--garis); }
+.soal-gambar.kecil { max-height: 140px; margin: 6px 0 8px; }
+.opsi-daftar { list-style: none; margin-top: 12px; display: grid; gap: 6px; }
+.opsi-daftar li { padding: 8px 12px; border: 1px solid var(--garis); border-radius: 9px; font-size: .94rem; word-break: break-word; }
+.opsi-daftar li.benar { border-color: var(--biru); background: var(--biru-muda); }
+.tanda-kunci { margin-left: 8px; font-size: .7rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; background: var(--kuning); color: var(--biru-gelap); padding: 2px 8px; border-radius: 999px; }
+.rubrik { margin-top: 12px; padding: 10px 14px; background: var(--kuning-muda); border-radius: 9px; font-size: .9rem; color: var(--kuning-tua); }
+.soal-aksi { display: flex; gap: 16px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--garis); }
+.soal-aksi form { margin: 0; }
+.soal-aksi a { color: var(--biru); font-weight: 600; text-decoration: none; }
+.soal-aksi a:hover { text-decoration: underline; }
+.kosong-kartu { text-align: center; color: var(--teks-redup); }
+
+.opsi-blok { border: 0; margin-bottom: 18px; }
+.opsi-blok legend { font-size: .82rem; font-weight: 700; margin-bottom: 8px; }
+.opsi-baris { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.opsi-baris[hidden] { display: none; }
+.opsi-baris input[type=text] {
+    flex: 1; padding: 11px 14px; font: inherit; color: var(--teks);
+    background: var(--putih); border: 2px solid var(--garis); border-radius: 10px; outline: none;
+}
+.opsi-baris input[type=text]:focus { border-color: var(--biru); box-shadow: 0 0 0 4px var(--biru-muda); }
+.kunci-pilih { display: flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; }
+.kunci-pilih span { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--garis); display: grid; place-items: center; font-weight: 800; font-size: .8rem; color: var(--teks-redup); }
+.kunci-pilih input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.kunci-pilih input:checked + span { background: var(--kuning); border-color: var(--kuning); color: var(--biru-gelap); }
+.kunci-pilih input:focus-visible + span { box-shadow: 0 0 0 4px var(--biru-muda); border-color: var(--biru); }
+.centang { display: flex; align-items: center; gap: 8px; font-weight: 500 !important; margin-bottom: 8px !important; }

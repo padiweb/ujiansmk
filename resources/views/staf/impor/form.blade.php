@@ -9,7 +9,7 @@
     <h2 class="judul-kartu">1. Unduh templat</h2>
     <p>Isi templat ini mulai baris kedua. Kolom bertanda <strong>*</strong> wajib diisi.</p>
     <p style="margin-top:12px">
-        <a class="tombol kecil garis" href="{{ route('staf.impor.templat', $entitas) }}">Unduh templat .xlsx</a>
+        <a class="tombol kecil garis" href="{{ $rute['templat'] }}">Unduh templat .xlsx</a>
     </p>
     @if ($p->petunjuk())
         <ul class="petunjuk">
@@ -20,7 +20,7 @@
     @endif
 </div>
 
-<form class="kartu formulir" method="POST" action="{{ route('staf.impor.pratinjau', $entitas) }}" enctype="multipart/form-data">
+<form class="kartu formulir" method="POST" action="{{ $rute['pratinjau'] }}" enctype="multipart/form-data">
     @csrf
     <h2 class="judul-kartu">2. Unggah dan periksa</h2>
     <div class="bidang @error('berkas') salah @enderror">
@@ -31,7 +31,7 @@
     </div>
     <div class="aksi-form">
         <button class="tombol kecil" type="submit">Periksa berkas</button>
-        <a class="tombol kecil garis" href="{{ route('staf.master.index', $entitas) }}">Batal</a>
+        <a class="tombol kecil garis" href="{{ $rute['kembali'] }}">Batal</a>
     </div>
 </form>
 @endsection

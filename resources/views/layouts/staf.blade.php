@@ -35,6 +35,11 @@
     <nav class="menu" aria-label="Menu utama">
         <a href="{{ route('staf.beranda') }}" class="{{ request()->routeIs('staf.beranda') ? 'aktif' : '' }}">Beranda</a>
 
+        @if (in_array($pengguna->role, ['admin', 'guru'], true))
+            <div class="menu-judul">Ujian</div>
+            <a href="{{ route('staf.bank-soal.index') }}" class="{{ request()->routeIs('staf.bank-soal.*', 'staf.soal.*') ? 'aktif' : '' }}">Bank Soal</a>
+        @endif
+
         @if ($pengguna->role === 'admin')
             <div class="menu-judul">Data master</div>
             @foreach ($menuMaster as $slug => $label)

@@ -3,9 +3,12 @@
 use App\Http\Controllers\Auth\MasukSiswaController;
 use App\Http\Controllers\Auth\MasukStafController;
 use App\Http\Controllers\BerandaController;
+use App\Http\Controllers\Staf\BankSoalController;
 use App\Http\Controllers\Staf\ImporController;
+use App\Http\Controllers\Staf\ImporSoalController;
 use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\PengaturanSekolahController;
+use App\Http\Controllers\Staf\SoalController;
 use Illuminate\Support\Facades\Route;
 
 // ── Siswa (login: NISN + kata sandi) ─────────────────────────────────────────
@@ -29,6 +32,38 @@ Route::prefix('staf')->group(function () {
     Route::middleware(['auth:web', 'peran:admin,guru,pengawas'])->group(function () {
         Route::get('/', [BerandaController::class, 'staf'])->name('staf.beranda');
         Route::post('/keluar', [MasukStafController::class, 'keluar'])->name('staf.keluar');
+    });
+
+    // Admin dan guru: bank soal (guru hanya bank miliknya sendiri; dicek di pengendali).
+    Route::middleware(['auth:web', 'peran:admin,guru'])->group(function () {
+        Route::get('/gambar/soal/{soal}', [SoalController::class, 'gambar'])->whereNumber('soal')->name('staf.soal.gambar');
+
+        Route::prefix('bank-soal')->group(function () {
+            Route::get('/', [BankSoalController::class, 'index'])->name('staf.bank-soal.index');
+            Route::get('/tambah', [BankSoalController::class, 'create'])->name('staf.bank-soal.create');
+            Route::post('/', [BankSoalController::class, 'store'])->name('staf.bank-soal.store');
+
+            Route::prefix('{bank}')->whereNumber('bank')->group(function () {
+                Route::get('/', [BankSoalController::class, 'show'])->name('staf.bank-soal.show');
+                Route::get('/ubah', [BankSoalController::class, 'edit'])->name('staf.bank-soal.edit');
+                Route::put('/', [BankSoalController::class, 'update'])->name('staf.bank-soal.update');
+                Route::delete('/', [BankSoalController::class, 'destroy'])->name('staf.bank-soal.destroy');
+                Route::post('/salin', [BankSoalController::class, 'salin'])->name('staf.bank-soal.salin');
+                Route::post('/siapkan-semua', [BankSoalController::class, 'siapkanSemua'])->name('staf.bank-soal.siapkan-semua');
+
+                Route::get('/impor', [ImporSoalController::class, 'form'])->name('staf.bank-soal.impor.form');
+                Route::get('/impor/templat', [ImporSoalController::class, 'templat'])->name('staf.bank-soal.impor.templat');
+                Route::post('/impor', [ImporSoalController::class, 'pratinjau'])->name('staf.bank-soal.impor.pratinjau');
+                Route::post('/impor/{token}', [ImporSoalController::class, 'simpan'])->name('staf.bank-soal.impor.simpan');
+
+                Route::get('/soal/tambah', [SoalController::class, 'create'])->name('staf.soal.create');
+                Route::post('/soal', [SoalController::class, 'store'])->name('staf.soal.store');
+                Route::get('/soal/{soal}/ubah', [SoalController::class, 'edit'])->whereNumber('soal')->name('staf.soal.edit');
+                Route::put('/soal/{soal}', [SoalController::class, 'update'])->whereNumber('soal')->name('staf.soal.update');
+                Route::delete('/soal/{soal}', [SoalController::class, 'destroy'])->whereNumber('soal')->name('staf.soal.destroy');
+                Route::post('/soal/{soal}/status', [SoalController::class, 'status'])->whereNumber('soal')->name('staf.soal.status');
+            });
+        });
     });
 
     // Hanya admin: master data, impor, pengaturan.

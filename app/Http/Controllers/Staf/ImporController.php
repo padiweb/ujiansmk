@@ -20,7 +20,7 @@ class ImporController extends Controller
 
     public function form(string $entitas): View
     {
-        return view('staf.impor.form', ['p' => $this->pengimpor($entitas), 'entitas' => $entitas]);
+        return view('staf.impor.form', ['p' => $this->pengimpor($entitas), 'entitas' => $entitas, 'rute' => $this->rute($entitas)]);
     }
 
     public function templat(string $entitas): StreamedResponse
@@ -52,7 +52,7 @@ class ImporController extends Controller
             $token = null;
         }
 
-        return view('staf.impor.hasil', ['p' => $p, 'entitas' => $entitas, 'hasil' => $hasil, 'token' => $token, 'selesai' => false, 'tokenSandi' => null]);
+        return view('staf.impor.hasil', ['p' => $p, 'entitas' => $entitas, 'hasil' => $hasil, 'token' => $token, 'selesai' => false, 'tokenSandi' => null, 'rute' => $this->rute($entitas)]);
     }
 
     public function simpan(Request $request, string $entitas, string $token): View
@@ -83,7 +83,7 @@ class ImporController extends Controller
             }
         }
 
-        return view('staf.impor.hasil', ['p' => $p, 'entitas' => $entitas, 'hasil' => $hasil, 'token' => null, 'selesai' => true, 'tokenSandi' => $tokenSandi]);
+        return view('staf.impor.hasil', ['p' => $p, 'entitas' => $entitas, 'hasil' => $hasil, 'token' => null, 'selesai' => true, 'tokenSandi' => $tokenSandi, 'rute' => $this->rute($entitas)]);
     }
 
     /** Daftar kata sandi hanya bisa diunduh sekali, lalu berkasnya dihapus. */
@@ -99,6 +99,18 @@ class ImporController extends Controller
         $request->session()->forget($kunci);
 
         return response()->download($jalur, 'kata-sandi-sementara.xlsx')->deleteFileAfterSend(true);
+    }
+
+    private function rute(string $entitas): array
+    {
+        return [
+            'templat' => route('staf.impor.templat', $entitas),
+            'pratinjau' => route('staf.impor.pratinjau', $entitas),
+            'simpan' => route('staf.impor.simpan', [$entitas, ':token']),
+            'form' => route('staf.impor.form', $entitas),
+            'kembali' => route('staf.master.index', $entitas),
+            'kembaliLabel' => $this->pengimpor($entitas)->judul(),
+        ];
     }
 
     private function pengimpor(string $entitas): Pengimpor
