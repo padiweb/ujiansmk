@@ -23,6 +23,10 @@
     @endif
 </div>
 
+@if ($j->nilaiDikunci())
+    <div class="pesan-salah" role="status"><x-ikon nama="info" :ukuran="18" /><span>Nilai jadwal ini sudah dikunci dan tidak bisa diubah. Admin dapat membukanya di halaman Rekap Nilai.</span></div>
+@endif
+
 <div class="kartu" id="korKotak"
      data-nilai="{{ url('staf/koreksi/'.$j->id.'/jawaban') }}"
      data-saran="{{ route('staf.koreksi.saran', [$j, $soal]) }}"
@@ -48,7 +52,7 @@
             <div class="teks-jawaban">{!! nl2br(e($j2->teks_esai)) !!}</div>
             <div class="kor-nilai">
                 <label>Nilai (0–100)
-                    <input type="text" inputmode="decimal" class="kor-input" value="{{ $j2->nilai_esai !== null ? rtrim(rtrim((string) $j2->nilai_esai, '0'), '.') : '' }}" autocomplete="off">
+                    <input type="text" inputmode="decimal" class="kor-input" @disabled($j->nilaiDikunci()) value="{{ $j2->nilai_esai !== null ? rtrim(rtrim((string) $j2->nilai_esai, '0'), '.') : '' }}" autocomplete="off">
                 </label>
                 <div class="kor-cepat">
                     @foreach ([0, 25, 50, 75, 100] as $n)

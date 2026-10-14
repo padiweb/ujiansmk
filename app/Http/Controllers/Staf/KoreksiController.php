@@ -91,6 +91,10 @@ class KoreksiController extends Controller
         $this->izinkan($request, $jadwal);
         abort_unless($this->koreksi->soalMilik($jadwal, $soal), 404);
 
+        if ($jadwal->nilaiDikunci()) {
+            return response()->json(['kode' => 'dikunci', 'pesan' => 'Nilai jadwal ini sudah dikunci.'], 409);
+        }
+
         $data = $request->validate([
             'ids' => ['required', 'array', 'min:1', 'max:'.LayananOtomatis::MAKS_SARAN],
             'ids.*' => ['integer'],

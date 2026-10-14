@@ -37,7 +37,7 @@
     function simpan(kartu) {
         var input = kartu.querySelector('.kor-input');
         var nilai = input.value.trim();
-        if (nilai === kartu.getAttribute('data-tersimpan')) return;
+        if (nilai === kartu.getAttribute('data-tersimpan')) { status(kartu, ''); return; }
 
         var b = new FormData();
         b.append('nilai', nilai);

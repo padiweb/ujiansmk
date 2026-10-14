@@ -117,7 +117,11 @@ class LayananKoreksi
 
         return DB::transaction(function () use ($jawaban, $nilai, $pengoreksi) {
             $terkunci = Jawaban::query()->lockForUpdate()->findOrFail($jawaban->id);
-            $sesi = SesiUjian::findOrFail($terkunci->sesi_id);
+            $sesi = SesiUjian::with('jadwal')->findOrFail($terkunci->sesi_id);
+
+            if ($sesi->jadwal->nilaiDikunci()) {
+                throw new KesalahanUjian('Nilai jadwal ini sudah dikunci. Minta admin membuka kunci bila perlu mengubahnya.', 'dikunci');
+            }
 
             if ($sesi->status !== SesiUjian::SELESAI) {
                 throw new KesalahanUjian('Jawaban ini belum bisa dikoreksi karena siswa belum selesai mengerjakan.', 'belum_selesai');

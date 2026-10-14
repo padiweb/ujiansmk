@@ -60,6 +60,10 @@
                    class="sisi-a {{ request()->routeIs('staf.koreksi.*') ? 'aktif' : '' }}">
                     <x-ikon nama="koreksi" /><span class="sisi-lbl">Koreksi Esai</span>
                 </a>
+                <a href="{{ route('staf.rekap.index') }}" data-tip="Rekap Nilai"
+                   class="sisi-a {{ request()->routeIs('staf.rekap.*') ? 'aktif' : '' }}">
+                    <x-ikon nama="berkas" /><span class="sisi-lbl">Rekap Nilai</span>
+                </a>
                 <a href="{{ route('staf.bank-soal.index') }}" data-tip="Bank Soal"
                    class="sisi-a {{ request()->routeIs('staf.bank-soal.*', 'staf.soal.*') ? 'aktif' : '' }}">
                     <x-ikon nama="bank-soal" /><span class="sisi-lbl">Bank Soal</span>

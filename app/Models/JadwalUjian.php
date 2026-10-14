@@ -17,7 +17,7 @@ class JadwalUjian extends Model
 
     protected $fillable = [
         'periode_id', 'mapel_id', 'nama', 'durasi_menit', 'mulai_pada', 'tutup_pada', 'token', 'media_kode', 'status',
-        'acak_soal', 'acak_opsi', 'batas_pelanggaran', 'bobot_pg', 'tampilkan_hasil', 'dibuat_oleh', 'diaktifkan_pada',
+        'acak_soal', 'acak_opsi', 'batas_pelanggaran', 'bobot_pg', 'tampilkan_hasil', 'dibuat_oleh', 'diaktifkan_pada', 'nilai_dikunci_pada', 'nilai_dikunci_oleh',
     ];
 
     protected function casts(): array
@@ -26,6 +26,7 @@ class JadwalUjian extends Model
             'mulai_pada' => 'datetime',
             'tutup_pada' => 'datetime',
             'diaktifkan_pada' => 'datetime',
+            'nilai_dikunci_pada' => 'datetime',
             'acak_soal' => 'boolean',
             'acak_opsi' => 'boolean',
         ];
@@ -44,6 +45,11 @@ class JadwalUjian extends Model
     public function pembuat(): BelongsTo
     {
         return $this->belongsTo(User::class, 'dibuat_oleh');
+    }
+
+    public function pengunci(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'nilai_dikunci_oleh');
     }
 
     public function kelas(): BelongsToMany
@@ -86,6 +92,11 @@ class JadwalUjian extends Model
             $sekarang->gt($this->tutup_pada) => 'ditutup',
             default => 'dibuka',
         };
+    }
+
+    public function nilaiDikunci(): bool
+    {
+        return $this->nilai_dikunci_pada !== null;
     }
 
     public function bobotEsai(): int

@@ -16,7 +16,9 @@
                 <div><strong>{{ $hasil->salah }}</strong><span>salah</span></div>
                 <div><strong>{{ $hasil->kosong }}</strong><span>kosong</span></div>
             </div>
-            @if ($hasil->status_koreksi === 'belum_dikoreksi')
+            @if ($hasil->status_koreksi === 'selesai' && $hasil->skor_akhir !== null)
+                <div class="info" style="margin-top:14px"><x-ikon nama="centang" :ukuran="18" /><span>Nilai akhir (setelah esai dikoreksi): <strong>{{ rtrim(rtrim(number_format((float) $hasil->skor_akhir, 2, ',', '.'), '0'), ',') }}</strong></span></div>
+            @elseif ($hasil->status_koreksi === 'belum_dikoreksi')
                 <div class="info" style="margin-top:14px"><x-ikon nama="info" :ukuran="18" /><span>Soal esai Anda menunggu koreksi guru. Nilai akhir menyusul.</span></div>
             @endif
         @else

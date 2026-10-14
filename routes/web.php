@@ -13,6 +13,7 @@ use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
 use App\Http\Controllers\Staf\PenyediaOtomatisController;
 use App\Http\Controllers\Staf\PengaturanSekolahController;
+use App\Http\Controllers\Staf\RekapController;
 use App\Http\Controllers\Siswa\UjianController;
 use App\Http\Controllers\Staf\SoalController;
 use Illuminate\Support\Facades\Route;
@@ -103,6 +104,19 @@ Route::prefix('staf')->group(function () {
             Route::get('/soal/{soal}', [KoreksiController::class, 'soal'])->whereNumber('soal')->name('soal');
             Route::post('/soal/{soal}/saran', [KoreksiController::class, 'saran'])->whereNumber('soal')->middleware('throttle:20,1')->name('saran');
             Route::post('/jawaban/{jawaban}/nilai', [KoreksiController::class, 'nilai'])->whereNumber('jawaban')->middleware('throttle:240,1')->name('nilai');
+        });
+    });
+
+    // Rekap nilai: admin semua jadwal, guru hanya mapel yang diampunya (dicek di pengendali).
+    Route::middleware(['auth:web', 'peran:admin,guru'])->prefix('rekap')->name('staf.rekap.')->group(function () {
+        Route::get('/', [RekapController::class, 'index'])->name('index');
+        Route::prefix('{jadwal}')->whereNumber('jadwal')->group(function () {
+            Route::get('/', [RekapController::class, 'show'])->name('show');
+            Route::get('/cetak', [RekapController::class, 'cetak'])->name('cetak');
+            Route::get('/ekspor', [RekapController::class, 'ekspor'])->name('ekspor');
+            Route::post('/kunci', [RekapController::class, 'kunci'])->name('kunci');
+            Route::post('/buka-kunci', [RekapController::class, 'bukaKunci'])->name('buka-kunci');
+            Route::post('/tampilkan', [RekapController::class, 'tampilkan'])->name('tampilkan');
         });
     });
 
