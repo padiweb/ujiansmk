@@ -56,9 +56,14 @@ class UjianController extends Controller
         }
 
         if (in_array($sesi->status, [SesiUjian::BERLANGSUNG, SesiUjian::DIBLOKIR], true)) {
-            return $this->layanan->perangkatCocok($sesi, $request->cookie($this->namaCookie($sesi)))
-                ? redirect()->route('siswa.ujian.kerjakan', $jadwal)
-                : view('siswa.ujian.perangkat-lain', ['jadwal' => $jadwal]);
+            if ($this->layanan->perangkatCocok($sesi, $request->cookie($this->namaCookie($sesi)))) {
+                return redirect()->route('siswa.ujian.kerjakan', $jadwal);
+            }
+
+            // Perangkat dilepas pengawas (token_perangkat kosong): siswa boleh masuk lagi dengan token.
+            if ($sesi->token_perangkat !== null) {
+                return view('siswa.ujian.perangkat-lain', ['jadwal' => $jadwal]);
+            }
         }
 
         return view('siswa.ujian.token', ['jadwal' => $jadwal->load('mapel'), 'jendela' => $jadwal->jendela()]);

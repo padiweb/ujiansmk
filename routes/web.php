@@ -8,6 +8,7 @@ use App\Http\Controllers\Staf\ImporController;
 use App\Http\Controllers\Staf\JadwalUjianController;
 use App\Http\Controllers\Staf\ImporSoalController;
 use App\Http\Controllers\Staf\MasterDataController;
+use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
 use App\Http\Controllers\Staf\PenyediaOtomatisController;
 use App\Http\Controllers\Staf\PengaturanSekolahController;
@@ -45,6 +46,17 @@ Route::prefix('staf')->group(function () {
     Route::middleware(['auth:web', 'peran:admin,guru,pengawas'])->group(function () {
         Route::get('/', [BerandaController::class, 'staf'])->name('staf.beranda');
         Route::post('/keluar', [MasukStafController::class, 'keluar'])->name('staf.keluar');
+
+        // Monitor ujian: hak akses per jadwal dicek di pengendali (admin semua, pengawas yang ditugaskan, guru mapelnya).
+        Route::prefix('monitor')->name('staf.monitor.')->group(function () {
+            Route::get('/', [MonitorController::class, 'index'])->name('index');
+            Route::prefix('{jadwal}')->whereNumber('jadwal')->group(function () {
+                Route::get('/', [MonitorController::class, 'show'])->name('show');
+                Route::get('/data', [MonitorController::class, 'data'])->name('data');
+                Route::post('/sesi/{sesi}/{aksi}', [MonitorController::class, 'aksi'])->whereNumber('sesi')
+                    ->where('aksi', 'aktifkan|reset|waktu|selesai')->middleware('throttle:60,1')->name('aksi');
+            });
+        });
     });
 
     // Admin dan guru: bank soal (guru hanya bank miliknya sendiri; dicek di pengendali).

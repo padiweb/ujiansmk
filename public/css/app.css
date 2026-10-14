@@ -439,3 +439,20 @@ h1, h2, h3 { color: var(--teks); }
 .penjaga-tepi { position: fixed; top: var(--tinggi-atas); bottom: 0; width: 18px; z-index: 90; background: transparent; }
 .penjaga-tepi.kiri { left: 0; }
 .penjaga-tepi.kanan { right: 0; }
+
+/* ── Monitor pengawas ─────────────────────────────────────────────────── */
+.kartu-monitor { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
+.kartu-monitor:hover { border-color: var(--biru); box-shadow: 0 4px 16px rgba(57, 96, 251, .12); }
+.tabel-monitor td { vertical-align: top; }
+.tabel-monitor td .bantuan { margin: 2px 0 0; }
+.tabel-monitor .lencana + .lencana { margin-left: 4px; }
+.mon-blokir td { background: var(--kuning-muda); }
+.mon-blokir td:first-child { box-shadow: inset 4px 0 0 var(--kuning); }
+.mon-langgar td:first-child { box-shadow: inset 4px 0 0 var(--kuning); }
+.mon-senyap td { background: #F3F4F8; }
+.mon-redup td { color: var(--teks-3); }
+.mon-bar { height: 5px; width: 90px; background: var(--garis-lembut); border-radius: 999px; overflow: hidden; margin-top: 4px; }
+.mon-bar span { display: block; height: 100%; background: var(--biru); border-radius: 999px; }
+.mon-aksi { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.mon-aksi .tombol { padding: 6px 10px; font-size: .78rem; }
+.tabel-monitor td:nth-child(2) { white-space: nowrap; }

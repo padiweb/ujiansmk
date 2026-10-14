@@ -71,15 +71,30 @@ class LayananSesi
             }
 
             if (in_array($sesi->status, [SesiUjian::BERLANGSUNG, SesiUjian::DIBLOKIR], true)) {
-                if (! $this->perangkatCocok($sesi, $cookiePerangkat)) {
+                $cocok = $this->perangkatCocok($sesi, $cookiePerangkat);
+                if (! $cocok && $sesi->token_perangkat !== null) {
                     throw new KesalahanUjian('Ujian ini sedang dikerjakan di perangkat lain. Hubungi pengawas bila Anda perlu pindah perangkat.', 'perangkat_lain');
                 }
                 // Waktu sudah habis: ditutup di luar transaksi ini (pengecualian akan membatalkan transaksi).
                 if (now()->gt($sesi->batas_selesai->copy()->addSeconds($this->toleransi()))) {
                     return null;
                 }
+                if ($cocok) {
+                    return $cookiePerangkat;
+                }
 
-                return $cookiePerangkat;
+                // Perangkat dilepas pengawas: perangkat yang masuk dengan token berikutnya mengambil alih sesi ini.
+                $baru = bin2hex(random_bytes(32));
+                $ua = (string) $request->userAgent();
+                $sesi->update([
+                    'token_perangkat' => hash('sha256', $baru),
+                    'platform' => $this->platform($ua),
+                    'info_peramban' => mb_substr($ua, 0, 300),
+                    'ip' => $request->ip(),
+                    'terakhir_aktif' => now(),
+                ]);
+
+                return $baru;
             }
 
             // Sesi baru: harus di dalam rentang waktu buka-tutup jadwal.
@@ -98,7 +113,7 @@ class LayananSesi
                 'mulai_pada' => $mulai,
                 'batas_selesai' => $mulai->copy()->addMinutes($jadwal->durasi_menit + $sesi->tambahan_menit),
                 'token_perangkat' => hash('sha256', $token),
-                'platform' => (str_contains($ua, 'ESMK-CBT') || str_contains($ua, 'UjianSMKAltan')) ? 'aplikasi' : 'peramban',
+                'platform' => $this->platform($ua),
                 'info_peramban' => mb_substr($ua, 0, 300),
                 'ip' => $request->ip(),
                 'terakhir_aktif' => $mulai,
@@ -115,6 +130,11 @@ class LayananSesi
         }
 
         return $token;
+    }
+
+    private function platform(string $userAgent): string
+    {
+        return (str_contains($userAgent, 'ESMK-CBT') || str_contains($userAgent, 'UjianSMKAltan')) ? 'aplikasi' : 'peramban';
     }
 
     /**

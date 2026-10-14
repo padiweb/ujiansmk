@@ -43,8 +43,13 @@
                 <x-ikon nama="beranda" /><span class="sisi-lbl">Beranda</span>
             </a>
 
+            <div class="sisi-seksi"><span>Ujian</span></div>
+            <a href="{{ route('staf.monitor.index') }}" data-tip="Monitor Ujian"
+               class="sisi-a {{ request()->routeIs('staf.monitor.*') ? 'aktif' : '' }}">
+                <x-ikon nama="monitor" /><span class="sisi-lbl">Monitor Ujian</span>
+            </a>
+
             @if ($admin || $pengguna->role === 'guru')
-                <div class="sisi-seksi"><span>Ujian</span></div>
                 @if ($admin)
                     <a href="{{ route('staf.jadwal.index') }}" data-tip="Jadwal Ujian"
                        class="sisi-a {{ request()->routeIs('staf.jadwal.*') ? 'aktif' : '' }}">
