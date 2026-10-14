@@ -18,6 +18,7 @@ class LayananJadwal
         private LayananGambarUjian $gambar,
         private LayananPaket $paket,
         private LayananSesi $sesi,
+        private LayananDenah $denah,
     ) {}
 
     /** Peserta yang berhak: siswa aktif di kelas-kelas jadwal. @return Collection<int,int> id siswa */
@@ -126,6 +127,7 @@ class LayananJadwal
         // Di luar transaksi: menyalin berkas bukan bagian dari basis data. Paket soal dibangun saat dibutuhkan.
         $this->paket->lupakan($jadwal);
         $this->gambar->salinKePublik($jadwal->refresh());
+        $this->denah->terapkan($jadwal); // ruang dan nomor meja dari denah (bila dipasang)
 
         return ['pg' => $soal['pg']->count(), 'esai' => $soal['esai']->count(), 'peserta' => $peserta->count()];
     }

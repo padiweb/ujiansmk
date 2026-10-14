@@ -44,10 +44,31 @@ class LayananMonitor
         return $this->jadwalUntuk($user)->whereKey($jadwal->id)->exists();
     }
 
-    /** Guru hanya melihat; yang boleh bertindak: admin dan pengawas yang ditugaskan. */
-    public function bolehBertindak(User $user, JadwalUjian $jadwal): bool
+    /**
+     * Guru hanya melihat; yang boleh bertindak: admin dan pengawas yang ditugaskan. Pengawas yang ditugaskan ke
+     * satu ruang hanya boleh menangani siswa di ruang itu (bila $sesi diberikan).
+     */
+    public function bolehBertindak(User $user, JadwalUjian $jadwal, ?SesiUjian $sesi = null): bool
     {
-        return in_array($user->role, ['admin', 'pengawas'], true) && $this->bolehLihat($user, $jadwal);
+        if (! in_array($user->role, ['admin', 'pengawas'], true) || ! $this->bolehLihat($user, $jadwal)) {
+            return false;
+        }
+
+        $ruang = $this->ruangDitugaskan($user, $jadwal);
+
+        return $sesi === null || $ruang === null || in_array($sesi->ruang_id, $ruang, true);
+    }
+
+    /** Ruang yang dibatasi untuk pengawas ini pada jadwal; null = semua ruang. @return list<int>|null */
+    public function ruangDitugaskan(User $user, JadwalUjian $jadwal): ?array
+    {
+        if ($user->role !== 'pengawas') {
+            return null;
+        }
+
+        $ruangId = $jadwal->pengawas()->where('users.id', $user->id)->first()?->pivot->ruang_id;
+
+        return $ruangId === null ? null : [(int) $ruangId];
     }
 
     // ── Data ────────────────────────────────────────────────────────────────
@@ -63,6 +84,36 @@ class LayananMonitor
         $this->sesi->sapuKedaluwarsa();
 
         return Cache::remember($this->kunci($jadwal), self::TTL_DATA, fn () => $this->susun($jadwal));
+    }
+
+    /** Data monitor untuk satu pengguna: pengawas yang dibatasi ruang hanya melihat ruangnya. @return array<string,mixed> */
+    public function dataUntuk(User $user, JadwalUjian $jadwal): array
+    {
+        $data = $this->data($jadwal);
+        $ruang = $this->ruangDitugaskan($user, $jadwal);
+        if ($ruang === null) {
+            return $data;
+        }
+
+        $data['peserta'] = array_values(array_filter($data['peserta'], fn ($b) => in_array($b['ruang_id'], $ruang, true)));
+        $data['ringkasan'] = $this->ringkas($data['peserta']);
+
+        return $data;
+    }
+
+    /** @param  list<array<string,mixed>>  $baris */
+    private function ringkas(array $baris): array
+    {
+        $hitung = fn (callable $f) => count(array_filter($baris, $f));
+
+        return [
+            'mengerjakan' => $hitung(fn ($b) => $b['status'] === SesiUjian::BERLANGSUNG),
+            'selesai' => $hitung(fn ($b) => $b['status'] === SesiUjian::SELESAI),
+            'melanggar' => $hitung(fn ($b) => $b['pelanggaran'] > 0 && $b['status'] !== SesiUjian::SELESAI),
+            'terblokir' => $hitung(fn ($b) => $b['status'] === SesiUjian::DIBLOKIR),
+            'belum' => $hitung(fn ($b) => $b['status'] === SesiUjian::BELUM),
+            'senyap' => $hitung(fn ($b) => $b['senyap']),
+        ];
     }
 
     public function lupakan(JadwalUjian|int $jadwal): void
@@ -101,6 +152,7 @@ class LayananMonitor
                 'kelas' => $s->siswa->kelas->whereIn('id', $kelasJadwal)->pluck('nama')->implode(', '),
                 'ruang_id' => $s->ruang_id,
                 'ruang' => $s->ruang?->nama,
+                'meja' => $s->no_meja,
                 'status' => $s->status,
                 'senyap' => $s->status === SesiUjian::BERLANGSUNG && $kabar !== null && $kabar > $ambangSenyap,
                 'pelanggaran' => (int) $s->jumlah_pelanggaran,
@@ -117,19 +169,10 @@ class LayananMonitor
             ];
         })->sortBy([['nama', 'asc']])->values()->all();
 
-        $hitung = fn (callable $f) => count(array_filter($baris, $f));
-
         return [
             'waktu' => $sekarang->format('H:i:s'),
             'total_soal' => JadwalSoal::where('jadwal_id', $jadwal->id)->count(),
-            'ringkasan' => [
-                'mengerjakan' => $hitung(fn ($b) => $b['status'] === SesiUjian::BERLANGSUNG),
-                'selesai' => $hitung(fn ($b) => $b['status'] === SesiUjian::SELESAI),
-                'melanggar' => $hitung(fn ($b) => $b['pelanggaran'] > 0 && $b['status'] !== SesiUjian::SELESAI),
-                'terblokir' => $hitung(fn ($b) => $b['status'] === SesiUjian::DIBLOKIR),
-                'belum' => $hitung(fn ($b) => $b['status'] === SesiUjian::BELUM),
-                'senyap' => $hitung(fn ($b) => $b['senyap']),
-            ],
+            'ringkasan' => $this->ringkas($baris),
             'peserta' => $baris,
         ];
     }

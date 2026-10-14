@@ -102,7 +102,7 @@
 
         var tdNama = el('td');
         tdNama.appendChild(el('strong', null, b.nama));
-        tdNama.appendChild(el('small', 'bantuan', (b.nisn || '') + (b.ruang ? ' · ' + b.ruang : '')));
+        tdNama.appendChild(el('small', 'bantuan', (b.nisn || '') + (b.ruang ? ' · ' + b.ruang + (b.meja ? ' / meja ' + b.meja : '') : '')));
         tr.appendChild(tdNama);
 
         tr.appendChild(el('td', null, b.kelas || '—'));

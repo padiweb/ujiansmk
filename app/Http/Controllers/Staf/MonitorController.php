@@ -38,8 +38,9 @@ class MonitorController extends Controller
         return view('staf.monitor.show', [
             'j' => $jadwal->load('mapel'),
             'bolehBertindak' => $this->monitor->bolehBertindak($user, $jadwal),
-            'ruang' => $jadwal->sesi()->whereNotNull('ruang_id')->with('ruang:id,nama')->get()->pluck('ruang')->unique('id')->sortBy('nama')->values(),
-            'data' => $this->monitor->data($jadwal),
+            'ruang' => $jadwal->sesi()->whereNotNull('ruang_id')->with('ruang:id,nama')->get()->pluck('ruang')->unique('id')->sortBy('nama')->values()
+                ->when($this->monitor->ruangDitugaskan($user, $jadwal), fn ($r, $ids) => $r->whereIn('id', $ids)->values()),
+            'data' => $this->monitor->dataUntuk($user, $jadwal),
             'aksiTerakhir' => AksiPengawas::query()->whereIn('sesi_id', $jadwal->sesi()->select('id'))
                 ->with('pelaku:id,nama', 'sesi.siswa:id,nama')->latest('id')->limit(8)->get(),
         ]);
@@ -53,7 +54,7 @@ class MonitorController extends Controller
             return response()->json(['kode' => 'tidak_aktif', 'pesan' => 'Jadwal ini sudah tidak aktif.'], 409);
         }
 
-        return response()->json($this->monitor->data($jadwal))->header('Cache-Control', 'no-store');
+        return response()->json($this->monitor->dataUntuk($request->user('web'), $jadwal))->header('Cache-Control', 'no-store');
     }
 
     /** Tindakan pengawas terhadap satu sesi siswa. */
@@ -61,7 +62,7 @@ class MonitorController extends Controller
     {
         $user = $request->user('web');
         abort_unless($sesi->jadwal_id === $jadwal->id, 404);
-        abort_unless($this->monitor->bolehBertindak($user, $jadwal), 403, 'Anda hanya dapat melihat jadwal ini.');
+        abort_unless($this->monitor->bolehBertindak($user, $jadwal, $sesi), 403, 'Anda tidak berwenang menangani siswa ini.');
 
         try {
             match ($aksi) {

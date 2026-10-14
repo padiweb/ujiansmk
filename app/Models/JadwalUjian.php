@@ -17,7 +17,7 @@ class JadwalUjian extends Model
 
     protected $fillable = [
         'periode_id', 'mapel_id', 'nama', 'durasi_menit', 'mulai_pada', 'tutup_pada', 'token', 'media_kode', 'status',
-        'acak_soal', 'acak_opsi', 'batas_pelanggaran', 'bobot_pg', 'tampilkan_hasil', 'dibuat_oleh', 'diaktifkan_pada', 'nilai_dikunci_pada', 'nilai_dikunci_oleh',
+        'acak_soal', 'acak_opsi', 'batas_pelanggaran', 'bobot_pg', 'tampilkan_hasil', 'dibuat_oleh', 'diaktifkan_pada', 'nilai_dikunci_pada', 'nilai_dikunci_oleh', 'denah_id',
     ];
 
     protected function casts(): array
@@ -47,6 +47,11 @@ class JadwalUjian extends Model
         return $this->belongsTo(User::class, 'dibuat_oleh');
     }
 
+    public function denah(): BelongsTo
+    {
+        return $this->belongsTo(Denah::class, 'denah_id');
+    }
+
     public function pengunci(): BelongsTo
     {
         return $this->belongsTo(User::class, 'nilai_dikunci_oleh');
@@ -69,7 +74,7 @@ class JadwalUjian extends Model
 
     public function pengawas(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'jadwal_pengawas', 'jadwal_id', 'user_id');
+        return $this->belongsToMany(User::class, 'jadwal_pengawas', 'jadwal_id', 'user_id')->withPivot('ruang_id');
     }
 
     public function sesi(): HasMany

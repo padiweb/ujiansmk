@@ -17,7 +17,7 @@ class SesiUjian extends Model
     public const DIBLOKIR = 'diblokir';
 
     protected $fillable = [
-        'jadwal_id', 'siswa_id', 'ruang_id', 'status', 'mulai_pada', 'batas_selesai', 'selesai_pada', 'alasan_selesai',
+        'jadwal_id', 'siswa_id', 'ruang_id', 'no_meja', 'status', 'mulai_pada', 'batas_selesai', 'selesai_pada', 'alasan_selesai',
         'jumlah_pelanggaran', 'token_perangkat', 'platform', 'info_peramban', 'ip', 'terakhir_aktif', 'susunan', 'tambahan_menit',
     ];
 

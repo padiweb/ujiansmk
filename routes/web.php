@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\MasukSiswaController;
 use App\Http\Controllers\Auth\MasukStafController;
 use App\Http\Controllers\BerandaController;
 use App\Http\Controllers\Staf\BankSoalController;
+use App\Http\Controllers\Staf\DenahController;
 use App\Http\Controllers\Staf\ImporController;
 use App\Http\Controllers\Staf\JadwalUjianController;
 use App\Http\Controllers\Staf\KoreksiController;
@@ -140,6 +141,22 @@ Route::prefix('staf')->group(function () {
                 Route::post('/batalkan', [JadwalUjianController::class, 'batalkan'])->name('batalkan');
                 Route::post('/token', [JadwalUjianController::class, 'regenerasiToken'])->name('token');
                 Route::post('/selesaikan', [JadwalUjianController::class, 'selesaikan'])->name('selesaikan');
+                Route::post('/pengawas-ruang', [JadwalUjianController::class, 'pengawasRuang'])->name('pengawas-ruang');
+            });
+        });
+
+        Route::prefix('denah')->name('staf.denah.')->group(function () {
+            Route::get('/', [DenahController::class, 'index'])->name('index');
+            Route::get('/tambah', [DenahController::class, 'create'])->name('create');
+            Route::post('/', [DenahController::class, 'store'])->name('store');
+            Route::prefix('{denah}')->whereNumber('denah')->group(function () {
+                Route::get('/', [DenahController::class, 'show'])->name('show');
+                Route::delete('/', [DenahController::class, 'destroy'])->name('destroy');
+                Route::post('/ruang', [DenahController::class, 'tambahRuang'])->name('ruang');
+                Route::delete('/ruang/{denahRuang}', [DenahController::class, 'hapusRuang'])->whereNumber('denahRuang')->name('ruang.hapus');
+                Route::post('/bagi', [DenahController::class, 'bagi'])->name('bagi');
+                Route::post('/tempatkan', [DenahController::class, 'tempatkan'])->name('tempatkan');
+                Route::post('/siswa/{siswa}/lepas', [DenahController::class, 'lepas'])->whereNumber('siswa')->name('lepas');
             });
         });
 
