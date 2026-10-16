@@ -27,6 +27,7 @@
             <label class="centang"><input type="checkbox" name="kelas[]" value="{{ $k->id }}" @checked(in_array($k->id, array_map('intval', old('kelas', [])), true))> {{ $k->nama }} <small class="bantuan" style="display:inline">({{ $perKelas[$k->id] ?? 0 }} siswa)</small></label>
         @endforeach
         @error('kelas') <small class="galat-bidang">{{ $message }}</small> @enderror
+        <small class="galat-bidang" id="galatKelas" hidden>Pilih minimal satu kelas dulu.</small>
     </fieldset>
 
     <div class="aksi-form">
@@ -37,8 +38,18 @@
     <h2 class="judul-kartu">Kata sandi sementara massal</h2>
     <div class="pesan-salah catatan" role="note"><x-ikon nama="peringatan" :ukuran="18" /><span>Kata sandi lama siswa di kelas terpilih <strong>diganti</strong> dengan sandi baru dan hanya tampil sekali pada kartu atau berkas yang dihasilkan. Siswa tidak wajib menggantinya. Maksimal {{ $maks }} siswa per kali.</span></div>
     <div class="aksi-form">
-        <button class="tombol kecil" type="submit" name="format" value="cetak" formtarget="_blank" onclick="return confirm('Buat kata sandi baru untuk kelas terpilih? Sandi lama tidak berlaku lagi.')">Buat sandi baru dan cetak kartu</button>
-        <button class="tombol kecil garis" type="submit" name="format" value="excel" onclick="return confirm('Buat kata sandi baru untuk kelas terpilih? Sandi lama tidak berlaku lagi.')">Buat sandi baru dan unduh Excel</button>
+        <button class="tombol kecil" type="submit" name="format" value="cetak" formtarget="_blank" onclick="return konfirmasiSandi()">Buat sandi baru dan cetak kartu</button>
+        <button class="tombol kecil garis" type="submit" name="format" value="excel" onclick="return konfirmasiSandi()">Buat sandi baru dan unduh Excel</button>
     </div>
 </form>
+
+<script>
+    // Tombol sandi harus memberi tanggapan jelas: tanpa kelas terpilih tidak ada yang dikirim (hasil dibuka di tab baru).
+    function konfirmasiSandi() {
+        var dipilih = document.querySelectorAll('#formKartu input[name="kelas[]"]:checked').length;
+        document.getElementById('galatKelas').hidden = dipilih > 0;
+        if (dipilih === 0) { return false; }
+        return confirm('Buat kata sandi baru untuk kelas terpilih? Sandi lama tidak berlaku lagi.');
+    }
+</script>
 @endsection

@@ -224,6 +224,28 @@ class PenyinkronEduweb
         $h->tambah('kejadian_diterapkan');
     }
 
+    /**
+     * Menyegarkan username + hash sandi SATU pengguna dari EduWeb (dipakai saat login gagal, supaya sandi yang baru
+     * diganti di EduWeb langsung berlaku). Mengembalikan true bila sandi lokal diganti.
+     *
+     * @param  'student'|'teacher'  $peran
+     *
+     * @throws KesalahanEduweb
+     */
+    public function segarkanKredensial(string $peran, int $idEdu): bool
+    {
+        $j = $this->klien->get('credentials', ['role' => $peran, 'ids' => (string) $idEdu]);
+        $baris = [];
+        foreach ($j['data'] ?? [] as $r) {
+            $baris[(int) ($r['id'] ?? 0)] = $r;
+        }
+
+        $h = new HasilSinkron;
+        DB::transaction(fn () => $this->terapkanKredensial([$peran => $baris] + ['student' => [], 'teacher' => []], $h));
+
+        return ($h->lain['sandi_diperbarui'] ?? 0) > 0;
+    }
+
     private function adaTindakLanjut(): bool
     {
         return $this->perluPenuh || $this->idKredensial['student'] || $this->idKredensial['teacher'];

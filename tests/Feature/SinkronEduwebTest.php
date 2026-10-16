@@ -560,6 +560,69 @@ class SinkronEduwebTest extends TestCase
         $this->assertAuthenticatedAs(User::where('eduweb_id', 2)->first(), 'web');
     }
 
+    public function test_sandi_yang_baru_diganti_di_eduweb_langsung_berlaku_saat_login(): void
+    {
+        config(['eduweb.otomatis' => true]);
+        $this->pasangKredensial();
+        $this->sinkron();
+
+        $this->edu['credentials'][0]['password_hash'] = $this->hashEdu('SandiBaruAni9');
+        $this->edu['credentials'][2]['password_hash'] = $this->hashEdu('SandiBaruSiti9');
+        $this->pasangEdu();
+
+        // Sinyal/kejadian belum diproses, tetapi login pertama dengan sandi baru langsung berhasil.
+        $this->post('/masuk', ['username' => 'ani.l', 'password' => 'SandiBaruAni9'])->assertRedirect(route('siswa.beranda'));
+        auth('siswa')->logout();
+        $this->post('/staf/masuk', ['username' => 'siti.aminah', 'password' => 'SandiBaruSiti9'])->assertRedirect(route('staf.beranda'));
+    }
+
+    public function test_sandi_lama_tidak_berlaku_lagi_begitu_kejadian_sandi_diterapkan(): void
+    {
+        $this->pasangKredensial();
+        $this->sinkron();
+        $kursor = (int) PengaturanSekolah::ambil()->eduweb_kejadian_terakhir;
+        $this->edu['credentials'][0]['password_hash'] = $this->hashEdu('SandiBaruAni9');
+        $this->edu['events'] = [['id' => $kursor + 1, 'type' => 'credential.changed', 'student_id' => 6, 'batch' => null, 'created_at' => now()->toIso8601String(), 'payload' => ['entity' => 'student', 'id' => 6]]];
+        $this->pasangEdu();
+
+        app(PenyinkronEduweb::class)->kejadian();
+
+        $this->post('/masuk', ['username' => 'ani.l', 'password' => 'SandiEduAni1'])->assertSessionHasErrors('username');
+        $this->assertGuest('siswa');
+        $this->post('/masuk', ['username' => 'ani.l', 'password' => 'SandiBaruAni9'])->assertRedirect(route('siswa.beranda'));
+    }
+
+    public function test_penyegaran_saat_login_dibatasi_dan_tidak_menyentuh_admin(): void
+    {
+        config(['eduweb.otomatis' => true]);
+        $this->pasangKredensial();
+        $this->sinkron();
+        $dipanggil = fn () => Http::recorded(fn (Request $r) => str_contains($r->url(), 'credentials') && str_contains(urldecode($r->url()), 'ids=6'))->count();
+        $sebelum = $dipanggil();
+
+        foreach (range(1, 4) as $i) {
+            $this->post('/masuk', ['username' => 'ani.l', 'password' => 'salah-terus'.$i]);
+        }
+        $this->assertSame($sebelum + 1, $dipanggil(), 'paling sering sekali per menit per pengguna');
+
+        $admin = $this->admin();
+        $admin->forceFill(['eduweb_id' => 99])->saveQuietly();
+        $this->post('/staf/masuk', ['username' => $admin->username, 'password' => 'salah']);
+        $this->assertSame(0, Http::recorded(fn (Request $r) => str_contains(urldecode($r->url()), 'ids=2'))->count(), 'admin tidak pernah diperiksa ke EduWeb');
+    }
+
+    public function test_login_gagal_saat_eduweb_mati_tetap_gagal_biasa(): void
+    {
+        config(['eduweb.otomatis' => true]);
+        $this->pasangKredensial();
+        $this->sinkron();
+        $this->edu['_galat']['credentials'] = 500;
+        $this->pasangEdu();
+
+        $this->post('/masuk', ['username' => 'ani.l', 'password' => 'apa-saja'])->assertSessionHasErrors('username');
+        $this->post('/masuk', ['username' => 'ani.l', 'password' => 'SandiEduAni1'])->assertRedirect(route('siswa.beranda'));
+    }
+
     public function test_hash_tidak_masuk_log_ringkasan_maupun_tampilan(): void
     {
         $this->pasangKredensial();

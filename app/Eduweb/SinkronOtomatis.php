@@ -5,6 +5,8 @@ namespace App\Eduweb;
 use App\Models\JadwalUjian;
 use App\Models\PengaturanSekolah;
 use App\Models\SesiUjian;
+use App\Models\Siswa;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -48,6 +50,32 @@ class SinkronOtomatis
 
         Cache::put(self::KUNCI_PERLU, true, now()->addHour());
         $this->jalankan();
+    }
+
+    /**
+     * Dipanggil saat login gagal: ambil sandi terbaru pengguna itu dari EduWeb (paling sering sekali per menit
+     * per pengguna). True bila sandi lokal berubah dan login layak dicoba ulang. Hanya sandi, tidak menyentuh data lain,
+     * jadi tetap aman saat ujian berlangsung. Akun admin dan akun yang tidak terhubung ke EduWeb dilewati.
+     */
+    public function segarkanPengguna(Siswa|User $akun): bool
+    {
+        if (! $this->aktif() || $akun->eduweb_id === null || ($akun instanceof User && $akun->role === User::ADMIN)) {
+            return false;
+        }
+        if (PengaturanSekolah::ambil()->eduweb_sinkron_penuh_pada === null) {
+            return false;
+        }
+
+        $peran = $akun instanceof Siswa ? 'student' : 'teacher';
+        if (! Cache::add("eduweb:segarkan:{$peran}:{$akun->eduweb_id}", true, now()->addMinute())) {
+            return false;
+        }
+
+        try {
+            return $this->penyinkron->segarkanKredensial($peran, (int) $akun->eduweb_id);
+        } catch (\Throwable $e) {
+            return false; // EduWeb tidak terjangkau: login tetap gagal seperti biasa
+        }
     }
 
     /** True bila ada ujian yang sedang atau akan segera berlangsung; data peserta tidak boleh berubah saat itu. */

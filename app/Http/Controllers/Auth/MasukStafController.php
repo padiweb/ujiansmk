@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Eduweb\SinkronOtomatis;
 use App\Models\AuditLog;
+use App\Models\User;
 use App\Support\PercobaanLogin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,9 +35,16 @@ class MasukStafController extends Controller
         $username = trim($data['username']);
         PercobaanLogin::pastikanBolehMencoba($request, $username, self::GUARD);
 
-        $berhasil = Auth::guard(self::GUARD)->attempt(
-            ['username' => $username, 'password' => $data['password'], 'aktif' => true]
-        );
+        $coba = fn () => Auth::guard(self::GUARD)->attempt(['username' => $username, 'password' => $data['password'], 'aktif' => true]);
+        $berhasil = $coba();
+
+        // Sandi mungkin baru diganti di EduWeb: segarkan sandi pengguna ini lalu coba sekali lagi.
+        if (! $berhasil) {
+            $akun = User::whereRaw('lower(username) = ?', [mb_strtolower($username)])->first();
+            if ($akun && app(SinkronOtomatis::class)->segarkanPengguna($akun)) {
+                $berhasil = $coba();
+            }
+        }
 
         if (! $berhasil) {
             PercobaanLogin::gagal($request, $username, self::GUARD);

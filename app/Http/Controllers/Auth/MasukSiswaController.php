@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Eduweb\SinkronOtomatis;
 use App\Models\AuditLog;
 use App\Models\Siswa;
 use App\Support\PercobaanLogin;
@@ -41,9 +42,13 @@ class MasukSiswaController extends Controller
         $siswa = Siswa::whereRaw('lower(username) = ?', [mb_strtolower($nama)])->first()
             ?? Siswa::where('nisn', $nama)->first();
 
-        $berhasil = $siswa !== null && Auth::guard(self::GUARD)->attempt(
-            ['id' => $siswa->id, 'password' => $data['password'], 'status' => 'aktif']
-        );
+        $coba = fn () => Auth::guard(self::GUARD)->attempt(['id' => $siswa->id, 'password' => $data['password'], 'status' => 'aktif']);
+        $berhasil = $siswa !== null && $coba();
+
+        // Sandi mungkin baru diganti di EduWeb: segarkan sandi siswa ini lalu coba sekali lagi.
+        if (! $berhasil && $siswa !== null && app(SinkronOtomatis::class)->segarkanPengguna($siswa)) {
+            $berhasil = $coba();
+        }
 
         if (! $berhasil) {
             if ($siswa === null) {
