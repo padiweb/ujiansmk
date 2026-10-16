@@ -47,7 +47,7 @@
                         <dt>Ujian</dt><dd>{{ $j->nama }} ({{ $j->mapel->nama }})</dd>
                         <dt>Waktu</dt><dd>{{ $j->mulai_pada->translatedFormat('d F Y, H:i') }}</dd>
                         <dt>Ruang / meja</dt><dd>{{ $p['ruang'] ?? '—' }}{{ $p['meja'] ? ' / meja '.$p['meja'] : '' }}</dd>
-                        <dt>Nama pengguna</dt><dd>{{ $p['nisn'] }}</dd>
+                        <dt>Nama pengguna</dt><dd>{{ $p['pengguna'] }}</dd>
                     </dl>
                     <div class="sandi">
                         Kata sandi:

@@ -4,16 +4,20 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\Siswa;
 use App\Support\PercobaanLogin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class MasukSiswaController extends Controller
 {
     private const GUARD = 'siswa';
+
+    private const HASH_PALSU = '$2y$12$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG';
 
     public function tampil(): View
     {
@@ -23,30 +27,37 @@ class MasukSiswaController extends Controller
     public function masuk(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'username' => ['required', 'string', 'max:30'],
+            'username' => ['required', 'string', 'max:50'],
             'password' => ['required', 'string', 'max:200'],
         ], [
-            'username.required' => 'NISN wajib diisi.',
+            'username.required' => 'Nama pengguna wajib diisi.',
             'password.required' => 'Kata sandi wajib diisi.',
         ]);
 
-        $nisn = trim($data['username']);
-        PercobaanLogin::pastikanBolehMencoba($request, $nisn, self::GUARD);
+        $nama = trim($data['username']);
+        PercobaanLogin::pastikanBolehMencoba($request, $nama, self::GUARD);
 
-        $berhasil = Auth::guard(self::GUARD)->attempt(
-            ['nisn' => $nisn, 'password' => $data['password'], 'status' => 'aktif']
+        // Sama seperti EduWeb: nama pengguna dulu, lalu NISN (NIS bila NISN kosong di EduWeb).
+        $siswa = Siswa::whereRaw('lower(username) = ?', [mb_strtolower($nama)])->first()
+            ?? Siswa::where('nisn', $nama)->first();
+
+        $berhasil = $siswa !== null && Auth::guard(self::GUARD)->attempt(
+            ['id' => $siswa->id, 'password' => $data['password'], 'status' => 'aktif']
         );
 
         if (! $berhasil) {
-            PercobaanLogin::gagal($request, $nisn, self::GUARD);
-            AuditLog::catat('siswa.masuk_gagal', "NISN: {$nisn}");
+            if ($siswa === null) {
+                Hash::check($data['password'], self::HASH_PALSU); // samakan waktu tanggap agar nama pengguna tak bisa ditebak
+            }
+            PercobaanLogin::gagal($request, $nama, self::GUARD);
+            AuditLog::catat('siswa.masuk_gagal', "Pengguna: {$nama}");
 
             throw ValidationException::withMessages([
-                'username' => 'NISN atau kata sandi salah.',
+                'username' => 'Nama pengguna atau kata sandi salah.',
             ]);
         }
 
-        PercobaanLogin::berhasil($request, $nisn, self::GUARD);
+        PercobaanLogin::berhasil($request, $nama, self::GUARD);
         $request->session()->regenerate();
         AuditLog::catat('siswa.masuk', null, Auth::guard(self::GUARD)->user());
 

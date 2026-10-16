@@ -34,6 +34,23 @@ class MasukSiswaTest extends TestCase
         $this->assertDatabaseHas('audit_log', ['aksi' => 'siswa.masuk', 'pelaku_id' => $siswa->id]);
     }
 
+    public function test_siswa_masuk_dengan_nama_pengguna_eduweb_tanpa_peduli_huruf_besar(): void
+    {
+        $siswa = Siswa::factory()->create(['nisn' => '0011223344', 'username' => 'Budi.S']);
+
+        $this->post('/masuk', ['username' => 'budi.s', 'password' => 'kata-sandi-uji-123'])->assertRedirect(route('siswa.beranda'));
+        $this->assertAuthenticatedAs($siswa, 'siswa');
+    }
+
+    public function test_nama_pengguna_didahulukan_sebelum_nisn_saat_sama(): void
+    {
+        $a = Siswa::factory()->create(['nisn' => '5555', 'username' => 'siswa.a']);
+        $b = Siswa::factory()->create(['nisn' => '6666', 'username' => '5555']);
+
+        $this->post('/masuk', ['username' => '5555', 'password' => 'kata-sandi-uji-123'])->assertRedirect(route('siswa.beranda'));
+        $this->assertAuthenticatedAs($b, 'siswa');
+    }
+
     public function test_kata_sandi_disimpan_sebagai_hash(): void
     {
         $siswa = Siswa::factory()->create();
@@ -48,7 +65,7 @@ class MasukSiswaTest extends TestCase
 
         $this->from('/')->post('/masuk', ['username' => '0011223344', 'password' => 'salah'])
             ->assertRedirect('/')
-            ->assertSessionHasErrors(['username' => 'NISN atau kata sandi salah.']);
+            ->assertSessionHasErrors(['username' => 'Nama pengguna atau kata sandi salah.']);
 
         $this->assertGuest('siswa');
     }
@@ -56,7 +73,7 @@ class MasukSiswaTest extends TestCase
     public function test_nisn_tidak_dikenal_mendapat_pesan_yang_sama(): void
     {
         $this->from('/')->post('/masuk', ['username' => '9999999999', 'password' => 'apa-saja'])
-            ->assertSessionHasErrors(['username' => 'NISN atau kata sandi salah.']);
+            ->assertSessionHasErrors(['username' => 'Nama pengguna atau kata sandi salah.']);
     }
 
     public function test_siswa_lulus_atau_keluar_tidak_bisa_masuk(): void

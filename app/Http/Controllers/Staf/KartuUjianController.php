@@ -97,9 +97,9 @@ class KartuUjianController extends Controller
     {
         $buku = new Spreadsheet;
         $lembar = $buku->getActiveSheet()->setTitle('Kartu ujian');
-        $baris = [['Nama', 'NISN (nama pengguna)', 'Kelas', 'Kata sandi sementara', 'Ruang', 'Meja']];
+        $baris = [['Nama', 'Nama pengguna', 'Kelas', 'Kata sandi sementara', 'Ruang', 'Meja']];
         foreach ($peserta as $p) {
-            $baris[] = [$p['nama'], $p['nisn'], $p['kelas'], $sandi[$p['siswa']->id] ?? '', $p['ruang'] ?? '', $p['meja'] ?? ''];
+            $baris[] = [$p['nama'], $p['pengguna'], $p['kelas'], $sandi[$p['siswa']->id] ?? '', $p['ruang'] ?? '', $p['meja'] ?? ''];
         }
         foreach ($baris as $r => $isi) {
             foreach ($isi as $k => $nilai) {

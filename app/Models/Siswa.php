@@ -15,11 +15,11 @@ class Siswa extends Authenticatable
     protected $table = 'siswa';
 
     protected $fillable = [
-        'eduweb_id', 'nisn', 'nis', 'nama', 'jenis_kelamin', 'tempat_lahir',
+        'eduweb_id', 'nisn', 'username', 'eduweb_hash_sandi', 'nis', 'nama', 'jenis_kelamin', 'tempat_lahir',
         'tgl_lahir', 'nama_wali', 'no_peserta_us', 'status', 'password',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'eduweb_hash_sandi', 'remember_token'];
 
     protected function casts(): array
     {

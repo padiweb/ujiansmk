@@ -31,6 +31,9 @@ class PenyinkronEduweb
     /** @var array<string,int> cache pemetaan eduweb_id → id lokal per entitas */
     private array $peta = [];
 
+    /** @var array{student:array<int,array<string,mixed>>,teacher:array<int,array<string,mixed>>} kredensial EduWeb per eduweb_id (hanya selama satu sinkron) */
+    private array $kredensial = ['student' => [], 'teacher' => []];
+
     public function __construct(private KlienEduweb $klien) {}
 
     // ── Sinkron penuh ───────────────────────────────────────────────────────
@@ -55,6 +58,7 @@ class PenyinkronEduweb
                 'siswa' => $this->semuaHalaman('students'),
                 'pengampu' => $this->klien->get('teaching-assignments')['data'] ?? [],
             ];
+            $this->kredensial = $this->bacaKredensial($pengaturan, $h);
 
             DB::transaction(function () use ($data, $h) {
                 $this->peta = [];
@@ -65,6 +69,7 @@ class PenyinkronEduweb
                 $this->guru($data['guru'], $h);
                 $this->waliKelas($data['kelas']);
                 $this->siswa($data['siswa'], $h);
+                $this->terapkanKredensial($this->kredensial, $h);
                 $this->pengampu($data['pengampu'], $h);
                 $this->laporkanTakTerhubung($h);
             });
@@ -309,7 +314,8 @@ class PenyinkronEduweb
         foreach ($baris as $r) {
             $nama = mb_substr(trim((string) ($r['name'] ?? '')), 0, 255);
             $aktif = (bool) ($r['is_active'] ?? false) && ! ($r['deleted'] ?? false);
-            $ident = $this->bersihkanUsername((string) ($r['nip'] ?? '')) ?: $this->bersihkanUsername((string) ($r['niy'] ?? ''));
+            // Nama pengguna EduWeb dipakai bila ada; bila belum, NIP lalu NIY (perilaku lama).
+            $ident = $this->bersihkanUsername((string) ($r['username'] ?? '')) ?: $this->bersihkanUsername((string) ($r['nip'] ?? '')) ?: $this->bersihkanUsername((string) ($r['niy'] ?? ''));
 
             $u = User::where('eduweb_id', $r['id'])->first();
             if (! $u && $ident !== '') {
@@ -329,14 +335,27 @@ class PenyinkronEduweb
             }
 
             if ($u) {
-                $this->perbarui($u, ['eduweb_id' => $r['id'], 'nama' => $nama, 'aktif' => $aktif], 'guru', $h);
+                $nilai = ['eduweb_id' => $r['id'], 'nama' => $nama, 'aktif' => $aktif];
+                if ($ident !== '' && mb_strtolower($ident) !== mb_strtolower($u->username)) {
+                    if ($this->usernameDipakai(User::class, $ident, $u->id)) {
+                        $h->peringatan("Guru \"{$nama}\": nama pengguna EduWeb \"{$ident}\" sudah dipakai akun lain di sini, nama pengguna lokal tidak diubah.");
+                    } else {
+                        $nilai['username'] = $ident;
+                    }
+                }
+                $this->perbarui($u, $nilai, 'guru', $h);
             } elseif ($aktif) {
                 $username = $this->usernameBebas($ident !== '' ? $ident : (Str::slug($nama, '.') ?: 'guru'.$r['id']));
-                $sandi = KataSandi::acak(12);
+                $hashEdu = $this->hashKredensial('teacher', (int) $r['id']);
                 $u = new User(['eduweb_id' => $r['id'], 'nama' => $nama, 'username' => $username, 'role' => User::GURU, 'aktif' => true]);
-                $u->password = $sandi; // dihash oleh cast
-                $u->save();
-                $h->akunBaru[] = ['username' => $username, 'nama' => $nama, 'sandi' => $sandi];
+                if ($hashEdu) {
+                    $u->forceFill(['password' => $hashEdu, 'eduweb_hash_sandi' => $hashEdu])->saveQuietly(); // hash EduWeb: login sama dengan EduWeb
+                } else {
+                    $sandi = KataSandi::acak(12);
+                    $u->password = $sandi; // dihash oleh cast
+                    $u->save();
+                    $h->akunBaru[] = ['username' => $username, 'nama' => $nama, 'sandi' => $sandi];
+                }
                 $h->baru('guru');
             } else {
                 continue; // guru nonaktif yang tidak dikenal: tidak perlu dibuatkan akun
@@ -378,6 +397,7 @@ class PenyinkronEduweb
             }
 
             $status = $this->statusSiswa($r['status'] ?? null, (bool) ($r['is_active'] ?? true) && ! ($r['deleted'] ?? false)) ?? 'aktif';
+            $username = $this->bersihkanUsername((string) ($r['username'] ?? ''));
             $isi = [
                 'nis' => $nis ?: null, 'nama' => $nama, 'jenis_kelamin' => in_array($r['gender'] ?? null, ['L', 'P'], true) ? $r['gender'] : null,
                 'tempat_lahir' => isset($r['birth_place']) ? mb_substr((string) $r['birth_place'], 0, 60) : null,
@@ -393,11 +413,18 @@ class PenyinkronEduweb
                 continue;
             }
 
+            if ($username !== '' && $this->usernameDipakai(Siswa::class, $username, $s?->id)) {
+                $h->peringatan("Siswa \"{$nama}\": nama pengguna EduWeb \"{$username}\" sudah dipakai siswa lain di sini, masuk memakai {$ident}.");
+                $username = '';
+            }
+            $isi['username'] = $username !== '' ? $username : null;
+
             if ($s) {
                 $this->perbarui($s, $isi + ['eduweb_id' => $r['id'], 'nisn' => $ident], 'siswa', $h);
             } else {
+                $hashEdu = $this->hashKredensial('student', (int) $r['id']);
                 $s = new Siswa;
-                $s->forceFill($isi + ['eduweb_id' => $r['id'], 'nisn' => $ident, 'password' => $sandiAcak]);
+                $s->forceFill($isi + ['eduweb_id' => $r['id'], 'nisn' => $ident, 'password' => $hashEdu ?: $sandiAcak, 'eduweb_hash_sandi' => $hashEdu]);
                 $s->saveQuietly(); // password sudah berupa hash; hindari hash ulang oleh cast
                 $h->baru('siswa');
             }
@@ -471,6 +498,109 @@ class PenyinkronEduweb
         $h->tambah('guru_belum_terhubung', User::whereNull('eduweb_id')->whereIn('role', [User::GURU, User::PENGAWAS])->count());
     }
 
+    // ── Kredensial (username + hash kata sandi) ─────────────────────────────
+
+    /**
+     * Membaca kredensial dari EduWeb. Bila lingkup "credentials" belum dinyalakan di EduWeb (403/404),
+     * sinkron data tetap berjalan dan login memakai sandi lokal (Kartu Ujian).
+     *
+     * @return array{student:array<int,array<string,mixed>>,teacher:array<int,array<string,mixed>>}
+     */
+    private function bacaKredensial(PengaturanSekolah $pengaturan, HasilSinkron $h): array
+    {
+        try {
+            $hasil = [];
+            foreach (['student', 'teacher'] as $peran) {
+                $hasil[$peran] = [];
+                foreach ($this->semuaHalaman('credentials', ['role' => $peran]) as $r) {
+                    $hasil[$peran][(int) ($r['id'] ?? 0)] = $r;
+                }
+            }
+        } catch (KesalahanEduweb $e) {
+            if (! in_array($e->status, [403, 404], true)) {
+                throw $e;
+            }
+            $pengaturan->update(['eduweb_kredensial' => 'belum_aktif']);
+            $h->peringatan('Kata sandi belum bisa disinkronkan: akses kredensial belum dinyalakan untuk kunci ini di EduWeb (menu Integrasi Ujian). Sementara, siswa masuk memakai sandi dari Kartu Ujian.');
+
+            return ['student' => [], 'teacher' => []];
+        }
+
+        $pengaturan->update(['eduweb_kredensial' => 'aktif']);
+
+        return $hasil;
+    }
+
+    /** Hash bcrypt EduWeb yang sah untuk satu pengguna, atau null. */
+    private function hashKredensial(string $peran, int $idEdu): ?string
+    {
+        $hash = $this->kredensial[$peran][$idEdu]['password_hash'] ?? null;
+
+        return is_string($hash) && $this->hashSah($hash) ? $hash : null;
+    }
+
+    private function hashSah(string $hash): bool
+    {
+        // Hanya bcrypt dengan biaya wajar; bentuk lain ditolak (juga mencegah biaya ekstrem membebani server).
+        return preg_match('/^\$2[aby]\$(0[4-9]|1[0-4])\$[.\/A-Za-z0-9]{53}$/', $hash) === 1;
+    }
+
+    /**
+     * Menerapkan username dan hash sandi EduWeb pada akun yang sudah terhubung. Sandi lokal hanya diganti bila
+     * hash EduWeb berubah dibanding yang terakhir terlihat (sandi sementara dari Kartu Ujian tidak tertimpa).
+     * Akun admin tidak pernah disentuh.
+     *
+     * @param  array{student:array<int,array<string,mixed>>,teacher:array<int,array<string,mixed>>}  $kredensial
+     */
+    private function terapkanKredensial(array $kredensial, HasilSinkron $h): void
+    {
+        foreach (['student' => Siswa::class, 'teacher' => User::class] as $peran => $model) {
+            foreach (array_chunk($kredensial[$peran] ?? [], 500, true) as $potong) {
+                $akun = $model::whereIn('eduweb_id', array_keys($potong))
+                    ->when($model === User::class, fn ($q) => $q->where('role', '!=', User::ADMIN))
+                    ->get()->keyBy('eduweb_id');
+
+                foreach ($potong as $idEdu => $r) {
+                    $a = $akun[$idEdu] ?? null;
+                    if (! $a) {
+                        continue;
+                    }
+
+                    $ubah = [];
+                    $username = $this->bersihkanUsername((string) ($r['username'] ?? ''));
+                    if ($username !== '' && mb_strtolower($username) !== mb_strtolower((string) $a->username)) {
+                        if ($this->usernameDipakai($model, $username, $a->id)) {
+                            $h->peringatan("Nama pengguna EduWeb \"{$username}\" sudah dipakai akun lain di sini; tidak diubah.");
+                        } else {
+                            $ubah['username'] = $username;
+                        }
+                    }
+
+                    $hash = $r['password_hash'] ?? null;
+                    if (is_string($hash) && $hash !== '') {
+                        if (! $this->hashSah($hash)) {
+                            $h->tambah('sandi_bentuk_tak_dikenal');
+                        } elseif ($a->eduweb_hash_sandi !== $hash) {
+                            $ubah += ['password' => $hash, 'eduweb_hash_sandi' => $hash];
+                            $h->tambah('sandi_diperbarui');
+                        }
+                    }
+
+                    if ($ubah) {
+                        DB::table($a->getTable())->where('id', $a->id)->update($ubah + ['updated_at' => now()]);
+                    }
+                }
+            }
+        }
+    }
+
+    /** @param  class-string<Model>  $model */
+    private function usernameDipakai(string $model, string $username, ?int $kecualiId): bool
+    {
+        return $model::whereRaw('lower(username) = ?', [mb_strtolower($username)])
+            ->when($kecualiId, fn ($q) => $q->whereKeyNot($kecualiId))->exists();
+    }
+
     // ── Pembantu ────────────────────────────────────────────────────────────
 
     /** Isi model dan simpan hanya bila ada yang berubah; hanya yang benar-benar berubah dihitung "diperbarui". */
@@ -522,11 +652,11 @@ class PenyinkronEduweb
     }
 
     /** @return list<array<string,mixed>> */
-    private function semuaHalaman(string $jalur): array
+    private function semuaHalaman(string $jalur, array $query = []): array
     {
         $hasil = [];
         for ($hal = 1; $hal <= 200; $hal++) {
-            $j = $this->klien->get($jalur, ['per_page' => self::HALAMAN, 'page' => $hal]);
+            $j = $this->klien->get($jalur, $query + ['per_page' => self::HALAMAN, 'page' => $hal]);
             array_push($hasil, ...($j['data'] ?? []));
             if (($j['current_page'] ?? $hal) >= ($j['last_page'] ?? 1)) {
                 break;

@@ -94,6 +94,12 @@ class SinkronEduwebTest extends TestCase
 
                 return Http::response(['data' => $potong, 'last_id' => $potong ? end($potong)['id'] : $sesudah, 'has_more' => count($baris) > $batas]);
             }
+            if ($jalur === 'credentials') {
+                $baris = array_values(array_filter($this->edu['credentials'] ?? [], fn ($c) => (! isset($q['role']) || $c['role'] === $q['role'])
+                    && (! isset($q['ids']) || in_array($c['id'], array_map('intval', explode(',', $q['ids'])), true))));
+
+                return Http::response(['data' => $baris, 'current_page' => 1, 'last_page' => 1, 'total' => count($baris)]);
+            }
             if (in_array($jalur, ['teachers', 'students'], true)) {
                 $semua = $this->edu[$jalur];
                 $per = (int) ($q['per_page'] ?? 200);
@@ -510,6 +516,157 @@ class SinkronEduwebTest extends TestCase
         $this->post(route('staf.sinkron.uji'))->assertSessionHas('gagal');
         $this->post(route('staf.sinkron.penuh'))->assertSessionHas('gagal');
         $this->assertSame(0, Siswa::count());
+    }
+
+    // ── Kredensial: login sama dengan EduWeb ────────────────────────────────
+
+    private function hashEdu(string $sandi): string
+    {
+        return Hash::make($sandi, ['rounds' => 4]);
+    }
+
+    private function pasangKredensial(): void
+    {
+        $this->edu['teachers'][0]['username'] = 'siti.aminah';
+        $this->edu['students'][0]['username'] = 'ani.l';
+        $this->edu['credentials'] = [
+            ['id' => 6, 'role' => 'student', 'username' => 'ani.l', 'password_hash' => $this->hashEdu('SandiEduAni1')],
+            ['id' => 7, 'role' => 'student', 'username' => null, 'password_hash' => $this->hashEdu('SandiEduBayu1')],
+            ['id' => 2, 'role' => 'teacher', 'username' => 'siti.aminah', 'password_hash' => $this->hashEdu('SandiEduSiti1')],
+        ];
+        $this->pasangEdu();
+    }
+
+    public function test_login_siswa_dan_guru_memakai_username_dan_sandi_eduweb(): void
+    {
+        $this->pasangKredensial();
+        $h = $this->sinkron();
+
+        $this->assertSame('siti.aminah', User::where('eduweb_id', 2)->value('username'));
+        $this->assertSame('ani.l', Siswa::where('eduweb_id', 6)->value('username'));
+        $this->assertSame('aktif', PengaturanSekolah::ambil()->eduweb_kredensial);
+        $this->assertNotContains('siti.aminah', array_column($h->akunBaru, 'username')); // punya hash EduWeb: tidak perlu daftar sandi
+        $this->assertSame(['NIY-77'], array_column($h->akunBaru, 'username')); // guru tanpa hash tetap sandi acak
+
+        $this->post('/masuk', ['username' => 'ani.l', 'password' => 'SandiEduAni1'])->assertRedirect(route('siswa.beranda'));
+        $this->assertAuthenticatedAs(Siswa::where('eduweb_id', 6)->first(), 'siswa');
+        auth('siswa')->logout();
+
+        // NISN/NIS juga diterima (seperti EduWeb), dengan sandi EduWeb yang sama.
+        $this->post('/masuk', ['username' => '222', 'password' => 'SandiEduBayu1'])->assertRedirect(route('siswa.beranda'));
+        auth('siswa')->logout();
+
+        $this->post('/staf/masuk', ['username' => 'siti.aminah', 'password' => 'SandiEduSiti1'])->assertRedirect(route('staf.beranda'));
+        $this->assertAuthenticatedAs(User::where('eduweb_id', 2)->first(), 'web');
+    }
+
+    public function test_hash_tidak_masuk_log_ringkasan_maupun_tampilan(): void
+    {
+        $this->pasangKredensial();
+        $this->actingAs($this->admin(), 'web');
+        $respons = $this->post(route('staf.sinkron.penuh'))->assertSessionHas('berhasil');
+
+        $log = (string) DB::table('sinkron_log')->value('ringkasan').(string) DB::table('audit_log')->pluck('detail')->join(' ');
+        foreach ($this->edu['credentials'] as $c) {
+            $this->assertStringNotContainsString($c['password_hash'], $log);
+        }
+        $this->get(route('staf.sinkron.index'))->assertDontSee('$2y$', false);
+        $this->assertStringNotContainsString('$2y$', json_encode(Siswa::first()->toArray()));
+    }
+
+    public function test_hash_bukan_bcrypt_ditolak_dan_akun_tetap_aman(): void
+    {
+        $this->edu['credentials'] = [
+            ['id' => 6, 'role' => 'student', 'username' => null, 'password_hash' => 'sandi-polos'],
+            ['id' => 7, 'role' => 'student', 'username' => null, 'password_hash' => '$2y$31$'.str_repeat('a', 53)], // biaya berlebihan
+        ];
+        $this->pasangEdu();
+        $h = $this->sinkron();
+
+        $this->assertSame(0, $h->lain['sandi_diperbarui'] ?? 0);
+        $this->post('/masuk', ['username' => '0011', 'password' => 'sandi-polos'])->assertSessionHasErrors();
+        $this->assertGuest('siswa');
+        $this->assertNull(Siswa::where('eduweb_id', 6)->value('eduweb_hash_sandi'));
+    }
+
+    public function test_sandi_sementara_tidak_tertimpa_kecuali_sandi_eduweb_berubah(): void
+    {
+        $this->pasangKredensial();
+        $this->sinkron();
+
+        $ani = Siswa::where('eduweb_id', 6)->first();
+        $ani->forceFill(['password' => Hash::make('Sementara-Kartu-9', ['rounds' => 4])])->saveQuietly(); // dari Kartu Ujian
+        $this->sinkron();
+        $this->assertTrue(Hash::check('Sementara-Kartu-9', $ani->fresh()->password), 'sinkron ulang tanpa perubahan di EduWeb tidak boleh menimpa sandi lokal');
+
+        $this->edu['credentials'][0]['password_hash'] = $this->hashEdu('SandiBaruAni2');
+        $this->pasangEdu();
+        $h = $this->sinkron();
+        $this->assertSame(1, $h->lain['sandi_diperbarui']);
+        $this->assertTrue(Hash::check('SandiBaruAni2', $ani->fresh()->password));
+        $this->assertFalse(Hash::check('SandiEduAni1', $ani->fresh()->password));
+    }
+
+    public function test_akun_admin_tidak_pernah_menerima_kredensial_eduweb(): void
+    {
+        $this->pasangKredensial();
+        $admin = $this->admin();
+        $admin->forceFill(['eduweb_id' => 2, 'username' => 'siti.aminah'])->saveQuietly();
+        $sebelum = $admin->fresh()->password;
+
+        $this->sinkron();
+
+        $this->assertSame($sebelum, $admin->fresh()->password);
+        $this->assertNull($admin->fresh()->eduweb_hash_sandi);
+        $this->assertSame('admin', $admin->fresh()->role);
+    }
+
+    public function test_kredensial_belum_dinyalakan_di_eduweb_hanya_peringatan(): void
+    {
+        $this->edu['_galat']['credentials'] = 403;
+        $this->pasangEdu();
+        $h = $this->sinkron();
+
+        $this->assertSame(4, Siswa::count());
+        $this->assertSame('belum_aktif', PengaturanSekolah::ambil()->eduweb_kredensial);
+        $this->assertStringContainsString('akses kredensial belum dinyalakan', implode(' ', $h->peringatan));
+        $this->assertNotEmpty($h->akunBaru, 'tanpa hash EduWeb, guru baru tetap mendapat sandi acak sekali-unduh');
+    }
+
+    public function test_kredensial_galat_server_menggagalkan_sinkron_tanpa_mengubah_data(): void
+    {
+        $this->edu['_galat']['credentials'] = 500;
+        $this->pasangEdu();
+
+        $this->expectException(KesalahanEduweb::class);
+        try {
+            $this->sinkron();
+        } finally {
+            $this->assertSame(0, Siswa::count());
+        }
+    }
+
+    public function test_nama_pengguna_eduweb_yang_bentrok_tidak_dipaksakan(): void
+    {
+        $lain = Siswa::factory()->create(['nisn' => '7777', 'username' => 'ani.l']);
+        $this->pasangKredensial();
+        $h = $this->sinkron();
+
+        $this->assertSame('ani.l', $lain->fresh()->username);
+        $this->assertNull(Siswa::where('eduweb_id', 6)->value('username'));
+        $this->assertStringContainsString('sudah dipakai siswa lain', implode(' ', $h->peringatan));
+        $this->post('/masuk', ['username' => '0011', 'password' => 'SandiEduAni1'])->assertRedirect(route('siswa.beranda'));
+    }
+
+    public function test_username_guru_eduweb_menggantikan_nip_pada_akun_terhubung(): void
+    {
+        $this->sinkron();
+        $this->assertSame('198001', User::where('eduweb_id', 2)->value('username'));
+
+        $this->edu['teachers'][0]['username'] = 'siti.aminah';
+        $this->pasangEdu();
+        $this->sinkron();
+        $this->assertSame('siti.aminah', User::where('eduweb_id', 2)->value('username'));
     }
 
     public function test_perintah_sinkron(): void

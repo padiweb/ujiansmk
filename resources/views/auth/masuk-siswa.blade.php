@@ -16,9 +16,9 @@
         @endforeach
 
         <div class="bidang @error('username') salah @enderror">
-            <label for="username">NISN</label>
-            <input id="username" name="username" type="text" inputmode="numeric" autocomplete="username"
-                   value="{{ old('username') }}" maxlength="30" required autofocus>
+            <label for="username">Nama pengguna</label>
+            <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false"
+                   value="{{ old('username') }}" maxlength="50" required autofocus>
         </div>
 
         <div class="bidang">

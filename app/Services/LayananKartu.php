@@ -54,7 +54,7 @@ class LayananKartu
             $meja = $punyaSesi ? $sesi[$s->id]->no_meja : ($tempat[$s->id]->meja ?? null);
 
             return [
-                'siswa' => $s, 'nama' => $s->nama, 'nisn' => $s->nisn,
+                'siswa' => $s, 'nama' => $s->nama, 'nisn' => $s->nisn, 'pengguna' => $s->username ?: $s->nisn,
                 'kelas_id' => $kelas?->id, 'kelas' => $kelas?->nama ?? '—',
                 'ruang_id' => $ruang?->id, 'ruang' => $ruang?->nama, 'meja' => $meja,
             ];
