@@ -8,4 +8,11 @@ return [
     'kunci' => env('EDUWEB_KUNCI'),
 
     'timeout' => (int) env('EDUWEB_TIMEOUT', 15),
+
+    // Rahasia bersama untuk memeriksa tanda tangan webhook dari EduWeb (dibuat di EduWeb, disalin sekali ke .env).
+    'webhook_rahasia' => env('EDUWEB_WEBHOOK_RAHASIA'),
+
+    // Sinkron kejadian otomatis (webhook + pengecekan cadangan saat halaman dibuka; tanpa cron).
+    'otomatis' => (bool) env('EDUWEB_OTOMATIS', true),
+    'cek_menit' => (int) env('EDUWEB_CEK_MENIT', 5),
 ];

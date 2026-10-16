@@ -25,6 +25,19 @@
         <div><dt>Sinkron penuh terakhir</dt><dd>{{ $p->eduweb_sinkron_penuh_pada?->format('d/m/Y H:i') ?? 'Belum pernah' }}</dd></div>
         <div><dt>Kejadian diterapkan sampai</dt><dd>#{{ $p->eduweb_kejadian_terakhir }}</dd></div>
         <div><dt>Mode sinkron</dt><dd>{{ $p->mode_sinkron_eduweb ? 'Aktif: data master dikelola EduWeb dan terkunci di sini' : 'Mati: data master bisa diisi di sini' }}</dd></div>
+        <div><dt>Sinkron otomatis</dt><dd>
+            @if (! $otomatisAktif) Mati (atur <code>EDUWEB_OTOMATIS</code> dan penghubung di .env)
+            @elseif ($ujianBerlangsung) <span class="lencana kuning">Ditahan</span> Ada ujian berlangsung; perubahan diterapkan otomatis setelah selesai
+            @elseif ($p->eduweb_kejadian_tertahan) <span class="lencana kuning">Menunggu</span> Ada perubahan yang tertahan, diterapkan sebentar lagi
+            @else Aktif: perubahan di EduWeb diterapkan otomatis @endif</dd></div>
+        <div><dt>Sinyal dari EduWeb</dt><dd>
+            @if ($webhookSiap) {{ $p->eduweb_webhook_terakhir?->format('d/m/Y H:i:s') ?? 'Siap, belum pernah menerima sinyal' }}
+            @else Belum diatur: isi <code>EDUWEB_WEBHOOK_RAHASIA</code> di .env. Tanpa itu, perubahan dicek tiap {{ $cekMenit }} menit saat halaman dibuka. @endif</dd></div>
+        <div><dt>Pengecekan terakhir</dt><dd>{{ $p->eduweb_cek_terakhir?->format('d/m/Y H:i:s') ?? 'Belum pernah' }}</dd></div>
+        <div><dt>Kata sandi dari EduWeb</dt><dd>
+            @if ($p->eduweb_kredensial === 'aktif') Aktif: guru dan siswa masuk dengan nama pengguna dan kata sandi EduWeb
+            @elseif ($p->eduweb_kredensial === 'belum_aktif') <span class="lencana kuning">Belum aktif</span> Nyalakan akses kredensial untuk kunci ini di menu Integrasi Ujian EduWeb, lalu sinkron penuh. Sementara, siswa memakai sandi dari Kartu Ujian.
+            @else Belum diketahui: jalankan sinkron penuh @endif</dd></div>
     </dl>
     <div class="aksi-form" style="margin-top:12px">
         <form method="POST" action="{{ route('staf.sinkron.uji') }}">@csrf <button class="tombol kecil garis" type="submit" @disabled(! $terkonfigurasi)>Uji koneksi</button></form>
@@ -33,7 +46,8 @@
         <form method="POST" action="{{ route('staf.sinkron.kejadian') }}">@csrf
             <button class="tombol kecil garis" type="submit" @disabled(! $terkonfigurasi || ! $p->eduweb_sinkron_penuh_pada)>Ikuti kejadian (kenaikan kelas dll.)</button></form>
     </div>
-    <small class="bantuan">Jangan jalankan sinkron saat ujian berlangsung. Siswa baru dari EduWeb belum punya kata sandi: buat lewat Kartu Ujian pada jadwal.</small>
+    <small class="bantuan">Jangan jalankan sinkron manual saat ujian berlangsung; sinkron otomatis berhenti sendiri selama ujian. Bila kata sandi EduWeb belum bisa dibawa, siswa memakai sandi dari Kartu Ujian.</small>
+    <small class="bantuan">Alamat sinyal untuk diisi di EduWeb: <code>{{ $urlWebhook }}</code></small>
 </div>
 
 @if ($hasil)

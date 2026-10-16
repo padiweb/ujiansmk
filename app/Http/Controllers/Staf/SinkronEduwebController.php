@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Staf;
 use App\Eduweb\KesalahanEduweb;
 use App\Eduweb\KlienEduweb;
 use App\Eduweb\PenyinkronEduweb;
+use App\Eduweb\SinkronOtomatis;
 use App\Http\Controllers\Controller;
 use App\Models\PengaturanSekolah;
 use Illuminate\Http\RedirectResponse;
@@ -22,13 +23,18 @@ class SinkronEduwebController extends Controller
 {
     private const FOLDER = 'eduweb-sandi';
 
-    public function __construct(private PenyinkronEduweb $penyinkron, private KlienEduweb $klien) {}
+    public function __construct(private PenyinkronEduweb $penyinkron, private KlienEduweb $klien, private SinkronOtomatis $otomatis) {}
 
     public function index(): View
     {
         return view('staf.sinkron.index', [
             'p' => PengaturanSekolah::ambil(),
             'terkonfigurasi' => $this->klien->terkonfigurasi(),
+            'otomatisAktif' => $this->otomatis->aktif(),
+            'webhookSiap' => filled(config('eduweb.webhook_rahasia')),
+            'urlWebhook' => route('eduweb.webhook'),
+            'ujianBerlangsung' => $this->otomatis->ujianBerlangsung(),
+            'cekMenit' => (int) config('eduweb.cek_menit'),
             'log' => DB::table('sinkron_log')->orderByDesc('id')->limit(15)->get()->map(function ($l) {
                 $l->ringkasan = json_decode((string) $l->ringkasan, true);
                 $l->created_at = \Illuminate\Support\Carbon::parse($l->created_at);

@@ -47,7 +47,7 @@ class PenyinkronEduweb
     /** @throws KesalahanEduweb */
     public function penuh(?User $pelaku = null): HasilSinkron
     {
-        return $this->dalamKunci('penuh', $pelaku, function (HasilSinkron $h) {
+        return $this->dalamKunci('penuh', $pelaku, false, function (HasilSinkron $h) {
             $pengaturan = PengaturanSekolah::ambil();
             $pertama = $pengaturan->eduweb_sinkron_penuh_pada === null;
 
@@ -99,10 +99,14 @@ class PenyinkronEduweb
 
     // ── Kejadian (kenaikan kelas, lulus, pindah, perubahan data master, sandi) ──
 
-    /** @throws KesalahanEduweb */
-    public function kejadian(?User $pelaku = null): HasilSinkron
+    /**
+     * @param  bool  $senyap  true untuk pemicu otomatis: pengecekan tanpa kejadian baru tidak dicatat di riwayat
+     *
+     * @throws KesalahanEduweb
+     */
+    public function kejadian(?User $pelaku = null, bool $senyap = false): HasilSinkron
     {
-        return $this->dalamKunci('kejadian', $pelaku, function (HasilSinkron $h) {
+        return $this->dalamKunci('kejadian', $pelaku, $senyap, function (HasilSinkron $h) {
             $pengaturan = PengaturanSekolah::ambil();
             if ($pengaturan->eduweb_sinkron_penuh_pada === null) {
                 throw new KesalahanEduweb('Jalankan sinkron penuh dulu sebelum mengikuti kejadian.', 'belum_penuh');
@@ -692,7 +696,7 @@ class PenyinkronEduweb
         }
     }
 
-    private function dalamKunci(string $jenis, ?User $pelaku, callable $kerja): HasilSinkron
+    private function dalamKunci(string $jenis, ?User $pelaku, bool $senyap, callable $kerja): HasilSinkron
     {
         $kunci = Cache::lock('eduweb:sinkron', 900);
         if (! $kunci->get()) {
@@ -705,8 +709,10 @@ class PenyinkronEduweb
 
         try {
             $kerja($h);
-            $this->catat($jenis, 'berhasil', $pelaku, $h, null, $mulai);
-            AuditLog::catat("eduweb.sinkron_{$jenis}", 'berhasil', $pelaku);
+            if (! ($senyap && ! $h->lain && ! $h->entitas && ! $h->peringatan)) {
+                $this->catat($jenis, 'berhasil', $pelaku, $h, null, $mulai);
+                AuditLog::catat("eduweb.sinkron_{$jenis}", 'berhasil', $pelaku);
+            }
 
             return $h;
         } catch (KesalahanEduweb $e) {

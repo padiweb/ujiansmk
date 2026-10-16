@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\KunciSinkronEduweb;
 use App\Http\Middleware\PastikanPerangkatUjian;
+use App\Http\Middleware\PeriksaSinkronEduweb;
 use App\Http\Middleware\PastikanPeran;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
         then: function () {
             Route::prefix('api/ujian')->group(base_path('routes/ujian-api.php'));
+            Route::prefix('api/eduweb')->group(base_path('routes/eduweb-api.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -24,6 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'sinkron.kunci' => KunciSinkronEduweb::class,
             'perangkat.ujian' => PastikanPerangkatUjian::class,
         ]);
+
+        // Cadangan sinkron EduWeb tanpa cron (berjalan setelah respons terkirim).
+        $middleware->appendToGroup('web', PeriksaSinkronEduweb::class);
 
         // Tamu yang membuka halaman terlindungi diarahkan ke login yang sesuai.
         $middleware->redirectGuestsTo(

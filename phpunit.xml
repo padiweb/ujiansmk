@@ -25,6 +25,8 @@
         <env name="CACHE_STORE" value="array"/>
         <env name="EDUWEB_URL" value=""/>
         <env name="EDUWEB_KUNCI" value=""/>
+        <env name="EDUWEB_OTOMATIS" value="false"/>
+        <env name="EDUWEB_WEBHOOK_RAHASIA" value=""/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>
