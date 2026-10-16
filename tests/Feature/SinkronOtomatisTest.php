@@ -30,6 +30,7 @@ class SinkronOtomatisTest extends TestCase
         config([
             'eduweb.url' => 'https://eduweb.contoh.sch.id/api/exam/v1', 'eduweb.kunci' => 'exu_kunci-uji-ABCDEF', 'eduweb.timeout' => 5,
             'eduweb.otomatis' => true, 'eduweb.webhook_rahasia' => self::RAHASIA, 'eduweb.cek_menit' => 5,
+            'ujian.mode_pengembang' => true,
         ]);
         PengaturanSekolah::ambil()->update(['eduweb_sinkron_penuh_pada' => now(), 'eduweb_kejadian_terakhir' => 10]);
         $this->pasangEdu();

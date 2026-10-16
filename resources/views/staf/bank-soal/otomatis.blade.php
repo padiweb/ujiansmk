@@ -8,7 +8,7 @@
 @if (! $penyedia)
     <div class="kartu">
         <div class="pesan-salah" style="margin:0"><x-ikon nama="peringatan" :ukuran="18" />
-            <span>Belum ada penyedia otomatis yang aktif. Minta admin mengaturnya di menu Penyedia Otomatis.</span></div>
+            <span>Fitur susun soal otomatis belum tersedia di instalasi ini. Hubungi pengelola aplikasi.</span></div>
     </div>
 @else
     <div class="info" style="margin-top:18px"><x-ikon nama="info" :ukuran="18" />

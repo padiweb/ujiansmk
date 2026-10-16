@@ -197,8 +197,21 @@ class MasterDataTest extends TestCase
         $this->get('/staf/master/staf/tambah')->assertOk();
     }
 
+    public function test_mode_sinkron_diabaikan_di_pengaturan_bila_bukan_mode_pengembang(): void
+    {
+        $this->actingAs($this->admin(), 'web');
+
+        $this->get('/staf/pengaturan')->assertOk()->assertDontSee('Sinkron dengan EduWeb');
+        $this->put('/staf/pengaturan', [
+            'nama' => 'SMK Alhikmah Tanon', 'kurikulum' => 'Kurikulum Merdeka', 'mode_sinkron_eduweb' => '1',
+        ])->assertSessionHas('berhasil');
+
+        $this->assertFalse(PengaturanSekolah::sinkronAktif());
+    }
+
     public function test_pengaturan_sekolah_bisa_disimpan(): void
     {
+        config(['ujian.mode_pengembang' => true]);
         $this->actingAs($this->admin(), 'web');
 
         $this->put('/staf/pengaturan', [

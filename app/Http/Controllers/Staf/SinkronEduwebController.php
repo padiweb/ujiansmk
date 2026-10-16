@@ -7,7 +7,9 @@ use App\Eduweb\KlienEduweb;
 use App\Eduweb\PenyinkronEduweb;
 use App\Eduweb\SinkronOtomatis;
 use App\Http\Controllers\Controller;
+use App\Models\LogOtomatis;
 use App\Models\PengaturanSekolah;
+use App\Models\PenyediaOtomatis;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +37,9 @@ class SinkronEduwebController extends Controller
             'urlWebhook' => route('eduweb.webhook'),
             'ujianBerlangsung' => $this->otomatis->ujianBerlangsung(),
             'cekMenit' => (int) config('eduweb.cek_menit'),
+            'penyedia' => PenyediaOtomatis::aktif(),
+            'logOtomatis' => LogOtomatis::with('user')->latest('id')->limit(15)->get(),
+            'batasOtomatis' => (int) config('ujian.batas_otomatis_harian'),
             'log' => DB::table('sinkron_log')->orderByDesc('id')->limit(15)->get()->map(function ($l) {
                 $l->ringkasan = json_decode((string) $l->ringkasan, true);
                 $l->created_at = \Illuminate\Support\Carbon::parse($l->created_at);

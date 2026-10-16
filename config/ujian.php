@@ -11,6 +11,17 @@ return [
     'batas_otomatis_harian' => (int) env('UJIAN_BATAS_OTOMATIS_HARIAN', 30),
     'maks_soal_otomatis' => 10,
 
+    // Layanan penyusun soal dan saran nilai otomatis. Diatur lewat .env (bukan layar admin); kunci tidak pernah ditampilkan.
+    // OTOMATIS_DRIVER: gemini | openai | anthropic. Bila salah satu kosong, fitur otomatis disembunyikan.
+    'otomatis' => [
+        'driver' => env('OTOMATIS_DRIVER'),
+        'model' => env('OTOMATIS_MODEL'),
+        'kunci' => env('OTOMATIS_KUNCI'),
+    ],
+
+    // Menampilkan halaman diagnosis teknis (/staf/sistem) untuk admin. Biarkan false di sekolah pengguna.
+    'mode_pengembang' => (bool) env('MODE_PENGEMBANG', false),
+
     // Hitungan pelanggaran (detik / jumlah).
     'pelanggaran' => [
         'jeda_sejenis' => 8,   // pelanggaran sejenis dalam jeda ini tidak dihitung dua kali

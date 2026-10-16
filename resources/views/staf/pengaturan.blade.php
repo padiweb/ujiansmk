@@ -24,6 +24,7 @@
         </div>
     @endforeach
 
+    @if (config('ujian.mode_pengembang'))
     <div class="bidang">
         <label for="f-mode">Sinkron dengan EduWeb</label>
         <select id="f-mode" name="mode_sinkron_eduweb">
@@ -32,6 +33,7 @@
         </select>
         <small class="bantuan">Saat aktif, siswa, guru, kelas, mapel, jurusan, tahun ajaran, semester, dan pengampu tidak bisa diubah atau diimpor di sini.</small>
     </div>
+    @endif
 
     <div class="aksi-form">
         <button class="tombol kecil" type="submit">Simpan</button>

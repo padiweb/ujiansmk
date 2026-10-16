@@ -35,6 +35,7 @@ class SinkronEduwebTest extends TestCase
     {
         parent::setUp();
         config(['eduweb.url' => self::URL, 'eduweb.kunci' => 'exu_kunci-uji-ABCDEF', 'eduweb.timeout' => 5]);
+        config(['ujian.mode_pengembang' => true]);
 
         $this->edu = [
             'academic-years' => [
@@ -470,6 +471,30 @@ class SinkronEduwebTest extends TestCase
         $this->actingAs($guru, 'web')->get(route('staf.sinkron.index'))->assertForbidden();
         $this->actingAs($guru, 'web')->post(route('staf.sinkron.penuh'))->assertForbidden();
         $this->assertSame(0, Siswa::count());
+    }
+
+    public function test_halaman_diagnosis_404_bila_bukan_mode_pengembang(): void
+    {
+        config(['ujian.mode_pengembang' => false]);
+
+        $this->actingAs($this->admin(), 'web')->get(route('staf.sinkron.index'))->assertNotFound();
+        $this->post(route('staf.sinkron.penuh'))->assertNotFound();
+    }
+
+    public function test_beranda_admin_menampilkan_satu_baris_status_data(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin, 'web')->get('/staf')->assertOk()->assertSee('belum pernah diambil');
+
+        PengaturanSekolah::ambil()->update(['eduweb_sinkron_penuh_pada' => now()->setDate(2026, 10, 15)->setTime(10, 15)]);
+        $this->get('/staf')->assertOk()->assertSee('terakhir diperbarui 15/10/2026 10.15')->assertDontSee('tidak berhasil');
+
+        DB::table('sinkron_log')->insert(['jenis' => 'kejadian', 'status' => 'gagal', 'galat' => 'x', 'durasi_ms' => 1, 'created_at' => now()]);
+        $this->get('/staf')->assertSee('tidak berhasil');
+
+        config(['eduweb.kunci' => null]);
+        $this->get('/staf')->assertDontSee('terakhir diperbarui');
     }
 
     public function test_sinkron_lewat_halaman_dan_unduh_sandi_hanya_sekali(): void

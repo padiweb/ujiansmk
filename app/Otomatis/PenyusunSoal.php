@@ -167,7 +167,7 @@ TEKS;
     protected function pesanGalat(Response $respons): string
     {
         return match (true) {
-            in_array($respons->status(), [401, 403], true) => 'Kunci penyedia ditolak. Minta admin memeriksa kunci di Pengaturan → Penyedia Otomatis.',
+            in_array($respons->status(), [401, 403], true) => 'Layanan otomatis menolak kunci akses. Hubungi pengelola aplikasi.',
             $respons->status() === 404 => 'Model tidak ditemukan di penyedia. Minta admin memeriksa nama model.',
             $respons->status() === 429 => 'Kuota penyedia sedang habis atau terlalu banyak permintaan. Coba lagi beberapa saat lagi.',
             $respons->status() >= 500 => 'Penyedia sedang bermasalah. Coba lagi nanti.',

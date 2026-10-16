@@ -6,7 +6,6 @@ use App\Models\AuditLog;
 use App\Models\Jawaban;
 use App\Models\LogOtomatis;
 use App\Models\Pengampu;
-use App\Models\PenyediaOtomatis;
 use App\Models\SesiUjian;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -56,7 +55,7 @@ class KoreksiEsaiTest extends TestCase
 
     private function sediakanPenyedia(): void
     {
-        PenyediaOtomatis::create(['nama' => 'Uji', 'driver' => 'gemini', 'model' => 'gemini-uji', 'kunci' => 'kunci-rahasia-ABCD1234', 'aktif' => true]);
+        config(['ujian.otomatis' => ['driver' => 'gemini', 'model' => 'gemini-uji', 'kunci' => 'kunci-rahasia-ABCD1234']]);
     }
 
     // ── Hak akses ───────────────────────────────────────────────────────────

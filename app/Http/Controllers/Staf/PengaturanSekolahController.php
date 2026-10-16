@@ -27,11 +27,16 @@ class PengaturanSekolahController extends Controller
             'kepala_sekolah' => ['nullable', 'string', 'max:100'],
             'nip_kepala_sekolah' => ['nullable', 'string', 'max:50'],
             'kurikulum' => ['required', 'string', 'max:60'],
-            'mode_sinkron_eduweb' => ['required', 'boolean'],
+            'mode_sinkron_eduweb' => ['sometimes', 'boolean'],
         ]);
 
+        // Hanya bisa diubah lewat halaman ini saat MODE_PENGEMBANG aktif; selain itu nilainya tidak disentuh.
+        if (! config('ujian.mode_pengembang')) {
+            unset($data['mode_sinkron_eduweb']);
+        }
+
         PengaturanSekolah::ambil()->update($data);
-        AuditLog::catat('pengaturan.ubah', 'mode_sinkron_eduweb='.$data['mode_sinkron_eduweb'], $request->user('web'));
+        AuditLog::catat('pengaturan.ubah', isset($data['mode_sinkron_eduweb']) ? 'mode_sinkron_eduweb='.$data['mode_sinkron_eduweb'] : 'data sekolah', $request->user('web'));
 
         return back()->with('berhasil', 'Pengaturan disimpan.');
     }

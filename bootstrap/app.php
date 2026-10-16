@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\KunciSinkronEduweb;
+use App\Http\Middleware\ModePengembang;
 use App\Http\Middleware\PastikanPerangkatUjian;
 use App\Http\Middleware\PeriksaSinkronEduweb;
 use App\Http\Middleware\PastikanPeran;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'peran' => PastikanPeran::class,
             'sinkron.kunci' => KunciSinkronEduweb::class,
+            'mode.pengembang' => ModePengembang::class,
             'perangkat.ujian' => PastikanPerangkatUjian::class,
         ]);
 

@@ -13,7 +13,6 @@ use App\Http\Controllers\Staf\ImporSoalController;
 use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
-use App\Http\Controllers\Staf\PenyediaOtomatisController;
 use App\Http\Controllers\Staf\PengaturanSekolahController;
 use App\Http\Controllers\Staf\SinkronEduwebController;
 use App\Http\Controllers\Staf\RekapController;
@@ -156,7 +155,8 @@ Route::prefix('staf')->group(function () {
             Route::post('/sandi', [KartuUjianController::class, 'sandi'])->middleware('throttle:6,1')->name('sandi');
         });
 
-        Route::prefix('sinkron-eduweb')->name('staf.sinkron.')->group(function () {
+        // Diagnosis teknis (penghubung EduWeb + layanan otomatis): hanya ada bila MODE_PENGEMBANG=true.
+        Route::prefix('sistem')->middleware('mode.pengembang')->name('staf.sinkron.')->group(function () {
             Route::get('/', [SinkronEduwebController::class, 'index'])->name('index');
             Route::post('/uji', [SinkronEduwebController::class, 'uji'])->middleware('throttle:10,1')->name('uji');
             Route::post('/penuh', [SinkronEduwebController::class, 'penuh'])->middleware('throttle:5,1')->name('penuh');
@@ -177,17 +177,6 @@ Route::prefix('staf')->group(function () {
                 Route::post('/tempatkan', [DenahController::class, 'tempatkan'])->name('tempatkan');
                 Route::post('/siswa/{siswa}/lepas', [DenahController::class, 'lepas'])->whereNumber('siswa')->name('lepas');
             });
-        });
-
-        Route::prefix('penyedia-otomatis')->name('staf.penyedia.')->group(function () {
-            Route::get('/', [PenyediaOtomatisController::class, 'index'])->name('index');
-            Route::get('/tambah', [PenyediaOtomatisController::class, 'create'])->name('create');
-            Route::post('/', [PenyediaOtomatisController::class, 'store'])->name('store');
-            Route::get('/{penyedia}/ubah', [PenyediaOtomatisController::class, 'edit'])->whereNumber('penyedia')->name('edit');
-            Route::put('/{penyedia}', [PenyediaOtomatisController::class, 'update'])->whereNumber('penyedia')->name('update');
-            Route::delete('/{penyedia}', [PenyediaOtomatisController::class, 'destroy'])->whereNumber('penyedia')->name('destroy');
-            Route::post('/{penyedia}/aktifkan', [PenyediaOtomatisController::class, 'aktifkan'])->whereNumber('penyedia')->name('aktifkan');
-            Route::post('/{penyedia}/nonaktifkan', [PenyediaOtomatisController::class, 'nonaktifkan'])->whereNumber('penyedia')->name('nonaktifkan');
         });
 
         Route::prefix('master/{entitas}')->where(['entitas' => '[a-z-]+'])->group(function () {

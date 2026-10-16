@@ -84,14 +84,12 @@
                 @endforeach
 
                 <div class="sisi-seksi"><span>Sistem</span></div>
-                <a href="{{ route('staf.sinkron.index') }}" data-tip="Sinkron EduWeb"
-                   class="sisi-a {{ request()->routeIs('staf.sinkron.*') ? 'aktif' : '' }}">
-                    <x-ikon nama="unduh" /><span class="sisi-lbl">Sinkron EduWeb</span>
-                </a>
-                <a href="{{ route('staf.penyedia.index') }}" data-tip="Penyedia Otomatis"
-                   class="sisi-a {{ request()->routeIs('staf.penyedia.*') ? 'aktif' : '' }}">
-                    <x-ikon nama="otomatis" /><span class="sisi-lbl">Penyedia Otomatis</span>
-                </a>
+                @if (config('ujian.mode_pengembang'))
+                    <a href="{{ route('staf.sinkron.index') }}" data-tip="Diagnosis Sistem"
+                       class="sisi-a {{ request()->routeIs('staf.sinkron.*') ? 'aktif' : '' }}">
+                        <x-ikon nama="unduh" /><span class="sisi-lbl">Diagnosis Sistem</span>
+                    </a>
+                @endif
                 <a href="{{ route('staf.pengaturan') }}" data-tip="Pengaturan Sekolah"
                    class="sisi-a {{ request()->routeIs('staf.pengaturan') ? 'aktif' : '' }}">
                     <x-ikon nama="pengaturan" /><span class="sisi-lbl">Pengaturan Sekolah</span>

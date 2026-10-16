@@ -6,6 +6,9 @@
 <p class="sub">{{ config('ujian.sekolah') }}</p>
 
 @if ($user->role === 'admin')
+    @if ($dataEduweb)
+        <div class="{{ $dataEduweb['masalah'] ? 'pesan-salah' : 'info' }}" role="status"><x-ikon :nama="$dataEduweb['masalah'] ? 'peringatan' : 'info'" :ukuran="18" /><span>{{ $dataEduweb['teks'] }}</span></div>
+    @endif
     <div class="kartu">
         <h2 class="judul-kartu">Persiapan data</h2>
         <p class="sub" style="margin-top:0">Isi berurutan dari atas. Setiap langkah bisa lewat impor Excel.</p>

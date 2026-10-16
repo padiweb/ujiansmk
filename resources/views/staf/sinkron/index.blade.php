@@ -1,5 +1,5 @@
 @extends('layouts.staf')
-@section('judul', 'Sinkron EduWeb')
+@section('judul', 'Diagnosis Sistem')
 
 @php
     $nama = ['tahun_ajaran' => 'Tahun ajaran', 'periode' => 'Semester', 'jurusan' => 'Jurusan', 'kelas' => 'Kelas', 'mapel' => 'Mata pelajaran', 'guru' => 'Guru', 'siswa' => 'Siswa'];
@@ -9,8 +9,8 @@
 @section('konten')
 <div class="kepala-halaman">
     <div>
-        <h1 class="judul-halaman">Sinkron EduWeb</h1>
-        <p class="sub">Tarik data siswa, kelas, mapel, dan guru dari EduWeb. Aplikasi ini hanya membaca dari EduWeb.</p>
+        <h1 class="judul-halaman">Diagnosis sistem</h1>
+        <p class="sub">Halaman teknis untuk pengelola aplikasi (aktif karena <code>MODE_PENGEMBANG=true</code>). Pengaturan diubah di berkas .env server.</p>
     </div>
 </div>
 
@@ -97,6 +97,41 @@
                     </tr>
                 @empty
                     <tr><td colspan="5" class="kosong">Belum ada sinkron.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="kartu">
+    <h2 class="judul-kartu">Layanan otomatis</h2>
+    <dl class="rincian">
+        <div><dt>Status</dt><dd>
+            @if ($penyedia) Siap: {{ $penyedia->namaDriver() }}, model <code>{{ $penyedia->model }}</code>, kunci terpasang (disembunyikan)
+            @else <span class="lencana kuning">Mati</span> Isi <code>OTOMATIS_DRIVER</code>, <code>OTOMATIS_MODEL</code>, dan <code>OTOMATIS_KUNCI</code> di .env. Selama belum lengkap, tombol susun soal dan saran nilai tidak tampil. @endif</dd></div>
+        <div><dt>Batas harian</dt><dd>{{ $batasOtomatis }} permintaan per pengguna</dd></div>
+    </dl>
+</div>
+
+<div class="kartu tanpa-padding">
+    <h2 class="judul-kartu" style="padding:16px 20px 0">Pemakaian layanan otomatis</h2>
+    <div class="gulir">
+        <table class="tabel">
+            <thead><tr><th>Waktu</th><th>Pengguna</th><th>Diminta</th><th>Jadi</th><th>Hasil</th></tr></thead>
+            <tbody>
+                @forelse ($logOtomatis as $l)
+                    <tr>
+                        <td>{{ $l->created_at->format('d/m/Y H:i') }}</td>
+                        <td>{{ $l->user->nama }}</td>
+                        <td>{{ $l->jumlah_diminta }}</td>
+                        <td>{{ $l->jumlah_dihasilkan }}</td>
+                        <td>
+                            @if ($l->status === 'berhasil') <span class="lencana">Berhasil</span>
+                            @else <span class="lencana kuning">Gagal</span> <small class="bantuan" style="display:inline">{{ $l->pesan }}</small> @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td colspan="5" class="kosong">Belum ada pemakaian.</td></tr>
                 @endforelse
             </tbody>
         </table>

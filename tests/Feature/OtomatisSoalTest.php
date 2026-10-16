@@ -15,7 +15,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory as KlienHttp;
 use Illuminate\Http\Client\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
@@ -41,9 +40,10 @@ class OtomatisSoalTest extends TestCase
         $this->bank = BankSoal::create(['mapel_id' => $mtk->id, 'tingkat' => 'X', 'nama' => 'Bank', 'jumlah_opsi_bawaan' => 4, 'dibuat_oleh' => $this->guru->id]);
     }
 
-    private function penyedia(string $driver = 'gemini', string $model = 'model-uji', bool $aktif = true): PenyediaOtomatis
+    /** Penyedia diatur lewat .env (config), bukan layar admin. $aktif=false meniru .env yang belum diisi. */
+    private function penyedia(string $driver = 'gemini', string $model = 'model-uji', bool $aktif = true): void
     {
-        return PenyediaOtomatis::create(['nama' => 'Uji', 'driver' => $driver, 'model' => $model, 'kunci' => self::KUNCI, 'aktif' => $aktif]);
+        config(['ujian.otomatis' => ['driver' => $driver, 'model' => $model, 'kunci' => $aktif ? self::KUNCI : '']]);
     }
 
     private function soalPg(string $pertanyaan = 'Berapa 2 + 2?', array $opsi = ['3', '4', '5', '6'], string $kunci = 'B'): array
@@ -80,72 +80,63 @@ class OtomatisSoalTest extends TestCase
         return $this->actingAs($this->guru, 'web')->post("/staf/bank-soal/{$this->bank->id}/otomatis", $this->form($timpa));
     }
 
-    // ── Penyedia: penyimpanan dan akses ─────────────────────────────────────
+    // ── Penyedia: dibaca dari .env ──────────────────────────────────────────
 
-    public function test_kunci_tersimpan_terenkripsi_dan_tersembunyi(): void
+    public function test_penyedia_dibaca_dari_config_dan_kunci_tidak_bocor(): void
     {
-        $p = $this->penyedia();
+        $this->penyedia('openai', 'gpt-uji');
 
-        $mentah = DB::table('penyedia_otomatis')->where('id', $p->id)->value('kunci');
-        $this->assertStringNotContainsString(self::KUNCI, $mentah);
-        $this->assertSame(self::KUNCI, $p->fresh()->kunci);
-        $this->assertArrayNotHasKey('kunci', $p->fresh()->toArray());
-        $this->assertStringNotContainsString(self::KUNCI, $p->fresh()->toJson());
-        $this->assertSame('••••1234', $p->petunjukKunci());
+        $p = PenyediaOtomatis::aktif();
+        $this->assertSame('openai', $p->driver);
+        $this->assertSame('gpt-uji', $p->model);
+        $this->assertSame(self::KUNCI, $p->kunci);
+        $this->assertArrayNotHasKey('kunci', $p->toArray());
+        $this->assertStringNotContainsString(self::KUNCI, $p->toJson());
+        $this->assertSame(0, PenyediaOtomatis::count(), 'penyedia dari .env tidak disimpan ke basis data');
     }
 
-    public function test_halaman_penyedia_hanya_admin_dan_tidak_menampilkan_kunci(): void
+    public function test_config_tidak_lengkap_atau_tidak_aman_berarti_tidak_tersedia(): void
+    {
+        foreach ([
+            ['driver' => null, 'model' => 'm', 'kunci' => self::KUNCI],
+            ['driver' => 'lain', 'model' => 'm', 'kunci' => self::KUNCI],
+            ['driver' => 'gemini', 'model' => '../../etc/x?y=1', 'kunci' => self::KUNCI],
+            ['driver' => 'gemini', 'model' => 'm', 'kunci' => 'pendek'],
+            ['driver' => 'gemini', 'model' => '', 'kunci' => self::KUNCI],
+        ] as $c) {
+            config(['ujian.otomatis' => $c]);
+            $this->assertNull(PenyediaOtomatis::aktif(), json_encode($c));
+            $this->assertFalse(PenyediaOtomatis::tersedia());
+        }
+    }
+
+    public function test_menu_penyedia_dan_sinkron_tidak_ada_di_admin_dan_halamannya_404(): void
     {
         $this->penyedia();
-
-        $this->actingAs($this->guru, 'web')->get('/staf/penyedia-otomatis')->assertForbidden();
-        $this->actingAs(User::factory()->pengawas()->create(), 'web')->get('/staf/penyedia-otomatis')->assertForbidden();
-
         $admin = User::factory()->admin()->create();
-        $html = $this->actingAs($admin, 'web')->get('/staf/penyedia-otomatis')->assertOk()->assertSee('••••1234')->getContent();
+
+        $html = $this->actingAs($admin, 'web')->get('/staf')->assertOk()->getContent();
+        $this->assertStringNotContainsString('Penyedia', $html);
+        $this->assertStringNotContainsString('Sinkron EduWeb', $html);
+        $this->assertStringNotContainsString('Diagnosis', $html);
         $this->assertStringNotContainsString(self::KUNCI, $html);
 
-        $edit = $this->get('/staf/penyedia-otomatis/'.PenyediaOtomatis::first()->id.'/ubah')->assertOk()->getContent();
-        $this->assertStringNotContainsString(self::KUNCI, $edit);
+        $this->get('/staf/penyedia-otomatis')->assertNotFound();
+        $this->get('/staf/sistem')->assertNotFound();
     }
 
-    public function test_tambah_ubah_aktifkan_hapus_penyedia(): void
+    public function test_diagnosis_hanya_admin_dengan_mode_pengembang_dan_kunci_tersembunyi(): void
     {
-        $this->actingAs(User::factory()->admin()->create(), 'web');
+        $this->penyedia();
+        config(['ujian.mode_pengembang' => true]);
 
-        $this->post('/staf/penyedia-otomatis', ['nama' => 'A', 'driver' => 'gemini', 'model' => 'gemini-x', 'kunci' => 'kunci-panjang-aaa', 'aktif' => '1'])->assertRedirect();
-        $this->post('/staf/penyedia-otomatis', ['nama' => 'B', 'driver' => 'openai', 'model' => 'gpt-x', 'kunci' => 'kunci-panjang-bbb', 'aktif' => '1'])->assertRedirect();
+        $this->actingAs($this->guru, 'web')->get('/staf/sistem')->assertForbidden();
 
-        $a = PenyediaOtomatis::firstWhere('nama', 'A');
-        $b = PenyediaOtomatis::firstWhere('nama', 'B');
-        $this->assertFalse($a->fresh()->aktif);
-        $this->assertTrue($b->fresh()->aktif);
-
-        $this->post("/staf/penyedia-otomatis/{$a->id}/aktifkan");
-        $this->assertTrue($a->fresh()->aktif);
-        $this->assertFalse($b->fresh()->aktif);
-        $this->assertSame(1, PenyediaOtomatis::where('aktif', true)->count());
-
-        // Kunci kosong saat ubah = kunci lama dipertahankan.
-        $this->put("/staf/penyedia-otomatis/{$a->id}", ['nama' => 'A2', 'driver' => 'gemini', 'model' => 'gemini-y', 'kunci' => ''])->assertSessionHasNoErrors();
-        $this->assertSame('kunci-panjang-aaa', $a->fresh()->kunci);
-        $this->assertSame('A2', $a->fresh()->nama);
-
-        $this->post("/staf/penyedia-otomatis/{$a->id}/nonaktifkan");
-        $this->assertNull(PenyediaOtomatis::aktif());
-
-        $this->delete("/staf/penyedia-otomatis/{$b->id}");
-        $this->assertNull(PenyediaOtomatis::find($b->id));
-    }
-
-    public function test_validasi_penyedia_menolak_model_berbahaya_dan_driver_asing(): void
-    {
-        $this->actingAs(User::factory()->admin()->create(), 'web');
-
-        $this->post('/staf/penyedia-otomatis', ['nama' => 'X', 'driver' => 'gemini', 'model' => '../../etc/x?y=1', 'kunci' => 'kunci-panjang-aaa'])->assertSessionHasErrors('model');
-        $this->post('/staf/penyedia-otomatis', ['nama' => 'X', 'driver' => 'lain', 'model' => 'm', 'kunci' => 'kunci-panjang-aaa'])->assertSessionHasErrors('driver');
-        $this->post('/staf/penyedia-otomatis', ['nama' => 'X', 'driver' => 'gemini', 'model' => 'm', 'kunci' => 'pendek'])->assertSessionHasErrors('kunci');
-        $this->assertSame(0, PenyediaOtomatis::count());
+        $admin = User::factory()->admin()->create();
+        $html = $this->actingAs($admin, 'web')->get('/staf/sistem')->assertOk()
+            ->assertSee('Layanan otomatis')->assertSee('model-uji')->getContent();
+        $this->assertStringNotContainsString(self::KUNCI, $html);
+        $this->assertStringContainsString('Diagnosis Sistem', $this->get('/staf')->getContent());
     }
 
     // ── Penyusunan ──────────────────────────────────────────────────────────
@@ -207,7 +198,6 @@ class OtomatisSoalTest extends TestCase
             && $r->header('Authorization') === ['Bearer '.self::KUNCI]
             && $r['model'] === 'gpt-uji' && $r['response_format']['type'] === 'json_object');
 
-        PenyediaOtomatis::query()->delete();
         $this->penyedia('anthropic', 'claude-uji');
         $this->fakeBaru(Http::response(['content' => [['type' => 'text', 'text' => json_encode(['soal' => [$this->soalPg('Soal kedua', ['a1', 'b1', 'c1', 'd1'], 'A')]])]]]));
         $this->kirim(['jumlah' => 1])->assertSessionHas('berhasil');
@@ -319,7 +309,7 @@ class OtomatisSoalTest extends TestCase
     {
         $this->penyedia();
         $kasus = [
-            [401, 'Kunci penyedia ditolak'],
+            [401, 'menolak kunci akses'],
             [404, 'Model tidak ditemukan'],
             [429, 'Kuota penyedia'],
             [503, 'sedang bermasalah'],
@@ -359,7 +349,7 @@ class OtomatisSoalTest extends TestCase
 
         $this->kirim()->assertSessionHas('gagal');
 
-        $this->assertStringContainsString('Belum ada penyedia otomatis yang aktif', session('gagal'));
+        $this->assertStringContainsString('belum tersedia di instalasi ini', session('gagal'));
         Http::assertNothingSent();
     }
 
@@ -432,7 +422,8 @@ class OtomatisSoalTest extends TestCase
     public function test_halaman_form_tampil_dengan_dan_tanpa_penyedia(): void
     {
         $this->actingAs($this->guru, 'web')->get("/staf/bank-soal/{$this->bank->id}/otomatis")
-            ->assertOk()->assertSee('Belum ada penyedia otomatis yang aktif');
+            ->assertOk()->assertSee('belum tersedia di instalasi ini');
+        $this->get("/staf/bank-soal/{$this->bank->id}")->assertOk()->assertDontSee('Susun otomatis');
 
         $this->penyedia();
         $this->get("/staf/bank-soal/{$this->bank->id}/otomatis")->assertOk()->assertSee('Sisa permintaan hari ini')->assertSee('Susun');

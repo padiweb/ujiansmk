@@ -45,7 +45,7 @@ class LayananOtomatis
     public function susun(User $user, BankSoal $bank, PermintaanSoal $permintaan): int
     {
         $penyedia = PenyediaOtomatis::aktif()
-            ?? throw new KesalahanOtomatis('Belum ada penyedia otomatis yang aktif. Minta admin mengaturnya di Pengaturan → Penyedia Otomatis.');
+            ?? throw new KesalahanOtomatis('Fitur otomatis belum tersedia di instalasi ini. Hubungi pengelola aplikasi.');
 
         if ($this->sisaHariIni($user) <= 0) {
             throw new KesalahanOtomatis("Batas {$this->batasHarian()} permintaan per hari sudah tercapai. Coba lagi besok.");
@@ -110,7 +110,7 @@ class LayananOtomatis
     public function sarankanNilai(User $user, Soal $soal, string $mapel, array $jawaban): array
     {
         $penyedia = PenyediaOtomatis::aktif()
-            ?? throw new KesalahanOtomatis('Belum ada penyedia otomatis yang aktif. Minta admin mengaturnya di Pengaturan → Penyedia Otomatis.');
+            ?? throw new KesalahanOtomatis('Fitur otomatis belum tersedia di instalasi ini. Hubungi pengelola aplikasi.');
 
         if ($jawaban === [] || count($jawaban) > self::MAKS_SARAN) {
             throw new KesalahanOtomatis('Pilih 1 sampai '.self::MAKS_SARAN.' jawaban untuk dimintakan saran.');
