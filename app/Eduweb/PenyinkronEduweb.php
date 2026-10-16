@@ -34,6 +34,12 @@ class PenyinkronEduweb
     /** @var array{student:array<int,array<string,mixed>>,teacher:array<int,array<string,mixed>>} kredensial EduWeb per eduweb_id (hanya selama satu sinkron) */
     private array $kredensial = ['student' => [], 'teacher' => []];
 
+    /** Penanda sementara selama satu pembacaan kejadian: perlu penyegaran data master / kredensial tertentu. */
+    private bool $perluPenuh = false;
+
+    /** @var array{student:array<int,int>,teacher:array<int,int>} */
+    private array $idKredensial = ['student' => [], 'teacher' => []];
+
     public function __construct(private KlienEduweb $klien) {}
 
     // ── Sinkron penuh ───────────────────────────────────────────────────────
@@ -48,31 +54,7 @@ class PenyinkronEduweb
             // Posisi kejadian diambil SEBELUM data dibaca: kejadian setelahnya akan diikuti lewat sinkron kejadian.
             $kursor = $pertama ? $this->kejadianTerakhir() : null;
 
-            // Baca semua dulu (gagal jaringan tidak meninggalkan data setengah jadi).
-            $data = [
-                'tahun' => $this->klien->get('academic-years')['data'] ?? [],
-                'jurusan' => $this->klien->get('majors')['data'] ?? [],
-                'kelas' => $this->klien->get('classrooms')['data'] ?? [],
-                'mapel' => $this->klien->get('subjects')['data'] ?? [],
-                'guru' => $this->semuaHalaman('teachers'),
-                'siswa' => $this->semuaHalaman('students'),
-                'pengampu' => $this->klien->get('teaching-assignments')['data'] ?? [],
-            ];
-            $this->kredensial = $this->bacaKredensial($pengaturan, $h);
-
-            DB::transaction(function () use ($data, $h) {
-                $this->peta = [];
-                $this->tahunAjaran($data['tahun'], $h);
-                $this->jurusan($data['jurusan'], $h);
-                $this->kelas($data['kelas'], $h);
-                $this->mapel($data['mapel'], $h);
-                $this->guru($data['guru'], $h);
-                $this->waliKelas($data['kelas']);
-                $this->siswa($data['siswa'], $h);
-                $this->terapkanKredensial($this->kredensial, $h);
-                $this->pengampu($data['pengampu'], $h);
-                $this->laporkanTakTerhubung($h);
-            });
+            $this->bacaDanTerapkanSemua($pengaturan, $h);
 
             $perubahan = ['eduweb_sinkron_penuh_pada' => now()];
             if ($pertama) {
@@ -85,7 +67,37 @@ class PenyinkronEduweb
         });
     }
 
-    // ── Kejadian (kenaikan kelas, lulus, pindah, ...) ───────────────────────
+    /** Membaca seluruh data master + kredensial dari EduWeb, lalu menerapkannya dalam satu transaksi. Dipanggil di dalam kunci sinkron. */
+    private function bacaDanTerapkanSemua(PengaturanSekolah $pengaturan, HasilSinkron $h): void
+    {
+        // Baca semua dulu (gagal jaringan tidak meninggalkan data setengah jadi).
+        $data = [
+            'tahun' => $this->klien->get('academic-years')['data'] ?? [],
+            'jurusan' => $this->klien->get('majors')['data'] ?? [],
+            'kelas' => $this->klien->get('classrooms')['data'] ?? [],
+            'mapel' => $this->klien->get('subjects')['data'] ?? [],
+            'guru' => $this->semuaHalaman('teachers'),
+            'siswa' => $this->semuaHalaman('students'),
+            'pengampu' => $this->klien->get('teaching-assignments')['data'] ?? [],
+        ];
+        $this->kredensial = $this->bacaKredensial($pengaturan, $h);
+
+        DB::transaction(function () use ($data, $h) {
+            $this->peta = [];
+            $this->tahunAjaran($data['tahun'], $h);
+            $this->jurusan($data['jurusan'], $h);
+            $this->kelas($data['kelas'], $h);
+            $this->mapel($data['mapel'], $h);
+            $this->guru($data['guru'], $h);
+            $this->waliKelas($data['kelas']);
+            $this->siswa($data['siswa'], $h);
+            $this->terapkanKredensial($this->kredensial, $h);
+            $this->pengampu($data['pengampu'], $h);
+            $this->laporkanTakTerhubung($h);
+        });
+    }
+
+    // ── Kejadian (kenaikan kelas, lulus, pindah, perubahan data master, sandi) ──
 
     /** @throws KesalahanEduweb */
     public function kejadian(?User $pelaku = null): HasilSinkron
@@ -97,6 +109,8 @@ class PenyinkronEduweb
             }
 
             $this->peta = [];
+            $this->perluPenuh = false;
+            $this->idKredensial = ['student' => [], 'teacher' => []];
             $kursor = (int) $pengaturan->eduweb_kejadian_terakhir;
 
             for ($i = 0; $i < self::MAKS_HALAMAN_KEJADIAN; $i++) {
@@ -109,12 +123,24 @@ class PenyinkronEduweb
                 });
 
                 $kursor = max($kursor, (int) ($j['last_id'] ?? $kursor));
-                $pengaturan->update(['eduweb_kejadian_terakhir' => $kursor]);
+                if (! $this->adaTindakLanjut()) {
+                    $pengaturan->update(['eduweb_kejadian_terakhir' => $kursor]); // aman: tidak ada pekerjaan yang masih tertunda
+                }
 
                 if (! ($j['has_more'] ?? false)) {
                     break;
                 }
             }
+
+            // Posisi baru disimpan hanya setelah penyegaran berhasil; bila gagal, kejadian dibaca ulang lain kali (idempoten).
+            if ($this->perluPenuh) {
+                $this->bacaDanTerapkanSemua($pengaturan, $h);
+                $pengaturan->update(['eduweb_sinkron_penuh_pada' => now()]);
+                $h->tambah('penyegaran_data_master');
+            } elseif ($this->idKredensial['student'] || $this->idKredensial['teacher']) {
+                $this->bacaDanTerapkanKredensialTertentu($pengaturan, $h);
+            }
+            $pengaturan->update(['eduweb_kejadian_terakhir' => $kursor]);
 
             return $h;
         });
@@ -123,7 +149,29 @@ class PenyinkronEduweb
     /** @param  array<string,mixed>  $e */
     private function terapkanKejadian(array $e, HasilSinkron $h): void
     {
-        if (($e['type'] ?? null) !== 'student.changed') {
+        $jenis = $e['type'] ?? null;
+
+        if ($jenis === 'master.changed') {
+            $this->perluPenuh = true; // satu penyegaran data master di akhir cukup untuk semua kejadian sejenis
+            $h->tambah('kejadian_data_master');
+
+            return;
+        }
+
+        if ($jenis === 'credential.changed') {
+            $peran = ($e['payload']['entity'] ?? null) === 'teacher' ? 'teacher' : (($e['payload']['entity'] ?? null) === 'student' ? 'student' : null);
+            $id = (int) ($e['payload']['id'] ?? $e['student_id'] ?? 0);
+            if ($peran && $id > 0) {
+                $this->idKredensial[$peran][$id] = $id;
+                $h->tambah('kejadian_sandi');
+            } else {
+                $h->tambah('kejadian_diabaikan');
+            }
+
+            return;
+        }
+
+        if ($jenis !== 'student.changed') {
             $h->tambah('kejadian_diabaikan');
 
             return;
@@ -170,6 +218,37 @@ class PenyinkronEduweb
         }
 
         $h->tambah('kejadian_diterapkan');
+    }
+
+    private function adaTindakLanjut(): bool
+    {
+        return $this->perluPenuh || $this->idKredensial['student'] || $this->idKredensial['teacher'];
+    }
+
+    /** Mengambil kredensial hanya untuk pengguna yang sandi/username-nya berubah (maks 200 id per permintaan). */
+    private function bacaDanTerapkanKredensialTertentu(PengaturanSekolah $pengaturan, HasilSinkron $h): void
+    {
+        $hasil = ['student' => [], 'teacher' => []];
+        try {
+            foreach (['student', 'teacher'] as $peran) {
+                foreach (array_chunk(array_values($this->idKredensial[$peran]), 200) as $potong) {
+                    $j = $this->klien->get('credentials', ['role' => $peran, 'ids' => implode(',', $potong)]);
+                    foreach ($j['data'] ?? [] as $r) {
+                        $hasil[$peran][(int) ($r['id'] ?? 0)] = $r;
+                    }
+                }
+            }
+        } catch (KesalahanEduweb $e) {
+            if (! in_array($e->status, [403, 404], true)) {
+                throw $e;
+            }
+            $pengaturan->update(['eduweb_kredensial' => 'belum_aktif']);
+            $h->peringatan('Perubahan kata sandi belum bisa diterapkan: akses kredensial belum dinyalakan untuk kunci ini di EduWeb.');
+
+            return;
+        }
+
+        DB::transaction(fn () => $this->terapkanKredensial($hasil, $h));
     }
 
     private function kejadianTerakhir(): int

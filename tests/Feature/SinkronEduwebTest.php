@@ -669,6 +669,98 @@ class SinkronEduwebTest extends TestCase
         $this->assertSame('siti.aminah', User::where('eduweb_id', 2)->value('username'));
     }
 
+    // ── Kejadian perubahan data master dan sandi ────────────────────────────
+
+    private function kejadianBaru(int $id, string $tipe, array $payload): array
+    {
+        return ['id' => $id, 'type' => $tipe, 'student_id' => $payload['id'] ?? null, 'batch' => null, 'created_at' => now()->toIso8601String(), 'payload' => $payload];
+    }
+
+    public function test_kejadian_data_master_menyegarkan_data_sekali_dan_kursor_maju(): void
+    {
+        $this->pasangKredensial();
+        $this->sinkron();
+        $kursor = (int) PengaturanSekolah::ambil()->eduweb_kejadian_terakhir;
+
+        $this->edu['students'][] = ['id' => 11, 'name' => 'Fajar Baru', 'nis' => '555', 'nisn' => '0015', 'username' => 'fajar', 'gender' => 'L', 'status' => 'aktif', 'is_active' => true, 'deleted' => false, 'classroom_ids' => [1]];
+        $this->edu['students'][0]['name'] = 'Ani Lestari Putri';
+        $this->edu['classrooms'][0]['name'] = 'X TKJ 1A'; $this->edu['classrooms'][2]['name'] = 'X TKJ 1A'; // baris semester 2 dari kelas yang sama
+        $this->edu['events'] = [
+            $this->kejadianBaru($kursor + 1, 'master.changed', ['entity' => 'student', 'id' => 11, 'action' => 'created']),
+            $this->kejadianBaru($kursor + 2, 'master.changed', ['entity' => 'student', 'id' => 6, 'action' => 'updated']),
+            $this->kejadianBaru($kursor + 3, 'master.changed', ['entity' => 'classroom', 'id' => 1, 'action' => 'updated']),
+        ];
+        $this->pasangEdu();
+
+        $h = app(PenyinkronEduweb::class)->kejadian();
+
+        $this->assertSame(3, $h->lain['kejadian_data_master']);
+        $this->assertSame(1, $h->lain['penyegaran_data_master']);
+        $this->assertSame('Fajar Baru', Siswa::where('eduweb_id', 11)->value('nama'));
+        $this->assertSame('Ani Lestari Putri', Siswa::where('eduweb_id', 6)->value('nama'));
+        $this->assertSame('X TKJ 1A', Kelas::where('eduweb_id', 1)->value('nama'));
+        $this->assertSame($kursor + 3, (int) PengaturanSekolah::ambil()->eduweb_kejadian_terakhir);
+    }
+
+    public function test_penyegaran_gagal_tidak_memajukan_kursor_dan_diulang_berikutnya(): void
+    {
+        $this->sinkron();
+        $kursor = (int) PengaturanSekolah::ambil()->eduweb_kejadian_terakhir;
+        $this->edu['students'][0]['name'] = 'Nama Baru Ani';
+        $this->edu['events'] = [$this->kejadianBaru($kursor + 1, 'master.changed', ['entity' => 'student', 'id' => 6, 'action' => 'updated'])];
+        $this->edu['_galat']['subjects'] = 500;
+        $this->pasangEdu();
+
+        try {
+            app(PenyinkronEduweb::class)->kejadian();
+            $this->fail('seharusnya gagal');
+        } catch (KesalahanEduweb) {
+        }
+        $this->assertSame($kursor, (int) PengaturanSekolah::ambil()->eduweb_kejadian_terakhir);
+        $this->assertNotSame('Nama Baru Ani', Siswa::where('eduweb_id', 6)->value('nama'));
+
+        unset($this->edu['_galat']);
+        $this->pasangEdu();
+        app(PenyinkronEduweb::class)->kejadian();
+        $this->assertSame($kursor + 1, (int) PengaturanSekolah::ambil()->eduweb_kejadian_terakhir);
+        $this->assertSame('Nama Baru Ani', Siswa::where('eduweb_id', 6)->value('nama'));
+    }
+
+    public function test_kejadian_sandi_hanya_mengambil_kredensial_pengguna_terkait(): void
+    {
+        $this->pasangKredensial();
+        $this->sinkron();
+        $kursor = (int) PengaturanSekolah::ambil()->eduweb_kejadian_terakhir;
+
+        $this->edu['credentials'][0]['password_hash'] = $this->hashEdu('SandiBaruAni3');
+        $this->edu['events'] = [$this->kejadianBaru($kursor + 1, 'credential.changed', ['entity' => 'student', 'id' => 6])];
+        $this->pasangEdu();
+
+        $h = app(PenyinkronEduweb::class)->kejadian();
+
+        $this->assertSame(1, $h->lain['sandi_diperbarui']);
+        $this->assertArrayNotHasKey('penyegaran_data_master', $h->lain);
+        $this->post('/masuk', ['username' => 'ani.l', 'password' => 'SandiBaruAni3'])->assertRedirect(route('siswa.beranda'));
+        Http::assertSent(fn (Request $r) => str_contains($r->url(), 'credentials') && str_contains(urldecode($r->url()), 'ids=6'));
+        $this->assertSame($kursor + 1, (int) PengaturanSekolah::ambil()->eduweb_kejadian_terakhir);
+    }
+
+    public function test_kejadian_tak_dikenal_atau_rusak_diabaikan(): void
+    {
+        $this->sinkron();
+        $kursor = (int) PengaturanSekolah::ambil()->eduweb_kejadian_terakhir;
+        $this->edu['events'] = [
+            $this->kejadianBaru($kursor + 1, 'credential.changed', ['entity' => 'admin', 'id' => 1]),
+            $this->kejadianBaru($kursor + 2, 'jenis.baru.entah', ['id' => 1]),
+        ];
+        $this->pasangEdu();
+
+        $h = app(PenyinkronEduweb::class)->kejadian();
+
+        $this->assertSame(2, $h->lain['kejadian_diabaikan']);
+        $this->assertSame($kursor + 2, (int) PengaturanSekolah::ambil()->eduweb_kejadian_terakhir);
+    }
+
     public function test_perintah_sinkron(): void
     {
         $this->artisan('eduweb:sinkron')->expectsOutputToContain('Sinkron selesai')->expectsOutputToContain('198001')->assertSuccessful();
