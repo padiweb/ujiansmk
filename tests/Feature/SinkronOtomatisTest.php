@@ -95,7 +95,7 @@ class SinkronOtomatisTest extends TestCase
         $this->kejadian = [['id' => 11, 'type' => 'unknown.type', 'student_id' => null, 'payload' => []]];
         $this->pasangEdu();
 
-        $this->kirim()->assertStatus(202)->assertJson(['diterima' => true]);
+        $this->kirim()->assertStatus(202)->assertJson(['diterima' => true])->assertHeader('Content-Length', '17');
 
         $this->assertGreaterThanOrEqual(1, $this->permintaanKe('events'));
         $this->assertSame(11, (int) PengaturanSekolah::ambil()->eduweb_kejadian_terakhir);

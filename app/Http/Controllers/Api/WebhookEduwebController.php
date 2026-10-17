@@ -47,6 +47,11 @@ class WebhookEduwebController extends Controller
         PengaturanSekolah::ambil()->update(['eduweb_webhook_terakhir' => now()]);
         defer(fn () => $otomatis->dariWebhook()); // dijalankan setelah respons terkirim
 
-        return response()->json(['diterima' => true], 202);
+        // Panjang isi dikirim eksplisit agar penelepon selesai membaca jawaban tanpa menunggu pekerjaan defer() di atas
+        // (server bawaan PHP tidak menutup sambungan lebih awal).
+        $jawaban = response()->json(['diterima' => true], 202);
+        $jawaban->header('Content-Length', (string) strlen((string) $jawaban->getContent()));
+
+        return $jawaban;
     }
 }
