@@ -9,6 +9,10 @@
         <h1>{{ config('ujian.merek') }}</h1>
         <p class="sekolah">Admin, Guru, dan Pengawas</p>
 
+        @if (session('info'))
+            <div class="info" role="status"><x-ikon nama="info" :ukuran="18" /><span>{{ session('info') }}</span></div>
+        @endif
+
         @foreach (['username', 'password'] as $bidang)
             @error($bidang)
                 <div class="pesan-salah" role="alert"><x-ikon nama="peringatan" :ukuran="18" /><span>{{ $message }}</span></div>

@@ -44,8 +44,26 @@ class LayananMonitor
         return $this->jadwalUntuk($user)->whereKey($jadwal->id)->exists();
     }
 
+    /** Tindakan yang boleh dilakukan guru mapel pada ujiannya (selain melihat): membantu siswa yang terblokir atau macet. */
+    public const AKSI_GURU = ['aktifkan', 'selesai'];
+
     /**
-     * Guru hanya melihat; yang boleh bertindak: admin dan pengawas yang ditugaskan. Pengawas yang ditugaskan ke
+     * Tindakan yang boleh dilakukan pengguna pada sesi ini ($sesi null = secara umum di jadwal). Admin dan pengawas yang
+     * ditugaskan boleh semuanya (pengawas ruang hanya untuk siswa di ruangnya); guru mapel hanya AKSI_GURU.
+     *
+     * @return list<string>
+     */
+    public function aksiBoleh(User $user, JadwalUjian $jadwal, ?SesiUjian $sesi = null): array
+    {
+        if ($this->bolehBertindak($user, $jadwal, $sesi)) {
+            return ['aktifkan', 'reset', 'waktu', 'selesai'];
+        }
+
+        return $user->role === 'guru' && $this->bolehLihat($user, $jadwal) ? self::AKSI_GURU : [];
+    }
+
+    /**
+     * Admin dan pengawas yang ditugaskan: seluruh tindakan, token, dan daftar hadir. Pengawas yang ditugaskan ke
      * satu ruang hanya boleh menangani siswa di ruang itu (bila $sesi diberikan).
      */
     public function bolehBertindak(User $user, JadwalUjian $jadwal, ?SesiUjian $sesi = null): bool

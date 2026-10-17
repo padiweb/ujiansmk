@@ -84,7 +84,32 @@ class MonitorPengawasTest extends TestCase
         $this->actingAs($lain, 'web')->get('/staf/monitor')->assertOk()->assertDontSee('UTS Matematika');
     }
 
-    public function test_guru_mapel_hanya_melihat_tanpa_tindakan(): void
+    public function test_guru_mapel_boleh_aktifkan_kembali_dan_paksa_selesai_tapi_tidak_reset_atau_tambah_waktu(): void
+    {
+        $guru = User::factory()->create();
+        Pengampu::create(['guru_id' => $guru->id, 'mapel_id' => $this->mtk->id, 'kelas_id' => $this->kelas->id]);
+        $guruLain = User::factory()->create();
+        [$sesi] = $this->berjalan();
+        $this->blokirkan($sesi);
+        $sesi = $sesi->fresh();
+
+        $this->aksi($guruLain, $sesi, 'aktifkan')->assertForbidden();
+        $this->aksi($guru, $sesi, 'reset')->assertForbidden();
+        $this->aksi($guru, $sesi, 'waktu', ['menit' => 5])->assertForbidden();
+        $this->assertSame(SesiUjian::DIBLOKIR, $sesi->fresh()->status);
+
+        $this->aksi($guru, $sesi, 'aktifkan')->assertOk()->assertJsonPath('ok', true);
+        $this->assertSame(SesiUjian::BERLANGSUNG, $sesi->fresh()->status);
+        $this->assertDatabaseHas('aksi_pengawas', ['sesi_id' => $sesi->id, 'user_id' => $guru->id, 'aksi' => 'aktifkan_kembali']);
+
+        $this->aksi($guru, $sesi, 'selesai')->assertOk();
+        $this->assertSame(SesiUjian::SELESAI, $sesi->fresh()->status);
+
+        $html = $this->actingAs($guru, 'web')->get("/staf/monitor/{$this->jadwal->id}")->assertOk()->assertSee('data-boleh="aktifkan,selesai"', false)->getContent();
+        $this->assertStringNotContainsString($this->jadwal->token, $html);
+    }
+
+    public function test_guru_mapel_tidak_melihat_token_dan_tidak_bisa_reset(): void
     {
         $guru = User::factory()->create();
         Pengampu::create(['guru_id' => $guru->id, 'mapel_id' => $this->mtk->id, 'kelas_id' => $this->kelas->id]);

@@ -38,6 +38,7 @@ class MonitorController extends Controller
         return view('staf.monitor.show', [
             'j' => $jadwal->load('mapel'),
             'bolehBertindak' => $this->monitor->bolehBertindak($user, $jadwal),
+            'aksiBoleh' => $this->monitor->aksiBoleh($user, $jadwal),
             'ruang' => $jadwal->sesi()->whereNotNull('ruang_id')->with('ruang:id,nama')->get()->pluck('ruang')->unique('id')->sortBy('nama')->values()
                 ->when($this->monitor->ruangDitugaskan($user, $jadwal), fn ($r, $ids) => $r->whereIn('id', $ids)->values()),
             'data' => $this->monitor->dataUntuk($user, $jadwal),
@@ -62,7 +63,7 @@ class MonitorController extends Controller
     {
         $user = $request->user('web');
         abort_unless($sesi->jadwal_id === $jadwal->id, 404);
-        abort_unless($this->monitor->bolehBertindak($user, $jadwal, $sesi), 403, 'Anda tidak berwenang menangani siswa ini.');
+        abort_unless(in_array($aksi, $this->monitor->aksiBoleh($user, $jadwal, $sesi), true), 403, 'Anda tidak berwenang menangani siswa ini.');
 
         try {
             match ($aksi) {

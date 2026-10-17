@@ -62,7 +62,7 @@
                data-url="{{ route('staf.monitor.data', $j) }}"
                data-aksi="{{ url('staf/monitor/'.$j->id.'/sesi') }}"
                data-token="{{ csrf_token() }}"
-               data-bertindak="{{ $bolehBertindak ? '1' : '0' }}"
+               data-boleh="{{ implode(',', $aksiBoleh) }}"
                data-total="{{ $data['total_soal'] }}">
             <thead><tr><th>Siswa</th><th>Kelas</th><th>Status</th><th>Pelanggaran</th><th>Dijawab</th><th>Kabar</th><th>Perangkat</th><th class="kanan">Tindakan</th></tr></thead>
             <tbody id="monIsi"><tr><td colspan="8" class="kosong">Memuat…</td></tr></tbody>

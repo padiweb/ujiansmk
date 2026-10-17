@@ -10,7 +10,8 @@
         selang: 5000,          // ms antar pembaruan (halaman terlihat)
         selangSembunyi: 15000, // ms antar pembaruan (tab di latar belakang)
     };
-    var bolehBertindak = tabel.getAttribute('data-bertindak') === '1';
+    var aksiBoleh = (tabel.getAttribute('data-boleh') || '').split(',');
+    function boleh(kode) { return aksiBoleh.indexOf(kode) !== -1; }
     var totalSoal = parseInt(tabel.getAttribute('data-total'), 10) || 0;
     var tubuh = document.getElementById('monIsi');
     var data = JSON.parse(document.getElementById('monAwal').textContent);
@@ -142,12 +143,10 @@
 
         var tdA = el('td', 'kanan');
         var kotak = el('div', 'mon-aksi');
-        if (bolehBertindak) {
-            if (b.status === 'diblokir') kotak.appendChild(tombolAksi(b, 'aktifkan', 'Aktifkan kembali', ''));
-            if (b.status === 'berlangsung' || b.status === 'diblokir') kotak.appendChild(tombolAksi(b, 'reset', 'Reset perangkat'));
-            if (b.status !== 'selesai') kotak.appendChild(tombolAksi(b, 'waktu', 'Tambah waktu'));
-            if (b.status === 'berlangsung' || b.status === 'diblokir') kotak.appendChild(tombolAksi(b, 'selesai', 'Paksa selesai', 'bahaya'));
-        }
+        if (b.status === 'diblokir' && boleh('aktifkan')) kotak.appendChild(tombolAksi(b, 'aktifkan', 'Aktifkan kembali', ''));
+        if ((b.status === 'berlangsung' || b.status === 'diblokir') && boleh('reset')) kotak.appendChild(tombolAksi(b, 'reset', 'Reset perangkat'));
+        if (b.status !== 'selesai' && boleh('waktu')) kotak.appendChild(tombolAksi(b, 'waktu', 'Tambah waktu'));
+        if ((b.status === 'berlangsung' || b.status === 'diblokir') && boleh('selesai')) kotak.appendChild(tombolAksi(b, 'selesai', 'Paksa selesai', 'bahaya'));
         tdA.appendChild(kotak);
         tr.appendChild(tdA);
 

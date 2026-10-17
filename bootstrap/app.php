@@ -9,6 +9,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -47,5 +49,19 @@ return Application::configure(basePath: dirname(__DIR__))
         );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Sesi/halaman kedaluwarsa (419): jangan tampilkan "Page Expired"; arahkan dengan pesan yang jelas.
+        $exceptions->render(function (HttpException $e, Request $request) {
+            if ($e->getStatusCode() !== 419 || $request->expectsJson()) {
+                return null; // selain 419, dan klien ujian (JSON) yang menangani 419 sendiri
+            }
+
+            $diStaf = $request->is('staf', 'staf/*');
+            $masuk = $diStaf ? Auth::guard('web')->check() : Auth::guard('siswa')->check();
+            if ($masuk && $request->method() !== 'GET' && url()->previous() !== $request->fullUrl()) {
+                return redirect()->back()->with('gagal', 'Halaman terlalu lama dibuka sehingga perubahan belum tersimpan. Silakan coba lagi.');
+            }
+
+            return redirect()->route($diStaf ? 'staf.masuk' : 'siswa.masuk')
+                ->with('info', 'Sesi Anda sudah berakhir. Silakan masuk kembali.');
+        });
     })->create();
