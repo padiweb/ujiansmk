@@ -36,7 +36,7 @@
                 @forelse ($jadwal as $j)
                     <tr>
                         <td><a href="{{ route('staf.jadwal.show', $j) }}"><strong>{{ $j->nama }}</strong></a>
-                            <small class="bantuan" style="margin:0">{{ ucfirst($j->periode->semester) }} {{ $j->periode->tahunAjaran->nama }}</small></td>
+                            <small class="bantuan" style="margin:0">{{ $j->periode->label() }}@if ($j->kegiatan && ! $j->kegiatan->aktif) · kegiatan tidak aktif @endif</small></td>
                         <td>{{ $j->mapel->nama }}</td>
                         <td>{{ $j->mulai_pada->format('d/m/Y H:i') }}<br><small class="bantuan" style="margin:0">s.d. {{ $j->tutup_pada->format('d/m/Y H:i') }}</small></td>
                         <td>{{ $j->durasi_menit }} menit</td>

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\BankSoal;
 use App\Models\JadwalSoal;
 use App\Models\JadwalUjian;
+use App\Models\KegiatanUjian;
 use App\Models\Kelas;
 use App\Models\Mapel;
 use App\Models\Periode;
@@ -36,6 +37,8 @@ class JadwalUjianTest extends TestCase
 
     private BankSoal $bank;
 
+    private KegiatanUjian $kegiatan;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,6 +49,7 @@ class JadwalUjianTest extends TestCase
         $this->kelasA = Kelas::create(['tahun_ajaran_id' => $this->tahun->id, 'tingkat' => 'X', 'nama' => 'X A']);
         $this->kelasB = Kelas::create(['tahun_ajaran_id' => $this->tahun->id, 'tingkat' => 'XI', 'nama' => 'XI A']);
         $this->bank = BankSoal::create(['mapel_id' => $this->mtk->id, 'tingkat' => 'X', 'nama' => 'Bank MTK X', 'jumlah_opsi_bawaan' => 4, 'dibuat_oleh' => $this->admin->id]);
+        $this->kegiatan = KegiatanUjian::create(['periode_id' => $this->periode->id, 'nama' => 'UTS', 'aktif' => true]);
     }
 
     private function soal(string $tipe = 'pg', string $status = 'siap', ?BankSoal $bank = null): Soal
@@ -68,7 +72,7 @@ class JadwalUjianTest extends TestCase
     private function data(array $timpa = []): array
     {
         return array_replace([
-            'nama' => 'UTS Matematika', 'periode_id' => $this->periode->id, 'mapel_id' => $this->mtk->id, 'durasi_menit' => 90,
+            'kegiatan_id' => $this->kegiatan->id, 'mapel_id' => $this->mtk->id, 'durasi_menit' => 90,
             'mulai_pada' => now()->addDay()->format('Y-m-d\TH:i'), 'tutup_pada' => now()->addDays(2)->format('Y-m-d\TH:i'),
             'kelas_ids' => [$this->kelasA->id], 'bank_ids' => [$this->bank->id],
             'acak_soal' => '1', 'acak_opsi' => '1', 'batas_pelanggaran' => 3, 'bobot_pg' => 100, 'tampilkan_hasil' => 'langsung',
@@ -98,7 +102,7 @@ class JadwalUjianTest extends TestCase
     {
         $jadwal = $this->buat();
 
-        $this->get('/staf/jadwal-ujian')->assertOk()->assertSee('UTS Matematika');
+        $this->get('/staf/jadwal-ujian')->assertOk()->assertSee('UTS – Matematika');
         $this->get('/staf/jadwal-ujian/tambah')->assertOk()->assertSee('Kelas peserta');
         $this->get("/staf/jadwal-ujian/{$jadwal->id}")->assertOk()->assertSee('Aktifkan jadwal');
         $this->get("/staf/jadwal-ujian/{$jadwal->id}/ubah")->assertOk();
@@ -127,7 +131,7 @@ class JadwalUjianTest extends TestCase
     {
         $this->actingAs($this->admin, 'web');
 
-        $this->post('/staf/jadwal-ujian', [])->assertSessionHasErrors(['nama', 'periode_id', 'mapel_id', 'durasi_menit', 'mulai_pada', 'tutup_pada', 'kelas_ids', 'bank_ids']);
+        $this->post('/staf/jadwal-ujian', [])->assertSessionHasErrors(['kegiatan_id', 'mapel_id', 'durasi_menit', 'mulai_pada', 'tutup_pada', 'kelas_ids', 'bank_ids']);
         $this->post('/staf/jadwal-ujian', $this->data(['durasi_menit' => 4]))->assertSessionHasErrors('durasi_menit');
         $this->post('/staf/jadwal-ujian', $this->data(['durasi_menit' => 481]))->assertSessionHasErrors('durasi_menit');
         $this->post('/staf/jadwal-ujian', $this->data(['batas_pelanggaran' => 0]))->assertSessionHasErrors('batas_pelanggaran');
@@ -180,13 +184,33 @@ class JadwalUjianTest extends TestCase
     {
         $jadwal = $this->buat();
 
-        $this->put("/staf/jadwal-ujian/{$jadwal->id}", $this->data(['nama' => 'Nama baru', 'kelas_ids' => [$this->kelasA->id, $this->kelasB->id], 'durasi_menit' => 60]))
+        $lain = KegiatanUjian::create(['periode_id' => $this->periode->id, 'nama' => 'UAS', 'aktif' => true]);
+        $this->put("/staf/jadwal-ujian/{$jadwal->id}", $this->data(['kegiatan_id' => $lain->id, 'kelas_ids' => [$this->kelasA->id, $this->kelasB->id], 'durasi_menit' => 60]))
             ->assertSessionHasNoErrors();
 
         $jadwal->refresh();
-        $this->assertSame('Nama baru', $jadwal->nama);
+        $this->assertSame('UAS – Matematika', $jadwal->nama);
+        $this->assertSame($lain->id, $jadwal->kegiatan_id);
         $this->assertSame(60, $jadwal->durasi_menit);
         $this->assertSame(2, $jadwal->kelas()->count());
+    }
+
+    public function test_nama_jadwal_diturunkan_dari_kegiatan_dan_mapel_bukan_diketik(): void
+    {
+        $jadwal = $this->buat(['nama' => 'Nama ketikan diabaikan', 'periode_id' => 999]);
+
+        $this->assertSame('UTS – Matematika', $jadwal->nama);
+        $this->assertSame($this->periode->id, $jadwal->periode_id);
+        $this->assertSame($this->kegiatan->id, $jadwal->kegiatan_id);
+    }
+
+    public function test_kegiatan_tidak_aktif_tidak_bisa_dipilih_untuk_jadwal_baru(): void
+    {
+        $this->actingAs($this->admin, 'web');
+        $this->kegiatan->update(['aktif' => false]);
+
+        $this->post('/staf/jadwal-ujian', $this->data())->assertSessionHasErrors('kegiatan_id');
+        $this->get('/staf/jadwal-ujian/tambah')->assertOk()->assertDontSee('UTS —', false);
     }
 
     // ── Aktivasi ────────────────────────────────────────────────────────────
@@ -320,7 +344,7 @@ class JadwalUjianTest extends TestCase
         $this->siswaDiKelas($this->kelasA);
         $tokens = [];
         foreach (range(1, 5) as $i) {
-            $jadwal = $this->buat(['nama' => "Jadwal {$i}"]);
+            $jadwal = $this->buat();
             $this->post("/staf/jadwal-ujian/{$jadwal->id}/aktifkan");
             $tokens[] = $jadwal->fresh()->token;
         }
@@ -372,7 +396,7 @@ class JadwalUjianTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $jadwal->refresh();
-        $this->assertSame('UTS Matematika', $jadwal->nama);
+        $this->assertSame('UTS – Matematika', $jadwal->nama);
         $this->assertSame(90, $jadwal->durasi_menit);
         $this->assertSame([$this->kelasA->id], $jadwal->kelas()->pluck('kelas.id')->all());
         $this->assertSame(5, $jadwal->batas_pelanggaran);

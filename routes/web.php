@@ -8,6 +8,7 @@ use App\Http\Controllers\Staf\DenahController;
 use App\Http\Controllers\Staf\ImporController;
 use App\Http\Controllers\Staf\KartuUjianController;
 use App\Http\Controllers\Staf\JadwalUjianController;
+use App\Http\Controllers\Staf\KegiatanUjianController;
 use App\Http\Controllers\Staf\KoreksiController;
 use App\Http\Controllers\Staf\ImporSoalController;
 use App\Http\Controllers\Staf\MasterDataController;
@@ -131,6 +132,13 @@ Route::prefix('staf')->group(function () {
     Route::middleware(['auth:web', 'peran:admin'])->group(function () {
         Route::get('/pengaturan', [PengaturanSekolahController::class, 'edit'])->name('staf.pengaturan');
         Route::put('/pengaturan', [PengaturanSekolahController::class, 'update'])->name('staf.pengaturan.simpan');
+
+        Route::prefix('kegiatan')->name('staf.kegiatan.')->group(function () {
+            Route::get('/', [KegiatanUjianController::class, 'index'])->name('index');
+            Route::post('/', [KegiatanUjianController::class, 'store'])->name('store');
+            Route::put('/{kegiatan}', [KegiatanUjianController::class, 'update'])->whereNumber('kegiatan')->name('update');
+            Route::delete('/{kegiatan}', [KegiatanUjianController::class, 'destroy'])->whereNumber('kegiatan')->name('destroy');
+        });
 
         Route::prefix('pengawas')->name('staf.pengawas.')->group(function () {
             Route::get('/', [PengawasController::class, 'index'])->name('index');

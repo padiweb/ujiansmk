@@ -16,7 +16,7 @@ class JadwalUjian extends Model
     public const SELESAI = 'selesai';
 
     protected $fillable = [
-        'periode_id', 'mapel_id', 'nama', 'durasi_menit', 'mulai_pada', 'tutup_pada', 'token', 'media_kode', 'status',
+        'periode_id', 'kegiatan_id', 'mapel_id', 'nama', 'durasi_menit', 'mulai_pada', 'tutup_pada', 'token', 'media_kode', 'status',
         'acak_soal', 'acak_opsi', 'batas_pelanggaran', 'bobot_pg', 'tampilkan_hasil', 'dibuat_oleh', 'diaktifkan_pada', 'denah_id',
     ];
 
@@ -34,6 +34,11 @@ class JadwalUjian extends Model
     public function periode(): BelongsTo
     {
         return $this->belongsTo(Periode::class);
+    }
+
+    public function kegiatan(): BelongsTo
+    {
+        return $this->belongsTo(KegiatanUjian::class, 'kegiatan_id');
     }
 
     public function mapel(): BelongsTo

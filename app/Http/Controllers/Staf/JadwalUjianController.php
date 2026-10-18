@@ -8,6 +8,7 @@ use App\Models\BankSoal;
 use App\Models\Denah;
 use App\Models\Ruang;
 use App\Models\JadwalUjian;
+use App\Models\KegiatanUjian;
 use App\Models\Kelas;
 use App\Models\Mapel;
 use App\Models\Periode;
@@ -28,7 +29,7 @@ class JadwalUjianController extends Controller
 
     public function index(Request $request): View
     {
-        $kueri = JadwalUjian::query()->with('mapel', 'periode.tahunAjaran')->withCount(['kelas', 'sesi'])
+        $kueri = JadwalUjian::query()->with('mapel', 'periode.tahunAjaran', 'kegiatan')->withCount(['kelas', 'sesi'])
             ->orderByRaw("case status when 'aktif' then 0 when 'draf' then 1 else 2 end")
             ->orderByDesc('mulai_pada');
 
@@ -95,7 +96,7 @@ class JadwalUjianController extends Controller
                 $jadwal->update(collect($data)->only(['tutup_pada', 'batas_pelanggaran', 'tampilkan_hasil'])->all() + ['denah_id' => $data['denah_id'] ?? null]);
             });
         } else {
-            $data = $this->validasiLengkap($request);
+            $data = $this->validasiLengkap($request, $jadwal);
             DB::transaction(function () use ($jadwal, $data) {
                 $jadwal->update($this->atributDasar($data));
                 $this->simpanRelasi($jadwal, $data);
@@ -186,16 +187,15 @@ class JadwalUjianController extends Controller
                 ->withCount(['soal as pg_siap' => fn ($q) => $q->where('tipe', 'pg')->where('status', 'siap'),
                     'soal as esai_siap' => fn ($q) => $q->where('tipe', 'esai')->where('status', 'siap')])
                 ->orderBy('nama')->get(),
-            'periodeAktif' => Periode::where('aktif', true)->value('id'),
+            'daftarKegiatan' => KegiatanUjian::with('periode.tahunAjaran')->where('aktif', true)->orderByDesc('periode_id')->orderBy('nama')->get(),
             'daftarDenah' => Denah::orderByDesc('id')->get(),
         ];
     }
 
-    private function validasiLengkap(Request $request): array
+    private function validasiLengkap(Request $request, ?JadwalUjian $jadwal = null): array
     {
         $aturan = [
-            'nama' => ['required', 'string', 'max:150'],
-            'periode_id' => ['required', Rule::exists('periode', 'id')],
+            'kegiatan_id' => ['required', Rule::exists('kegiatan_ujian', 'id')],
             'mapel_id' => ['required', Rule::exists('mapel', 'id')],
             'durasi_menit' => ['required', 'integer', 'between:5,480'],
             'mulai_pada' => ['required', 'date'],
@@ -221,18 +221,26 @@ class JadwalUjianController extends Controller
             'kelas_ids.required' => 'Pilih minimal satu kelas peserta.',
             'bank_ids.required' => 'Pilih minimal satu bank soal.',
         ], [
-            'nama' => 'Nama jadwal', 'periode_id' => 'Semester', 'mapel_id' => 'Mata pelajaran', 'durasi_menit' => 'Durasi',
+            'kegiatan_id' => 'Kegiatan', 'mapel_id' => 'Mata pelajaran', 'durasi_menit' => 'Durasi',
             'mulai_pada' => 'Waktu mulai', 'tutup_pada' => 'Waktu tutup', 'batas_pelanggaran' => 'Batas pelanggaran',
             'bobot_pg' => 'Bobot PG', 'tampilkan_hasil' => 'Tampilan hasil',
         ]);
 
-        $v->after(function ($v) use ($request) {
+        $v->after(function ($v) use ($request, $jadwal) {
             if ($v->errors()->isNotEmpty()) {
                 return;
             }
 
-            // Kelas harus berada pada tahun ajaran dari semester yang dipilih.
-            $tahun = Periode::find($request->input('periode_id'))->tahun_ajaran_id;
+            // Kegiatan harus aktif (kegiatan lama yang sudah dipakai jadwal ini tetap boleh dipertahankan).
+            $kegiatan = KegiatanUjian::find($request->input('kegiatan_id'));
+            if (! $kegiatan->aktif && $kegiatan->id !== $jadwal?->kegiatan_id) {
+                $v->errors()->add('kegiatan_id', 'Kegiatan ini sudah tidak aktif. Aktifkan di menu Kegiatan Ujian atau pilih yang lain.');
+
+                return;
+            }
+
+            // Kelas harus berada pada tahun ajaran dari semester kegiatan yang dipilih.
+            $tahun = Periode::find($kegiatan->periode_id)->tahun_ajaran_id;
             if (Kelas::whereIn('id', $request->input('kelas_ids'))->where('tahun_ajaran_id', '!=', $tahun)->exists()) {
                 $v->errors()->add('kelas_ids', 'Semua kelas harus berasal dari tahun ajaran semester yang dipilih.');
             }
@@ -248,7 +256,14 @@ class JadwalUjianController extends Controller
             }
         });
 
-        return $v->validate();
+        $data = $v->validate();
+
+        // Semester dan nama jadwal diturunkan dari kegiatan + mata pelajaran (tidak diketik lagi).
+        $kegiatan = KegiatanUjian::findOrFail($data['kegiatan_id']);
+        $data['periode_id'] = $kegiatan->periode_id;
+        $data['nama'] = $kegiatan->namaJadwal(Mapel::findOrFail($data['mapel_id']));
+
+        return $data;
     }
 
     private function validasiAktif(Request $request, JadwalUjian $jadwal): array
@@ -267,6 +282,7 @@ class JadwalUjianController extends Controller
     {
         return [
             'nama' => $data['nama'],
+            'kegiatan_id' => $data['kegiatan_id'],
             'periode_id' => $data['periode_id'],
             'mapel_id' => $data['mapel_id'],
             'durasi_menit' => $data['durasi_menit'],

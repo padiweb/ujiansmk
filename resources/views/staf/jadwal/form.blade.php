@@ -7,7 +7,8 @@
     $kelasDipilih = collect(old('kelas_ids', $j?->kelas->pluck('id')->all() ?? []))->map(fn ($v) => (int) $v)->all();
     $bankDipilih = collect(old('bank_ids', $j?->bank->pluck('bank_soal_id')->all() ?? []))->map(fn ($v) => (int) $v)->all();
     $rinciBank = $j?->bank->keyBy('bank_soal_id') ?? collect();
-    $periodeAwal = old('periode_id', $j?->periode_id ?? $periodeAktif);
+    $kegiatanAwal = (int) old('kegiatan_id', $j?->kegiatan_id);
+    $kegiatanLama = $j?->kegiatan && ! $daftarKegiatan->contains('id', $j->kegiatan_id) ? $j->kegiatan : null; // kegiatan yang kini tidak aktif
 @endphp
 
 @section('konten')
@@ -21,22 +22,16 @@
     @if ($j) @method('PUT') @endif
 
     @unless ($terbatas)
-        <div class="bidang @error('nama') salah @enderror">
-            <label for="nama">Nama jadwal <span class="wajib">*</span></label>
-            <input id="nama" name="nama" type="text" maxlength="150" value="{{ old('nama', $j?->nama) }}" required autofocus>
-            <small class="bantuan">Contoh: Ujian Tengah Semester Matematika Kelas X.</small>
-            @error('nama') <small class="galat-bidang">{{ $message }}</small> @enderror
-        </div>
-
-        <div class="bidang @error('periode_id') salah @enderror">
-            <label for="periode_id">Semester <span class="wajib">*</span></label>
-            <select id="periode_id" name="periode_id" required>
+        <div class="bidang @error('kegiatan_id') salah @enderror">
+            <label for="kegiatan_id">Kegiatan <span class="wajib">*</span></label>
+            <select id="kegiatan_id" name="kegiatan_id" required>
                 <option value="">— Pilih —</option>
-                @foreach ($daftarPeriode as $p)
-                    <option value="{{ $p->id }}" data-tahun="{{ $p->tahun_ajaran_id }}" @selected((int) $periodeAwal === $p->id)>{{ $p->label() }}</option>
+                @foreach ($daftarKegiatan->concat($kegiatanLama ? [$kegiatanLama->loadMissing('periode.tahunAjaran')] : []) as $k)
+                    <option value="{{ $k->id }}" data-tahun="{{ $k->periode->tahun_ajaran_id }}" @selected($kegiatanAwal === $k->id)>{{ $k->nama }} — {{ $k->periode->label() }}</option>
                 @endforeach
             </select>
-            @error('periode_id') <small class="galat-bidang">{{ $message }}</small> @enderror
+            <small class="bantuan">Nama jadwal dibuat otomatis dari kegiatan dan mata pelajaran. Kegiatan baru ditambahkan di menu <a href="{{ route('staf.kegiatan.index') }}">Kegiatan Ujian</a>.</small>
+            @error('kegiatan_id') <small class="galat-bidang">{{ $message }}</small> @enderror
         </div>
 
         <div class="bidang @error('mapel_id') salah @enderror">
@@ -154,7 +149,7 @@
 @push('skrip')
 <script>
     (function () {
-        var periode = document.getElementById('periode_id'), mapel = document.getElementById('mapel_id');
+        var periode = document.getElementById('kegiatan_id'), mapel = document.getElementById('mapel_id');
         function saring() {
             var tahun = periode.selectedOptions[0] ? periode.selectedOptions[0].dataset.tahun : '';
             document.querySelectorAll('[data-kelas]').forEach(function (el) {

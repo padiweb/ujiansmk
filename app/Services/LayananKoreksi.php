@@ -29,7 +29,7 @@ class LayananKoreksi
 
         return match ($user->role) {
             'admin' => $kueri,
-            'guru' => $kueri->whereExists(fn ($q) => $q->selectRaw('1')->from('pengampu')
+            'guru' => $kueri->where(fn ($q) => $q->whereNull('kegiatan_id')->orWhereHas('kegiatan', fn ($k) => $k->where('aktif', true)))->whereExists(fn ($q) => $q->selectRaw('1')->from('pengampu')
                 ->whereColumn('pengampu.mapel_id', 'jadwal_ujian.mapel_id')->where('pengampu.guru_id', $user->id)
                 ->whereIn('pengampu.kelas_id', fn ($k) => $k->select('kelas_id')->from('jadwal_kelas')->whereColumn('jadwal_kelas.jadwal_id', 'jadwal_ujian.id'))),
             default => $kueri->whereRaw('1 = 0'),
