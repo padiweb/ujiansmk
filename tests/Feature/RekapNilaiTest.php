@@ -131,7 +131,7 @@ class RekapNilaiTest extends TestCase
         $this->assertFalse($this->jadwal->fresh()->nilaiDikunci());
     }
 
-    public function test_kunci_berhasil_lalu_nilai_tidak_bisa_diubah_dan_buka_kunci_hanya_admin(): void
+    public function test_kunci_berhasil_lalu_mengubah_nilai_membuka_kunci_dan_guru_bisa_membuka_sendiri(): void
     {
         $sesi = $this->selesaikan(0, 'Jawaban A');
         $this->nilaiEsai($sesi, 80);
@@ -139,21 +139,30 @@ class RekapNilaiTest extends TestCase
         $this->actingAs($this->guru, 'web')->post("/staf/rekap/{$this->jadwal->id}/kunci")->assertSessionHas('berhasil');
         $j = $this->jadwal->fresh();
         $this->assertTrue($j->nilaiDikunci());
-        $this->assertSame($this->guru->id, $j->nilai_dikunci_oleh);
+        $this->assertSame($this->guru->id, $j->kunciNilai()->first()->dikunci_oleh);
         $this->assertSame(1, AuditLog::where('aksi', 'rekap.kunci')->count());
 
         $esai = Jawaban::where('sesi_id', $sesi->id)->where('soal_id', $this->soal['esai']->id)->first();
-        $this->postJson("/staf/koreksi/{$this->jadwal->id}/jawaban/{$esai->id}/nilai", ['nilai' => 10])->assertStatus(409)->assertJsonPath('kode', 'dikunci');
-        $this->assertSame('80.00', $esai->fresh()->nilai_esai);
-        $this->postJson("/staf/koreksi/{$this->jadwal->id}/soal/{$this->soal['esai']->id}/saran", ['ids' => [$esai->id]])->assertStatus(409);
 
         $this->post("/staf/rekap/{$this->jadwal->id}/kunci")->assertSessionHas('gagal'); // sudah dikunci
-        $this->post("/staf/rekap/{$this->jadwal->id}/buka-kunci")->assertForbidden();
-        $this->assertTrue($this->jadwal->fresh()->nilaiDikunci());
 
-        $this->actingAs($this->admin, 'web')->post("/staf/rekap/{$this->jadwal->id}/buka-kunci")->assertSessionHas('berhasil');
+        // Guru membuka kunci sendiri (tercatat), tanpa admin.
+        $this->post("/staf/rekap/{$this->jadwal->id}/buka-kunci")->assertSessionHas('berhasil');
         $this->assertFalse($this->jadwal->fresh()->nilaiDikunci());
-        $this->actingAs($this->guru, 'web')->postJson("/staf/koreksi/{$this->jadwal->id}/jawaban/{$esai->id}/nilai", ['nilai' => 10])->assertOk();
+        $this->assertSame(1, AuditLog::where('aksi', 'rekap.buka_kunci')->count());
+        $this->post("/staf/rekap/{$this->jadwal->id}/buka-kunci")->assertSessionHas('gagal'); // tidak sedang dikunci
+
+        // Kunci lagi, lalu mengubah nilai membuka kunci otomatis.
+        $this->post("/staf/rekap/{$this->jadwal->id}/kunci")->assertSessionHas('berhasil');
+        $this->postJson("/staf/koreksi/{$this->jadwal->id}/jawaban/{$esai->id}/nilai", ['nilai' => 10])
+            ->assertOk()->assertJsonPath('kunci_dibuka', true);
+        $this->assertSame('10.00', $esai->fresh()->nilai_esai);
+        $this->assertFalse($this->jadwal->fresh()->nilaiDikunci());
+        $this->assertSame(1, AuditLog::where('aksi', 'rekap.buka_kunci_otomatis')->count());
+
+        $this->postJson("/staf/koreksi/{$this->jadwal->id}/jawaban/{$esai->id}/nilai", ['nilai' => 20])->assertOk()->assertJsonPath('kunci_dibuka', false);
+        $this->post("/staf/rekap/{$this->jadwal->id}/kunci")->assertSessionHas('berhasil'); // dikunci lagi
+        $this->assertTrue($this->jadwal->fresh()->nilaiDikunci());
     }
 
     public function test_hasil_ditahan_baru_tampil_ke_siswa_setelah_ditampilkan(): void

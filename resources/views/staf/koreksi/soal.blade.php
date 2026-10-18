@@ -5,11 +5,10 @@
 <div class="kepala-halaman">
     <div>
         <h1 class="judul-halaman">{{ $j->nama }}</h1>
-        <p class="sub">{{ $j->mapel->nama }}</p>
+        <p class="sub">{{ $j->mapel->nama }} · Kelas {{ $kelasPilihan }}</p>
     </div>
     <div class="aksi-halaman">
-        <a class="tombol kecil garis" href="{{ route('staf.koreksi.show', $j) }}"><x-ikon nama="panah-kiri" :ukuran="16" />Soal esai</a>
-        <button type="button" class="tombol kecil garis" id="korNama" aria-pressed="false">Tampilkan nama</button>
+        <a class="tombol kecil garis" href="{{ route('staf.koreksi.show', array_filter([$j, 'kelas' => $kelasId])) }}"><x-ikon nama="panah-kiri" :ukuran="16" />Soal esai</a>
     </div>
 </div>
 
@@ -23,9 +22,22 @@
     @endif
 </div>
 
-@if ($j->nilaiDikunci())
-    <div class="pesan-salah" role="status"><x-ikon nama="info" :ukuran="18" /><span>Nilai jadwal ini sudah dikunci dan tidak bisa diubah. Admin dapat membukanya di halaman Rekap Nilai.</span></div>
+@if ($terkunci)
+    <div class="info" role="status" id="korKunci"><x-ikon nama="info" :ukuran="18" /><span>Nilai kelas ini sedang dikunci. Bila Bapak/Ibu mengubah atau menambah nilai, kunci terbuka otomatis. Setelah selesai, kunci lagi di <a href="{{ route('staf.rekap.show', array_filter([$j, 'kelas' => $kelasId])) }}">Rekap Nilai</a>.</span></div>
 @endif
+
+<form class="kartu" method="POST" action="{{ route('staf.koreksi.nilai-semua', [$j, $soal]) }}" onsubmit="return confirm('Beri nilai ini ke semua jawaban pada soal ini ('+(this.timpa.checked ? 'termasuk yang sudah dinilai' : 'yang belum dinilai')+')?')">
+    @csrf
+    @if ($kelasId) <input type="hidden" name="kelas" value="{{ $kelasId }}"> @endif
+    <h2 class="judul-kartu">Nilai yang sama untuk semua jawaban</h2>
+    <div class="aksi-form" style="align-items:flex-end;flex-wrap:wrap;gap:12px;margin-top:8px">
+        <div class="bidang" style="margin:0"><label for="nilaiSemua">Nilai (0–100)</label>
+            <input id="nilaiSemua" name="nilai" type="text" inputmode="decimal" style="width:110px" required autocomplete="off"></div>
+        <label class="centang" style="margin:0"><input type="checkbox" name="timpa" value="1"> Timpa nilai yang sudah ada</label>
+        <button class="tombol kecil" type="submit">Terapkan ke semua</button>
+    </div>
+    <small class="bantuan">Mengisi jawaban yang belum dinilai pada kelas {{ $kelasPilihan }}. Jawaban kosong tetap bernilai 0.</small>
+</form>
 
 <div class="kartu" id="korKotak"
      data-nilai="{{ url('staf/koreksi/'.$j->id.'/jawaban') }}"
@@ -45,14 +57,14 @@
     @forelse ($jawaban as $i => $j2)
         <article class="jawaban-esai" data-id="{{ $j2->id }}">
             <header>
-                <strong>Jawaban {{ $jawaban->firstItem() + $i }}</strong>
-                <span class="kor-nama" hidden data-nama="{{ $j2->sesi->siswa->nama }} ({{ $j2->sesi->siswa->nisn }})"></span>
+                <strong>{{ $j2->sesi->siswa->nama }}</strong>
+                <span class="kor-nama">· {{ $j2->sesi->siswa->kelas->whereIn('nama', explode(', ', $kelasPilihan))->pluck('nama')->implode(', ') }} · {{ $j2->sesi->siswa->nisn }}</span>
                 <span class="kor-simpan" aria-live="polite"></span>
             </header>
             <div class="teks-jawaban">{!! nl2br(e($j2->teks_esai)) !!}</div>
             <div class="kor-nilai">
                 <label>Nilai (0–100)
-                    <input type="text" inputmode="decimal" class="kor-input" @disabled($j->nilaiDikunci()) value="{{ $j2->nilai_esai !== null ? rtrim(rtrim((string) $j2->nilai_esai, '0'), '.') : '' }}" autocomplete="off">
+                    <input type="text" inputmode="decimal" class="kor-input" value="{{ $j2->nilai_esai !== null ? rtrim(rtrim((string) $j2->nilai_esai, '0'), '.') : '' }}" autocomplete="off">
                 </label>
                 <div class="kor-cepat">
                     @foreach ([0, 25, 50, 75, 100] as $n)

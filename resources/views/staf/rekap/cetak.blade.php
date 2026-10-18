@@ -29,7 +29,7 @@
 <body>
     <div class="aksi"><button type="button" onclick="window.print()">Cetak</button></div>
     <h1>{{ config('ujian.sekolah') }}</h1>
-    <p class="sub"><strong>Rekap nilai: {{ $j->nama }}</strong> · {{ $j->mapel->nama }} · KKM {{ $kkm }} · {{ $j->mulai_pada->format('d/m/Y') }}</p>
+    <p class="sub"><strong>Rekap nilai: {{ $j->nama }}</strong> · {{ $j->mapel->nama }} · Kelas {{ $kelasPilihan }} · KKM {{ $kkm }} · {{ $j->mulai_pada->format('d/m/Y') }}</p>
 
     <table>
         <thead><tr><th class="n">No</th><th>Nama</th><th>NISN</th><th>Kelas</th><th class="n">PG</th><th class="n">Esai</th><th class="n">Akhir</th><th>Keterangan</th></tr></thead>

@@ -4,20 +4,19 @@
 @php
     $nm = fn ($n) => $n === null ? '—' : rtrim(rtrim(number_format((float) $n, 2, ',', '.'), '0'), ',');
     $namaStatus = ['belum' => 'Belum mulai', 'berlangsung' => 'Mengerjakan', 'selesai' => 'Selesai', 'diblokir' => 'Terblokir'];
-    $admin = auth('web')->user()->role === 'admin';
 @endphp
 
 @section('konten')
 <div class="kepala-halaman">
     <div>
         <h1 class="judul-halaman">{{ $j->nama }}
-            @if ($j->nilaiDikunci()) <span class="lencana" style="vertical-align:middle">Nilai dikunci</span> @endif</h1>
-        <p class="sub">{{ $j->mapel->nama }} · KKM {{ $kkm }} · bobot PG {{ $j->bobot_pg }}% / esai {{ $j->bobotEsai() }}%</p>
+            @if ($kunci['terkunci']) <span class="lencana" style="vertical-align:middle">Nilai dikunci</span> @endif</h1>
+        <p class="sub">{{ $j->mapel->nama }} · Kelas {{ $kelasPilihan }} · KKM {{ $kkm }} · bobot PG {{ $j->bobot_pg }}% / esai {{ $j->bobotEsai() }}%</p>
     </div>
     <div class="aksi-halaman">
         <a class="tombol kecil garis" href="{{ route('staf.rekap.index') }}"><x-ikon nama="panah-kiri" :ukuran="16" />Daftar</a>
-        <a class="tombol kecil garis" href="{{ route('staf.rekap.ekspor', $j) }}"><x-ikon nama="unduh" :ukuran="16" />Excel</a>
-        <a class="tombol kecil garis" href="{{ route('staf.rekap.cetak', $j) }}" target="_blank" rel="noopener">Cetak</a>
+        <a class="tombol kecil garis" href="{{ route('staf.rekap.ekspor', array_filter([$j, 'kelas' => $kelasId])) }}"><x-ikon nama="unduh" :ukuran="16" />Excel</a>
+        <a class="tombol kecil garis" href="{{ route('staf.rekap.cetak', array_filter([$j, 'kelas' => $kelasId])) }}" target="_blank" rel="noopener">Cetak</a>
     </div>
 </div>
 
@@ -37,17 +36,19 @@
 <div class="kartu">
     <h2 class="judul-kartu">Tindakan</h2>
     <div class="aksi-form" style="margin-top:10px">
-        @if (! $j->nilaiDikunci())
-            <form method="POST" action="{{ route('staf.rekap.kunci', $j) }}" onsubmit="return confirm('Kunci nilai? Setelah dikunci, nilai tidak bisa diubah dan siap dipakai untuk rapor.')">
-                @csrf <button class="tombol kecil" type="submit"><x-ikon nama="centang" :ukuran="16" />Kunci nilai</button>
+        @if (! $kunci['terkunci'])
+            <form method="POST" action="{{ route('staf.rekap.kunci', $j) }}" onsubmit="return confirm('Kunci nilai kelas {{ $kelasPilihan }}? Setelah dikunci, nilai siap dipakai untuk rapor. Bila perlu, kunci bisa dibuka lagi.')">
+                @csrf @if ($kelasId) <input type="hidden" name="kelas" value="{{ $kelasId }}"> @endif
+                <button class="tombol kecil" type="submit"><x-ikon nama="centang" :ukuran="16" />Kunci nilai</button>
             </form>
-        @else
-            <span class="sub">Dikunci {{ $j->nilai_dikunci_pada->format('d/m/Y H:i') }} oleh {{ $j->pengunci?->nama ?? '—' }}.</span>
-            @if ($admin)
-                <form method="POST" action="{{ route('staf.rekap.buka-kunci', $j) }}" onsubmit="return confirm('Buka kunci nilai? Koreksi bisa diubah lagi.')">
-                    @csrf <button class="tombol kecil bahaya" type="submit">Buka kunci</button>
-                </form>
-            @endif
+            @if ($kunci['sebagian']) <span class="sub">Sebagian kelas sudah dikunci.</span> @endif
+        @endif
+        @if ($kunci['terkunci'] || $kunci['sebagian'])
+            @if ($kunci['pada']) <span class="sub">Dikunci {{ $kunci['pada']->format('d/m/Y H:i') }} oleh {{ $kunci['oleh'] ?? '—' }}.</span> @endif
+            <form method="POST" action="{{ route('staf.rekap.buka-kunci', $j) }}" onsubmit="return confirm('Buka kunci nilai kelas {{ $kelasPilihan }}? Nilai bisa diubah atau ditambah lagi. Kunci lagi setelah selesai.')">
+                @csrf @if ($kelasId) <input type="hidden" name="kelas" value="{{ $kelasId }}"> @endif
+                <button class="tombol kecil garis" type="submit">Buka kunci</button>
+            </form>
         @endif
         @if ($j->tampilkan_hasil === 'ditahan')
             <form method="POST" action="{{ route('staf.rekap.tampilkan', $j) }}" onsubmit="return confirm('Tampilkan hasil kepada siswa?')">

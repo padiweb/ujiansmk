@@ -51,6 +51,10 @@
             kartu.setAttribute('data-tersimpan', nilai);
             status(kartu, nilai === '' ? 'Nilai dihapus' : 'Tersimpan');
             kartu.classList.toggle('dinilai', nilai !== '');
+            if (h.j.kunci_dibuka) {
+                pesan('Kunci nilai kelas ini terbuka karena nilai diubah. Kunci lagi di Rekap Nilai setelah selesai.');
+                var kk = $('korKunci'); if (kk) kk.hidden = true;
+            }
             if (h.j.kemajuan) $('korProgres').textContent = h.j.kemajuan.dinilai + '/' + h.j.kemajuan.total;
         }).catch(function () { status(kartu, 'Koneksi bermasalah. Coba lagi.', true); });
     }
@@ -71,18 +75,6 @@
         if (pakai) pakai.addEventListener('click', function () {
             input.value = kartu.querySelector('.kor-saran').getAttribute('data-saran');
             simpan(kartu);
-        });
-    });
-
-    // Nama disembunyikan sebagai bawaan agar penilaian tidak bias.
-    var tombolNama = $('korNama');
-    tombolNama.addEventListener('click', function () {
-        var tampil = this.getAttribute('aria-pressed') !== 'true';
-        this.setAttribute('aria-pressed', tampil ? 'true' : 'false');
-        this.textContent = tampil ? 'Sembunyikan nama' : 'Tampilkan nama';
-        semua('.kor-nama').forEach(function (e) {
-            e.textContent = tampil ? '· ' + e.getAttribute('data-nama') : '';
-            e.hidden = !tampil;
         });
     });
 

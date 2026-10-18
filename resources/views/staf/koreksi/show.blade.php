@@ -5,14 +5,14 @@
 <div class="kepala-halaman">
     <div>
         <h1 class="judul-halaman">{{ $j->nama }}</h1>
-        <p class="sub">{{ $j->mapel->nama }} · bobot PG {{ $j->bobot_pg }}% · esai {{ $j->bobotEsai() }}%</p>
+        <p class="sub">{{ $j->mapel->nama }} · Kelas {{ $kelasPilihan }} · bobot PG {{ $j->bobot_pg }}% · esai {{ $j->bobotEsai() }}%</p>
     </div>
     <div class="aksi-halaman">
         <a class="tombol kecil garis" href="{{ route('staf.koreksi.index') }}"><x-ikon nama="panah-kiri" :ukuran="16" />Daftar</a>
     </div>
 </div>
 
-<div class="info" role="note"><x-ikon nama="info" :ukuran="18" /><span>Hanya jawaban siswa yang sudah selesai mengerjakan yang bisa dikoreksi. Jawaban kosong otomatis bernilai 0. Nama siswa disembunyikan agar penilaian adil.</span></div>
+<div class="info" role="note"><x-ikon nama="info" :ukuran="18" /><span>Hanya jawaban siswa yang sudah selesai mengerjakan yang bisa dikoreksi. Jawaban kosong otomatis bernilai 0.</span></div>
 
 <div class="kartu tanpa-padding">
     <div class="gulir">
@@ -28,7 +28,7 @@
                             <div class="mon-bar"><span style="width:{{ $s['total'] ? round($s['dinilai'] / $s['total'] * 100) : 0 }}%"></span></div>
                         </td>
                         <td>{{ $s['kosong'] }}</td>
-                        <td class="kanan aksi-baris"><a href="{{ route('staf.koreksi.soal', [$j, $s['soal']]) }}">{{ $s['total'] ? 'Koreksi' : 'Lihat' }}</a></td>
+                        <td class="kanan aksi-baris"><a href="{{ route('staf.koreksi.soal', array_filter([$j, $s['soal'], 'kelas' => $kelasId])) }}">{{ $s['total'] ? 'Koreksi' : 'Lihat' }}</a></td>
                     </tr>
                 @empty
                     <tr><td colspan="5" class="kosong">Jadwal ini tidak memiliki soal esai.</td></tr>

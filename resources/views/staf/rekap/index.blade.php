@@ -5,22 +5,9 @@
 <div class="kepala-halaman">
     <div>
         <h1 class="judul-halaman">Rekap Nilai</h1>
-        <p class="sub">Hasil ujian per jadwal{{ auth('web')->user()->role === 'guru' ? ' pada mata pelajaran yang Anda ampu' : '' }}.</p>
+        <p class="sub">Pilih mata pelajaran dan kelas{{ auth('web')->user()->role === 'guru' ? ' yang Anda ampu' : '' }} untuk membuka rekap nilainya.</p>
     </div>
 </div>
 
-@forelse ($jadwal as $j)
-    <a class="kartu kartu-monitor" href="{{ route('staf.rekap.show', $j) }}">
-        <div>
-            <strong>{{ $j->nama }}</strong>
-            <small class="bantuan" style="margin:2px 0 0">{{ $j->mapel->nama }} · {{ $j->mulai_pada->format('d/m/Y H:i') }}</small>
-        </div>
-        <div>
-            @if ($j->nilaiDikunci()) <span class="lencana">Nilai dikunci</span> @endif
-            <span class="lencana {{ $j->status === 'aktif' ? '' : 'pucat' }}">{{ $j->status === 'aktif' ? 'Aktif' : 'Selesai' }}</span>
-        </div>
-    </a>
-@empty
-    <div class="kartu kosong-kartu">Belum ada jadwal ujian yang dimulai.</div>
-@endforelse
+@include('staf.partials.pilih-unit', ['rute' => 'staf.rekap.show', 'kosong' => 'Belum ada jadwal ujian yang dimulai untuk pilihan ini.'])
 @endsection

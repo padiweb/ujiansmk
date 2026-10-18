@@ -108,6 +108,7 @@ Route::prefix('staf')->group(function () {
         Route::prefix('{jadwal}')->whereNumber('jadwal')->group(function () {
             Route::get('/', [KoreksiController::class, 'show'])->name('show');
             Route::get('/soal/{soal}', [KoreksiController::class, 'soal'])->whereNumber('soal')->name('soal');
+            Route::post('/soal/{soal}/nilai-semua', [KoreksiController::class, 'nilaiSemua'])->whereNumber('soal')->middleware('throttle:20,1')->name('nilai-semua');
             Route::post('/soal/{soal}/saran', [KoreksiController::class, 'saran'])->whereNumber('soal')->middleware('throttle:20,1')->name('saran');
             Route::post('/jawaban/{jawaban}/nilai', [KoreksiController::class, 'nilai'])->whereNumber('jawaban')->middleware('throttle:240,1')->name('nilai');
         });

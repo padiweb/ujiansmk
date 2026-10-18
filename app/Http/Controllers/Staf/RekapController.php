@@ -19,32 +19,36 @@ class RekapController extends Controller
 {
     public function __construct(private LayananRekap $rekap, private LayananKoreksi $akses) {}
 
+    /** Pilih semester, mata pelajaran, dan kelas yang diampu sebelum membuka rekap. */
     public function index(Request $request): View
     {
-        $jadwal = $this->akses->jadwalUntuk($request->user('web'))->with('mapel')
-            ->orderByDesc('mulai_pada')->get();
-
-        return view('staf.rekap.index', ['jadwal' => $jadwal]);
+        return view('staf.rekap.index', $this->akses->dataPilihan(
+            $request->user('web'), $request->query('periode'), $request->query('mapel'), $request->query('kelas'), hanyaEsai: false,
+        ) + ['kunciPerKelas' => true]);
     }
 
     public function show(Request $request, JadwalUjian $jadwal): View
     {
-        $this->izinkan($request, $jadwal);
+        $kelas = $this->izinkan($request, $jadwal);
 
-        return view('staf.rekap.show', ['j' => $jadwal->load('mapel', 'pengunci')] + $this->rekap->data($jadwal));
+        return view('staf.rekap.show', [
+            'j' => $jadwal->load('mapel'),
+            'kelasPilihan' => $jadwal->kelas()->whereIn('kelas.id', $kelas)->orderBy('nama')->pluck('nama')->implode(', '),
+            'kelasId' => $request->query('kelas'),
+        ] + $this->rekap->data($jadwal, $kelas));
     }
 
     public function cetak(Request $request, JadwalUjian $jadwal): View
     {
-        $this->izinkan($request, $jadwal);
+        $kelas = $this->izinkan($request, $jadwal);
 
-        return view('staf.rekap.cetak', ['j' => $jadwal->load('mapel')] + $this->rekap->data($jadwal));
+        return view('staf.rekap.cetak', ['j' => $jadwal->load('mapel'), 'kelasPilihan' => $jadwal->kelas()->whereIn('kelas.id', $kelas)->orderBy('nama')->pluck('nama')->implode(', ')] + $this->rekap->data($jadwal, $kelas));
     }
 
     public function ekspor(Request $request, JadwalUjian $jadwal): StreamedResponse
     {
-        $this->izinkan($request, $jadwal);
-        $data = $this->rekap->data($jadwal);
+        $kelas = $this->izinkan($request, $jadwal);
+        $data = $this->rekap->data($jadwal, $kelas);
 
         $buku = new Spreadsheet;
         $lembar = $buku->getActiveSheet()->setTitle('Rekap nilai');
@@ -74,22 +78,21 @@ class RekapController extends Controller
 
     public function kunci(Request $request, JadwalUjian $jadwal): RedirectResponse
     {
-        $this->izinkan($request, $jadwal);
+        $kelas = $this->izinkan($request, $jadwal, $request->input('kelas'));
 
-        return $this->jalankan(fn () => $this->rekap->kunci($jadwal, $request->user('web')), 'Nilai dikunci. Nilai ini sekarang bisa dipakai untuk rapor.');
+        return $this->jalankan(fn () => $this->rekap->kunci($jadwal, $request->user('web'), $kelas), 'Nilai dikunci. Nilai ini sekarang bisa dipakai untuk rapor.');
     }
 
     public function bukaKunci(Request $request, JadwalUjian $jadwal): RedirectResponse
     {
-        abort_unless($request->user('web')->role === 'admin', 403, 'Hanya admin yang dapat membuka kunci nilai.');
-        $this->izinkan($request, $jadwal);
+        $kelas = $this->izinkan($request, $jadwal, $request->input('kelas'));
 
-        return $this->jalankan(fn () => $this->rekap->bukaKunci($jadwal, $request->user('web')), 'Kunci nilai dibuka. Koreksi dapat diubah lagi.');
+        return $this->jalankan(fn () => $this->rekap->bukaKunci($jadwal, $request->user('web'), $kelas), 'Kunci nilai dibuka. Ubah atau tambahkan nilai, lalu kunci lagi.');
     }
 
     public function tampilkan(Request $request, JadwalUjian $jadwal): RedirectResponse
     {
-        $this->izinkan($request, $jadwal);
+        $this->izinkan($request, $jadwal, null, tanpaPilihan: true);
 
         return $this->jalankan(fn () => $this->rekap->tampilkanKeSiswa($jadwal, $request->user('web')), 'Hasil sekarang tampil kepada siswa.');
     }
@@ -105,9 +108,13 @@ class RekapController extends Controller
         return back()->with('berhasil', $pesan);
     }
 
-    private function izinkan(Request $request, JadwalUjian $jadwal): void
+    /** @return list<int> kelas yang boleh ditangani (dipersempit ?kelas= bila ada) */
+    private function izinkan(Request $request, JadwalUjian $jadwal, int|string|null $pilihan = null, bool $tanpaPilihan = false): array
     {
-        abort_unless($this->akses->boleh($request->user('web'), $jadwal), 404);
+        $kelas = $this->akses->lingkup($request->user('web'), $jadwal, $tanpaPilihan ? null : ($pilihan ?? $request->query('kelas')));
+        abort_if($kelas === [] || ! $this->akses->boleh($request->user('web'), $jadwal), 404);
+
+        return $kelas;
     }
 
     private function namaStatus(string $status): string

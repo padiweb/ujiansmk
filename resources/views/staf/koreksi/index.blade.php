@@ -5,19 +5,9 @@
 <div class="kepala-halaman">
     <div>
         <h1 class="judul-halaman">Koreksi Esai</h1>
-        <p class="sub">Jadwal ujian yang memuat soal esai{{ auth('web')->user()->role === 'guru' ? ' pada mata pelajaran yang Anda ampu' : '' }}.</p>
+        <p class="sub">Pilih mata pelajaran dan kelas{{ auth('web')->user()->role === 'guru' ? ' yang Anda ampu' : '' }} untuk mengoreksi jawaban esai.</p>
     </div>
 </div>
 
-@forelse ($jadwal as $j)
-    <a class="kartu kartu-monitor" href="{{ route('staf.koreksi.show', $j) }}">
-        <div>
-            <strong>{{ $j->nama }}</strong>
-            <small class="bantuan" style="margin:2px 0 0">{{ $j->mapel->nama }} · {{ $j->mulai_pada->format('d/m/Y H:i') }}</small>
-        </div>
-        <span class="lencana {{ $j->status === 'aktif' ? '' : 'pucat' }}">{{ $j->status === 'aktif' ? 'Aktif' : 'Selesai' }}</span>
-    </a>
-@empty
-    <div class="kartu kosong-kartu">Belum ada jadwal dengan soal esai.</div>
-@endforelse
+@include('staf.partials.pilih-unit', ['rute' => 'staf.koreksi.show', 'kosong' => 'Belum ada jadwal dengan soal esai untuk pilihan ini.'])
 @endsection

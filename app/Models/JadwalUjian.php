@@ -17,7 +17,7 @@ class JadwalUjian extends Model
 
     protected $fillable = [
         'periode_id', 'mapel_id', 'nama', 'durasi_menit', 'mulai_pada', 'tutup_pada', 'token', 'media_kode', 'status',
-        'acak_soal', 'acak_opsi', 'batas_pelanggaran', 'bobot_pg', 'tampilkan_hasil', 'dibuat_oleh', 'diaktifkan_pada', 'nilai_dikunci_pada', 'nilai_dikunci_oleh', 'denah_id',
+        'acak_soal', 'acak_opsi', 'batas_pelanggaran', 'bobot_pg', 'tampilkan_hasil', 'dibuat_oleh', 'diaktifkan_pada', 'denah_id',
     ];
 
     protected function casts(): array
@@ -26,7 +26,6 @@ class JadwalUjian extends Model
             'mulai_pada' => 'datetime',
             'tutup_pada' => 'datetime',
             'diaktifkan_pada' => 'datetime',
-            'nilai_dikunci_pada' => 'datetime',
             'acak_soal' => 'boolean',
             'acak_opsi' => 'boolean',
         ];
@@ -52,9 +51,9 @@ class JadwalUjian extends Model
         return $this->belongsTo(Denah::class, 'denah_id');
     }
 
-    public function pengunci(): BelongsTo
+    public function kunciNilai(): HasMany
     {
-        return $this->belongsTo(User::class, 'nilai_dikunci_oleh');
+        return $this->hasMany(KunciNilai::class, 'jadwal_id');
     }
 
     public function kelas(): BelongsToMany
@@ -99,9 +98,15 @@ class JadwalUjian extends Model
         };
     }
 
-    public function nilaiDikunci(): bool
+    /** Apakah nilai terkunci untuk semua kelas yang ditanyakan (bawaan: semua kelas jadwal ini). @param list<int>|null $kelasIds */
+    public function nilaiDikunci(?array $kelasIds = null): bool
     {
-        return $this->nilai_dikunci_pada !== null;
+        $kelasIds ??= $this->kelas()->pluck('kelas.id')->map(fn ($k) => (int) $k)->all();
+        if ($kelasIds === []) {
+            return false;
+        }
+
+        return $this->kunciNilai()->whereIn('kelas_id', $kelasIds)->count() === count(array_unique($kelasIds));
     }
 
     public function bobotEsai(): int
