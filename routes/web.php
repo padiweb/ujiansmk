@@ -181,15 +181,18 @@ Route::prefix('staf')->group(function () {
 
         Route::prefix('denah')->name('staf.denah.')->group(function () {
             Route::get('/', [DenahController::class, 'index'])->name('index');
-            Route::get('/tambah', [DenahController::class, 'create'])->name('create');
-            Route::post('/', [DenahController::class, 'store'])->name('store');
+            Route::get('/kegiatan/{kegiatan}', [DenahController::class, 'bukaKegiatan'])->whereNumber('kegiatan')->name('kegiatan');
             Route::prefix('{denah}')->whereNumber('denah')->group(function () {
                 Route::get('/', [DenahController::class, 'show'])->name('show');
                 Route::delete('/', [DenahController::class, 'destroy'])->name('destroy');
-                Route::post('/ruang', [DenahController::class, 'tambahRuang'])->name('ruang');
-                Route::delete('/ruang/{denahRuang}', [DenahController::class, 'hapusRuang'])->whereNumber('denahRuang')->name('ruang.hapus');
+                Route::post('/ruang', [DenahController::class, 'simpanRuang'])->name('ruang');
                 Route::post('/bagi', [DenahController::class, 'bagi'])->name('bagi');
-                Route::post('/tempatkan', [DenahController::class, 'tempatkan'])->name('tempatkan');
+                Route::get('/ruang/{ruang}', [DenahController::class, 'ruang'])->whereNumber('ruang')->name('ruang.show');
+                Route::post('/ruang/{ruang}/urutan', [DenahController::class, 'urutan'])->whereNumber('ruang')->middleware('throttle:60,1')->name('ruang.urutan');
+                Route::post('/ruang/{ruang}/urut-kelas', [DenahController::class, 'urutkanPerKelas'])->whereNumber('ruang')->name('ruang.urut-kelas');
+                Route::get('/ruang/{ruang}/no-meja', [DenahController::class, 'cetakMeja'])->whereNumber('ruang')->name('ruang.no-meja');
+                Route::get('/ruang/{ruang}/absen', [DenahController::class, 'absen'])->whereNumber('ruang')->name('ruang.absen');
+                Route::post('/siswa/{siswa}/pindah', [DenahController::class, 'pindah'])->whereNumber('siswa')->name('pindah');
                 Route::post('/siswa/{siswa}/lepas', [DenahController::class, 'lepas'])->whereNumber('siswa')->name('lepas');
             });
         });

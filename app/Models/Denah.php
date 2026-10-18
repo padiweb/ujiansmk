@@ -10,11 +10,16 @@ class Denah extends Model
 {
     protected $table = 'denah_ujian';
 
-    protected $fillable = ['nama', 'periode_id', 'dibuat_oleh'];
+    protected $fillable = ['nama', 'periode_id', 'kegiatan_id', 'dibuat_oleh'];
 
     public function periode(): BelongsTo
     {
         return $this->belongsTo(Periode::class);
+    }
+
+    public function kegiatan(): BelongsTo
+    {
+        return $this->belongsTo(KegiatanUjian::class, 'kegiatan_id');
     }
 
     public function ruang(): HasMany

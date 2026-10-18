@@ -131,12 +131,12 @@
     <div class="bidang">
         <label for="denah_id">Denah ruang ujian</label>
         <select id="denah_id" name="denah_id">
-            <option value="">Tanpa denah (ruang dan meja tidak ditentukan)</option>
+            <option value="">Otomatis (denah kegiatan)</option>
             @foreach ($daftarDenah as $d)
                 <option value="{{ $d->id }}" @selected((int) old('denah_id', $j?->denah_id) === $d->id)>{{ $d->nama }}</option>
             @endforeach
         </select>
-        <small class="bantuan">Atur denah di menu Denah Ruang. Penempatan siswa dari denah dipakai untuk ruang, nomor meja, dan kartu ujian.</small>
+        <small class="bantuan">Denah diatur di menu Denah Ruang.</small>
     </div>
 
     <div class="aksi-form">

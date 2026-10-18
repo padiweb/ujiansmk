@@ -7,6 +7,7 @@ use App\Models\Denah;
 use App\Models\DenahPenempatan;
 use App\Models\DenahRuang;
 use App\Models\JadwalUjian;
+use App\Models\KegiatanUjian;
 use App\Models\SesiUjian;
 use App\Models\Siswa;
 use App\Models\User;
@@ -16,15 +17,16 @@ use Illuminate\Support\Facades\DB;
 class LayananDenah
 {
     /**
-     * Bagi siswa dari kelas-kelas terpilih ke ruang-ruang denah. Siswa diacak per tingkat; tiap meja diisi dari
-     * tingkat yang berbeda (kelompok terbanyak didahulukan) agar tidak saling menyontek. Penempatan lama diganti.
+     * Bagi siswa dari kelas-kelas terpilih ke ruang-ruang denah. Bawaan (seperti aplikasi lama): siswa diurutkan per kelas
+     * lalu nama, mengisi ruang satu per satu sampai kapasitasnya, satu siswa per meja. Dengan $campur, siswa diacak per
+     * tingkat dan tiap meja (2-3 siswa) diisi dari tingkat berbeda agar tidak saling menyontek. Penempatan lama diganti.
      *
      * @param  list<int>  $kelasIds
      * @return array{ditempatkan:int,tanpa_tempat:int,meja_sejenis:int,kapasitas:int}
      *
      * @throws KesalahanJadwal
      */
-    public function bagi(Denah $denah, array $kelasIds, ?User $pelaku = null, ?int $benih = null): array
+    public function bagi(Denah $denah, array $kelasIds, ?User $pelaku = null, ?int $benih = null, bool $campur = false): array
     {
         $ruang = $denah->ruang()->get();
         if ($ruang->isEmpty()) {
@@ -36,40 +38,66 @@ class LayananDenah
             ->join('kelas as kl', 'kl.id', '=', 'k.kelas_id')
             ->where('s.status', 'aktif')->where('k.status', 'aktif')
             ->whereIn('k.kelas_id', $kelasIds)
+            ->orderBy('kl.nama')->orderBy('s.nama')
             ->select('s.id as siswa_id', 'kl.tingkat')->get()->unique('siswa_id');
 
         if ($baris->isEmpty()) {
             throw new KesalahanJadwal('Tidak ada siswa aktif di kelas yang dipilih.');
         }
 
-        if ($benih !== null) {
-            mt_srand($benih);
+        // Bentuk meja menyesuaikan mode: 1 siswa per meja (bawaan) atau 2-3 siswa campur tingkat.
+        foreach ($ruang as $r) {
+            $kap = $r->kapasitas();
+            $per = $campur ? max(2, min(3, (int) $r->siswa_per_meja)) : 1;
+            $r->forceFill(['siswa_per_meja' => $per, 'kapasitas' => $kap, 'jumlah_meja' => max(1, (int) ceil($kap / $per))])->save();
         }
-        /** @var array<string,list<int>> $kelompok tingkat => id siswa (teracak) */
-        $kelompok = $baris->groupBy('tingkat')->map(fn ($g) => $g->pluck('siswa_id')->shuffle()->values()->all())->all();
+        $ruang = $denah->ruang()->get();
 
         $hasil = [];
         $ditempatkan = 0;
 
-        foreach ($ruang as $r) {
-            for ($meja = 1; $meja <= $r->jumlah_meja; $meja++) {
-                $dipakai = [];
-                for ($posisi = 1; $posisi <= $r->siswa_per_meja; $posisi++) {
-                    $pilih = $this->pilihKelompok($kelompok, $dipakai);
-                    if ($pilih === null) {
-                        break 3; // semua siswa sudah mendapat tempat
+        if ($campur) {
+            if ($benih !== null) {
+                mt_srand($benih);
+            }
+            /** @var array<string,list<int>> $kelompok tingkat => id siswa (teracak) */
+            $kelompok = $baris->groupBy('tingkat')->map(fn ($g) => $g->pluck('siswa_id')->shuffle()->values()->all())->all();
+
+            foreach ($ruang as $r) {
+                $kap = $r->kapasitas();
+                $isi = 0;
+                for ($meja = 1; $meja <= $r->jumlah_meja && $isi < $kap; $meja++) {
+                    $dipakai = [];
+                    for ($posisi = 1; $posisi <= $r->siswa_per_meja && $isi < $kap; $posisi++) {
+                        $pilih = $this->pilihKelompok($kelompok, $dipakai);
+                        if ($pilih === null) {
+                            break 3; // semua siswa sudah mendapat tempat
+                        }
+                        $dipakai[] = $pilih;
+                        $hasil[] = ['denah_id' => $denah->id, 'siswa_id' => array_shift($kelompok[$pilih]), 'ruang_id' => $r->ruang_id, 'meja' => $meja, 'posisi' => $posisi];
+                        $ditempatkan++;
+                        $isi++;
                     }
-                    $dipakai[] = $pilih;
-                    $hasil[] = ['denah_id' => $denah->id, 'siswa_id' => array_shift($kelompok[$pilih]), 'ruang_id' => $r->ruang_id, 'meja' => $meja, 'posisi' => $posisi];
+                }
+            }
+            $sisa = collect($kelompok)->sum(fn ($g) => count($g));
+        } else {
+            $antrean = $baris->pluck('siswa_id')->all();
+            foreach ($ruang as $r) {
+                for ($i = 0; $i < $r->kapasitas() && $antrean !== []; $i++) {
+                    [$meja, $posisi] = $r->tempatKe($i);
+                    $hasil[] = ['denah_id' => $denah->id, 'siswa_id' => array_shift($antrean), 'ruang_id' => $r->ruang_id, 'meja' => $meja, 'posisi' => $posisi];
                     $ditempatkan++;
                 }
             }
+            $sisa = count($antrean);
         }
 
-        $sisa = collect($kelompok)->sum(fn ($g) => count($g));
         $tingkatSiswa = $baris->pluck('tingkat', 'siswa_id');
-        $sejenis = collect($hasil)->groupBy(fn ($h) => $h['ruang_id'].'-'.$h['meja'])
-            ->filter(fn ($meja) => $meja->count() > 1 && $meja->pluck('siswa_id')->map(fn ($id) => $tingkatSiswa[$id])->unique()->count() < $meja->count())->count();
+        $sejenis = $campur
+            ? collect($hasil)->groupBy(fn ($h) => $h['ruang_id'].'-'.$h['meja'])
+                ->filter(fn ($meja) => $meja->count() > 1 && $meja->pluck('siswa_id')->map(fn ($id) => $tingkatSiswa[$id])->unique()->count() < $meja->count())->count()
+            : 0;
 
         DB::transaction(function () use ($denah, $hasil) {
             DenahPenempatan::where('denah_id', $denah->id)->delete();
@@ -80,10 +108,165 @@ class LayananDenah
 
         $this->perbaruiJadwal($denah);
         if ($pelaku) {
-            AuditLog::catat('denah.bagi', "denah {$denah->id}: {$ditempatkan} ditempatkan, {$sisa} tanpa tempat", $pelaku);
+            AuditLog::catat('denah.bagi', "denah {$denah->id}: {$ditempatkan} ditempatkan, {$sisa} tanpa tempat".($campur ? ' (campur tingkat)' : ''), $pelaku);
         }
 
         return ['ditempatkan' => $ditempatkan, 'tanpa_tempat' => $sisa, 'meja_sejenis' => $sejenis, 'kapasitas' => $ruang->sum(fn (DenahRuang $r) => $r->kapasitas())];
+    }
+
+    /**
+     * Atur kapasitas ruang pada denah (null/0 = ruang tidak dipakai). Penempatan di luar kapasitas baru dilepas.
+     *
+     * @param  array<int,int|null>  $kapasitas  ruang_id => kapasitas
+     */
+    public function aturRuang(Denah $denah, array $kapasitas, ?User $pelaku = null): void
+    {
+        DB::transaction(function () use ($denah, $kapasitas) {
+            foreach ($kapasitas as $ruangId => $kap) {
+                $kap = (int) $kap;
+                $r = DenahRuang::where('denah_id', $denah->id)->where('ruang_id', $ruangId)->first();
+
+                if ($kap < 1) {
+                    if ($r) {
+                        DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $ruangId)->delete();
+                        $r->delete();
+                    }
+                    continue;
+                }
+
+                $per = $r ? max(1, (int) $r->siswa_per_meja) : 1;
+                $r = DenahRuang::updateOrCreate(['denah_id' => $denah->id, 'ruang_id' => $ruangId], [
+                    'kapasitas' => $kap, 'siswa_per_meja' => $per, 'jumlah_meja' => max(1, (int) ceil($kap / $per)),
+                ]);
+                $this->rapikan($denah, $r);
+                $urutan = DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $ruangId)->orderBy('meja')->orderBy('posisi')->pluck('id');
+                if ($urutan->count() > $kap) {
+                    DenahPenempatan::whereIn('id', $urutan->slice($kap)->all())->delete(); // kelebihan kapasitas dilepas
+                }
+            }
+        });
+
+        $this->perbaruiJadwal($denah);
+        $this->ikatJadwalKegiatan($denah);
+        if ($pelaku) {
+            AuditLog::catat('denah.ruang', "denah {$denah->id}", $pelaku);
+        }
+    }
+
+    /** Susun ulang nomor meja/posisi ruang ini berurutan tanpa celah, mengikuti urutan sekarang. */
+    public function rapikan(Denah $denah, DenahRuang $r): void
+    {
+        $ids = DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $r->ruang_id)->orderBy('meja')->orderBy('posisi')->pluck('siswa_id')->map(fn ($v) => (int) $v)->all();
+        $this->susun($denah, $r, $ids);
+    }
+
+    /**
+     * Terapkan urutan baru (hasil seret-lepas) pada satu ruang; nomor meja mengikuti urutan.
+     *
+     * @param  list<int>  $siswaIds
+     */
+    public function urutkan(Denah $denah, DenahRuang $r, array $siswaIds, ?User $pelaku = null): void
+    {
+        $ada = DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $r->ruang_id)->orderBy('meja')->orderBy('posisi')->pluck('siswa_id')->map(fn ($v) => (int) $v)->all();
+        $urut = array_values(array_unique(array_filter(array_map('intval', $siswaIds), fn ($id) => in_array($id, $ada, true))));
+        $urut = array_merge($urut, array_values(array_diff($ada, $urut))); // yang tidak disebut tetap di ruang, di urutan akhir
+
+        $this->susun($denah, $r, $urut);
+        $this->perbaruiJadwal($denah);
+        if ($pelaku) {
+            AuditLog::catat('denah.urutan', "denah {$denah->id} ruang {$r->ruang_id}", $pelaku);
+        }
+    }
+
+    /** Urutkan ruang menurut kelas lalu nama (seperti urutan awal di aplikasi lama). */
+    public function urutkanPerKelas(Denah $denah, DenahRuang $r, ?User $pelaku = null): void
+    {
+        $kelas = DB::table('keanggotaan_kelas as k')->join('kelas as kl', 'kl.id', '=', 'k.kelas_id')
+            ->where('kl.tahun_ajaran_id', $denah->periode()->value('tahun_ajaran_id'))->select('k.siswa_id', 'kl.nama')->get()->unique('siswa_id')->pluck('nama', 'siswa_id');
+        $ids = DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $r->ruang_id)->with('siswa:id,nama')->get()
+            ->sortBy(fn ($p) => [$kelas[$p->siswa_id] ?? '', $p->siswa->nama])->pluck('siswa_id')->map(fn ($v) => (int) $v)->all();
+
+        $this->susun($denah, $r, $ids);
+        $this->perbaruiJadwal($denah);
+        if ($pelaku) {
+            AuditLog::catat('denah.urut_kelas', "denah {$denah->id} ruang {$r->ruang_id}", $pelaku);
+        }
+    }
+
+    /**
+     * Pindahkan siswa ke ruang lain (di akhir daftar) atau keluarkan dari denah ($ruangId null).
+     *
+     * @throws KesalahanJadwal
+     */
+    public function pindah(Denah $denah, Siswa $siswa, ?int $ruangId, ?User $pelaku = null): void
+    {
+        $tujuan = null;
+        if ($ruangId !== null) {
+            $tujuan = DenahRuang::where('denah_id', $denah->id)->where('ruang_id', $ruangId)->first()
+                ?? throw new KesalahanJadwal('Ruang itu bukan bagian dari denah ini.');
+        }
+
+        DB::transaction(function () use ($denah, $siswa, $tujuan) {
+            $lama = DenahPenempatan::where('denah_id', $denah->id)->where('siswa_id', $siswa->id)->lockForUpdate()->first();
+            $asal = $lama ? DenahRuang::where('denah_id', $denah->id)->where('ruang_id', $lama->ruang_id)->first() : null;
+
+            if ($tujuan && (! $lama || $lama->ruang_id !== $tujuan->ruang_id)) {
+                $isi = DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $tujuan->ruang_id)->count();
+                if ($isi >= $tujuan->kapasitas()) {
+                    throw new KesalahanJadwal('Ruang tujuan sudah penuh ('.$tujuan->kapasitas().' siswa). Naikkan kapasitasnya atau pilih ruang lain.');
+                }
+            }
+
+            $lama?->delete();
+            if ($tujuan && (! $lama || $lama->ruang_id !== $tujuan->ruang_id)) {
+                $isi = DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $tujuan->ruang_id)->count();
+                [$meja, $posisi] = $tujuan->tempatKe($isi);
+                DenahPenempatan::create(['denah_id' => $denah->id, 'siswa_id' => $siswa->id, 'ruang_id' => $tujuan->ruang_id, 'meja' => $meja, 'posisi' => $posisi]);
+            } elseif ($tujuan && $lama) {
+                DenahPenempatan::create($lama->only(['denah_id', 'siswa_id', 'ruang_id', 'meja', 'posisi'])); // ruang sama: tidak berubah
+            }
+            if ($asal) {
+                $this->rapikan($denah, $asal); // tutup celah nomor meja di ruang asal
+            }
+        });
+
+        $this->perbaruiJadwal($denah);
+        if ($pelaku) {
+            AuditLog::catat('denah.pindah', "denah {$denah->id}: siswa {$siswa->id} ke ".($ruangId ?? 'luar denah'), $pelaku);
+        }
+    }
+
+    /** Denah milik kegiatan ini (dibuat otomatis pada kunjungan pertama). */
+    public function untukKegiatan(KegiatanUjian $kegiatan, ?User $pembuat = null): Denah
+    {
+        return Denah::firstOrCreate(['kegiatan_id' => $kegiatan->id], [
+            'nama' => $kegiatan->nama, 'periode_id' => $kegiatan->periode_id, 'dibuat_oleh' => $pembuat?->id,
+        ]);
+    }
+
+    /** Jadwal kegiatan ini yang belum punya denah memakai denah kegiatan. */
+    public function ikatJadwalKegiatan(Denah $denah): void
+    {
+        if (! $denah->kegiatan_id) {
+            return;
+        }
+
+        JadwalUjian::where('kegiatan_id', $denah->kegiatan_id)->whereNull('denah_id')->where('status', '!=', JadwalUjian::SELESAI)->get()->each(function (JadwalUjian $j) use ($denah) {
+            $j->update(['denah_id' => $denah->id]);
+            $this->terapkan($j);
+        });
+    }
+
+    /** @param list<int> $urut id siswa lengkap sesuai urutan baru */
+    private function susun(Denah $denah, DenahRuang $r, array $urut): void
+    {
+        DB::transaction(function () use ($denah, $r, $urut) {
+            DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $r->ruang_id)->delete();
+            foreach ($urut as $i => $siswaId) {
+                [$meja, $posisi] = $r->tempatKe($i);
+                DenahPenempatan::create(['denah_id' => $denah->id, 'siswa_id' => $siswaId, 'ruang_id' => $r->ruang_id, 'meja' => $meja, 'posisi' => $posisi]);
+            }
+        });
     }
 
     /**

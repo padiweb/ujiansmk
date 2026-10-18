@@ -93,7 +93,7 @@ class JadwalUjianController extends Controller
         if ($jadwal->berstatus(JadwalUjian::AKTIF)) {
             $data = $this->validasiAktif($request, $jadwal);
             DB::transaction(function () use ($jadwal, $data) {
-                $jadwal->update(collect($data)->only(['tutup_pada', 'batas_pelanggaran', 'tampilkan_hasil'])->all() + ['denah_id' => $data['denah_id'] ?? null]);
+                $jadwal->update(collect($data)->only(['tutup_pada', 'batas_pelanggaran', 'tampilkan_hasil'])->all() + ['denah_id' => $data['denah_id'] ?? $this->denahKegiatan($jadwal->kegiatan_id)]);
             });
         } else {
             $data = $this->validasiLengkap($request, $jadwal);
@@ -293,8 +293,14 @@ class JadwalUjianController extends Controller
             'batas_pelanggaran' => $data['batas_pelanggaran'],
             'bobot_pg' => $data['bobot_pg'],
             'tampilkan_hasil' => $data['tampilkan_hasil'],
-            'denah_id' => $data['denah_id'] ?? null,
+            'denah_id' => $data['denah_id'] ?? $this->denahKegiatan($data['kegiatan_id'] ?? null),
         ];
+    }
+
+    /** Denah milik kegiatan (dipakai otomatis bila jadwal tidak memilih denah lain). */
+    private function denahKegiatan(?int $kegiatanId): ?int
+    {
+        return $kegiatanId ? \App\Models\Denah::where('kegiatan_id', $kegiatanId)->value('id') : null;
     }
 
     private function simpanRelasi(JadwalUjian $jadwal, array $data): void

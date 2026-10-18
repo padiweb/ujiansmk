@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Denah;
 use App\Models\DenahPenempatan;
 use App\Models\DenahRuang;
+use App\Models\KegiatanUjian;
 use App\Models\Kelas;
 use App\Models\Ruang;
 use App\Models\SesiUjian;
@@ -52,9 +53,10 @@ class DenahRuangTest extends TestCase
         return $r;
     }
 
-    private function bagi(array $tingkat, ?int $benih = 7): array
+    /** Bawaan campur tingkat agar tes pengacakan tetap berlaku; $campur false = pembagian urut kelas seperti aplikasi lama. */
+    private function bagi(array $tingkat, ?int $benih = 7, bool $campur = true): array
     {
-        return app(LayananDenah::class)->bagi($this->denah, collect($tingkat)->map(fn ($t) => $this->kelasTingkat[$t]->id)->all(), null, $benih);
+        return app(LayananDenah::class)->bagi($this->denah, collect($tingkat)->map(fn ($t) => $this->kelasTingkat[$t]->id)->all(), null, $benih, $campur);
     }
 
     /** @return array<string,list<string>> "ruang-meja" => tingkat para penghuni */
@@ -278,38 +280,142 @@ class DenahRuangTest extends TestCase
         $this->assertSame(0, DenahPenempatan::count());
     }
 
-    public function test_alur_halaman_buat_ruang_bagi_tempatkan_lepas(): void
+    public function test_alur_halaman_kegiatan_ruang_bagi_pindah_lepas(): void
     {
         $this->actingAs($this->admin, 'web');
-        $this->post(route('staf.denah.store'), ['nama' => 'Denah Baru', 'periode_id' => $this->jadwal->periode_id])->assertRedirect();
-        $denah = Denah::where('nama', 'Denah Baru')->firstOrFail();
-        $r = Ruang::create(['nama' => 'Lab Z']);
+        $kegiatan = KegiatanUjian::create(['periode_id' => $this->jadwal->periode_id, 'nama' => 'Asesmen Gasal', 'aktif' => true]);
+        $this->get(route('staf.denah.index'))->assertOk()->assertSee('Asesmen Gasal');
 
-        $this->post(route('staf.denah.ruang', $denah), ['ruang_id' => $r->id, 'jumlah_meja' => 5, 'siswa_per_meja' => 2])->assertSessionHasNoErrors();
-        $this->post(route('staf.denah.ruang', $denah), ['ruang_id' => $r->id, 'jumlah_meja' => 0, 'siswa_per_meja' => 4])->assertSessionHasErrors(['jumlah_meja', 'siswa_per_meja']);
+        $this->get(route('staf.denah.kegiatan', $kegiatan))->assertRedirect();
+        $denah = Denah::where('kegiatan_id', $kegiatan->id)->firstOrFail();
+        $this->get(route('staf.denah.kegiatan', $kegiatan)); // idempoten
+        $this->assertSame(1, Denah::where('kegiatan_id', $kegiatan->id)->count());
+
+        $r1 = Ruang::create(['nama' => 'Lab A']);
+        $r2 = Ruang::create(['nama' => 'Lab B']);
+        $this->post(route('staf.denah.ruang', $denah), ['kapasitas' => [$r1->id => 4, $r2->id => 10]])->assertSessionHasNoErrors();
+        $this->post(route('staf.denah.ruang', $denah), ['kapasitas' => [$r1->id => 9999]])->assertSessionHasErrors('kapasitas.'.$r1->id);
         $this->post(route('staf.denah.bagi', $denah), ['kelas_ids' => []])->assertSessionHasErrors('kelas_ids');
-        $this->post(route('staf.denah.bagi', $denah), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('catatan'); // sejenis (satu tingkat)
-        $this->assertSame(6, DenahPenempatan::where('denah_id', $denah->id)->count());
+        $this->post(route('staf.denah.bagi', $denah), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('berhasil');
+        $this->assertSame(4, DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $r1->id)->count());
+        $this->assertSame(2, DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $r2->id)->count());
 
-        $s = $this->siswa[0];
-        $this->post(route('staf.denah.tempatkan', $denah), ['nisn' => $s->nisn, 'ruang_id' => $r->id, 'meja' => 5, 'posisi' => 2])->assertSessionHas('berhasil');
-        $this->post(route('staf.denah.tempatkan', $denah), ['nisn' => 'tidak-ada', 'ruang_id' => $r->id, 'meja' => 1, 'posisi' => 1])->assertSessionHas('gagal');
-        $this->post(route('staf.denah.tempatkan', $denah), ['nisn' => $s->nisn, 'ruang_id' => $r->id, 'meja' => 6, 'posisi' => 1])->assertSessionHas('gagal');
-        $this->post(route('staf.denah.lepas', [$denah, $s]))->assertSessionHas('berhasil');
+        $s = DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $r1->id)->where('meja', 1)->first()->siswa;
+        $this->post(route('staf.denah.pindah', [$denah, $s]), ['ruang_id' => $r2->id])->assertSessionHas('berhasil');
+        $this->assertSame($r2->id, DenahPenempatan::where('siswa_id', $s->id)->value('ruang_id'));
+        $this->assertSame([1, 2, 3], DenahPenempatan::where('ruang_id', $r1->id)->orderBy('meja')->pluck('meja')->all()); // celah ditutup
+
+        $this->post(route('staf.denah.pindah', [$denah, $s]), ['ruang_id' => 'keluar'])->assertSessionHas('berhasil');
         $this->assertFalse(DenahPenempatan::where('denah_id', $denah->id)->where('siswa_id', $s->id)->exists());
 
-        $this->get(route('staf.denah.show', $denah))->assertOk()->assertSee('Lab Z');
+        $this->post(route('staf.denah.ruang', $denah), ['kapasitas' => [$r1->id => 3, $r2->id => '']]);
+        $this->assertFalse(DenahRuang::where('denah_id', $denah->id)->where('ruang_id', $r2->id)->exists());
+
+        $this->get(route('staf.denah.show', $denah))->assertOk()->assertSee('Lab A');
+    }
+
+    public function test_bagi_bawaan_mengisi_ruang_berurutan_per_kelas_lalu_nama(): void
+    {
+        $kelasA = $this->kelas;
+        $kelasB = $this->kelasBaru('X', 3, 'X 0'); // nama kelas lebih awal dari "X A"
+        $r1 = $this->ruang('Lab 1', 4, 1);
+        $r2 = $this->ruang('Lab 2', 10, 1);
+
+        $h = app(LayananDenah::class)->bagi($this->denah, [$kelasA->id, $kelasB->id], null, null, false);
+        $this->assertSame(9, $h['ditempatkan']);
+        $this->assertSame(0, $h['meja_sejenis']);
+
+        $lab1 = DenahPenempatan::where('ruang_id', $r1->id)->orderBy('meja')->get();
+        $this->assertSame([1, 2, 3, 4], $lab1->pluck('meja')->all());
+        $this->assertSame([1, 1, 1, 1], $lab1->pluck('posisi')->all());
+        $kelasSiswa = DB::table('keanggotaan_kelas')->pluck('kelas_id', 'siswa_id');
+        $this->assertSame([$kelasB->id, $kelasB->id, $kelasB->id], $lab1->take(3)->map(fn ($p) => $kelasSiswa[$p->siswa_id])->all()); // X AAA lebih dulu
+        $this->assertSame(5, DenahPenempatan::where('ruang_id', $r2->id)->count());
+    }
+
+    public function test_kapasitas_ruang_dihormati_saat_bagi(): void
+    {
+        $r = Ruang::create(['nama' => 'Kecil']);
+        app(LayananDenah::class)->aturRuang($this->denah, [$r->id => 3]);
+
+        $h = $this->bagi(['X'], campur: false);
+
+        $this->assertSame(3, $h['ditempatkan']);
+        $this->assertSame(3, $h['tanpa_tempat']);
+        $this->assertSame(3, DenahRuang::where('ruang_id', $r->id)->value('kapasitas'));
+    }
+
+    public function test_urutkan_menyusun_nomor_meja_mengikuti_urutan_dan_aman_dari_id_asing(): void
+    {
+        $r = $this->ruang('Lab 1', 10, 1);
+        $this->bagi(['X'], campur: false);
+        $dr = DenahRuang::where('ruang_id', $r->id)->first();
+        $urut = DenahPenempatan::where('ruang_id', $r->id)->orderBy('meja')->pluck('siswa_id')->all();
+
+        $baru = array_reverse($urut);
+        app(LayananDenah::class)->urutkan($this->denah, $dr, array_merge($baru, [999999]));
+
+        $this->assertSame($baru, DenahPenempatan::where('ruang_id', $r->id)->orderBy('meja')->pluck('siswa_id')->all());
+        $this->assertSame(range(1, 6), DenahPenempatan::where('ruang_id', $r->id)->orderBy('meja')->pluck('meja')->all());
+
+        $this->actingAs($this->admin, 'web')->postJson(route('staf.denah.ruang.urutan', [$this->denah, $r]), ['ids' => $urut])->assertOk();
+        $this->assertSame($urut, DenahPenempatan::where('ruang_id', $r->id)->orderBy('meja')->pluck('siswa_id')->all());
+    }
+
+    public function test_pindah_ke_ruang_penuh_ditolak(): void
+    {
+        $r1 = $this->ruang('Lab 1', 4, 1);
+        $r2 = $this->ruang('Lab 2', 2, 1);
+        $this->bagi(['X'], campur: false); // Lab 1 penuh (4), Lab 2 berisi 2 (penuh)
+        $s = DenahPenempatan::where('ruang_id', $r1->id)->first()->siswa;
+
+        $this->expectException(KesalahanJadwal::class);
+        $this->expectExceptionMessage('sudah penuh');
+        app(LayananDenah::class)->pindah($this->denah, $s, $r2->id);
+    }
+
+    public function test_halaman_ruang_cetak_meja_dan_absen(): void
+    {
+        $r = $this->ruang('Lab 1', 10, 1);
+        $this->bagi(['X'], campur: false);
+        $this->actingAs($this->admin, 'web');
+
+        $this->get(route('staf.denah.ruang.show', [$this->denah, $r]))->assertOk()->assertSee('Lab 1')->assertSee($this->siswa[0]->nama)->assertSee('Cetak No. Meja', false);
+        $this->get(route('staf.denah.ruang.no-meja', [$this->denah, $r]))->assertOk()->assertSee($this->siswa[0]->nama);
+        $this->get(route('staf.denah.ruang.absen', [$this->denah, $r]))->assertOk()->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $this->post(route('staf.denah.ruang.urut-kelas', [$this->denah, $r]))->assertSessionHas('berhasil');
+
+        $lain = Ruang::create(['nama' => 'Bukan Bagian Denah']);
+        $this->get(route('staf.denah.ruang.show', [$this->denah, $lain]))->assertNotFound();
+        $this->actingAs(User::factory()->create(), 'web')->get(route('staf.denah.ruang.show', [$this->denah, $r]))->assertForbidden();
+    }
+
+    public function test_jadwal_kegiatan_otomatis_memakai_denah_kegiatan(): void
+    {
+        $kegiatan = KegiatanUjian::create(['periode_id' => $this->jadwal->periode_id, 'nama' => 'Asesmen', 'aktif' => true]);
+        $this->jadwal->update(['kegiatan_id' => $kegiatan->id, 'denah_id' => null]);
+        $denah = app(LayananDenah::class)->untukKegiatan($kegiatan);
+        $r = Ruang::create(['nama' => 'Lab K']);
+
+        // Mengatur ruang lalu membagi siswa memasang denah ke jadwal kegiatan dan menyalin ke sesi.
+        $this->actingAs($this->admin, 'web')->post(route('staf.denah.ruang', $denah), ['kapasitas' => [$r->id => 10]]);
+        $this->assertSame($denah->id, $this->jadwal->fresh()->denah_id);
+        $this->post(route('staf.denah.bagi', $denah), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('berhasil');
+
+        $sesi = $this->sesiDari($this->siswa[0]);
+        $this->assertSame($r->id, $sesi->ruang_id);
+        $this->assertNotNull($sesi->no_meja);
     }
 
     public function test_mengecilkan_ruang_melepas_penempatan_di_luar_kapasitas(): void
     {
         $r = $this->ruang('Lab 1', 10);
-        $this->bagi(['X']); // 6 siswa menempati meja 1-3
+        $this->bagi(['X']); // 6 siswa
 
-        $this->actingAs($this->admin, 'web')->post(route('staf.denah.ruang', $this->denah), ['ruang_id' => $r->id, 'jumlah_meja' => 2, 'siswa_per_meja' => 2])->assertSessionHasNoErrors();
+        $this->actingAs($this->admin, 'web')->post(route('staf.denah.ruang', $this->denah), ['kapasitas' => [$r->id => 4]])->assertSessionHasNoErrors();
 
         $this->assertSame(4, DenahPenempatan::where('denah_id', $this->denah->id)->count());
-        $this->assertSame(0, DenahPenempatan::where('denah_id', $this->denah->id)->where('meja', '>', 2)->count());
+        $this->assertSame(4, DenahRuang::where('ruang_id', $r->id)->value('kapasitas'));
     }
 
     // ── Pengawas lintas ruang ───────────────────────────────────────────────

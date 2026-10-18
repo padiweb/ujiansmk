@@ -489,3 +489,7 @@ h1, h2, h3 { color: var(--teks); }
 .meja-siswa small { display: block; color: var(--teks-3); font-size: .74rem; }
 .meja-lepas { border: 0; background: transparent; color: var(--teks-3); cursor: pointer; padding: 2px; border-radius: 4px; }
 .meja-lepas:hover { background: var(--garis-lembut); color: var(--teks); }
+.dr-meja { text-align: center; font-size: 1.1rem; color: var(--biru-tua); }
+.dr-pegang { text-align: center; color: var(--teks-3); cursor: grab; user-select: none; }
+#drIsi tr { cursor: grab; }
+#drIsi tr.dr-ambil { opacity: .45; background: var(--biru-muda); }

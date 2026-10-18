@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /** Nama kegiatan ujian pada satu semester, mis. "Asesmen Semester Gasal". Jadwal per mapel dibuat di bawahnya. */
 class KegiatanUjian extends Model
@@ -26,6 +27,11 @@ class KegiatanUjian extends Model
     public function jadwal(): HasMany
     {
         return $this->hasMany(JadwalUjian::class, 'kegiatan_id');
+    }
+
+    public function denah(): HasOne
+    {
+        return $this->hasOne(Denah::class, 'kegiatan_id');
     }
 
     /** Nama jadwal yang tampil di semua halaman: kegiatan + mata pelajaran. */
