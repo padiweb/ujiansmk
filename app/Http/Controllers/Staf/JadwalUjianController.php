@@ -65,7 +65,7 @@ class JadwalUjianController extends Controller
 
     public function show(JadwalUjian $jadwal): View
     {
-        $jadwal->load('mapel', 'periode.tahunAjaran', 'pembuat', 'kelas.jurusan', 'pengawas', 'bank.bankSoal', 'denah');
+        $jadwal->load('mapel', 'periode.tahunAjaran', 'pembuat', 'kelas.jurusan', 'bank.bankSoal', 'denah');
 
         return view('staf.jadwal.show', [
             'j' => $jadwal,
@@ -82,7 +82,7 @@ class JadwalUjianController extends Controller
     {
         abort_if($jadwal->berstatus(JadwalUjian::SELESAI), 403, 'Jadwal yang sudah selesai tidak dapat diubah.');
 
-        return view('staf.jadwal.form', ['j' => $jadwal->load('kelas', 'bank', 'pengawas')] + $this->pilihan());
+        return view('staf.jadwal.form', ['j' => $jadwal->load('kelas', 'bank')] + $this->pilihan());
     }
 
     public function update(Request $request, JadwalUjian $jadwal): RedirectResponse
@@ -93,7 +93,6 @@ class JadwalUjianController extends Controller
             $data = $this->validasiAktif($request, $jadwal);
             DB::transaction(function () use ($jadwal, $data) {
                 $jadwal->update(collect($data)->only(['tutup_pada', 'batas_pelanggaran', 'tampilkan_hasil'])->all() + ['denah_id' => $data['denah_id'] ?? null]);
-                $this->syncPengawas($jadwal, $data['pengawas_ids'] ?? []);
             });
         } else {
             $data = $this->validasiLengkap($request);
@@ -187,7 +186,6 @@ class JadwalUjianController extends Controller
                 ->withCount(['soal as pg_siap' => fn ($q) => $q->where('tipe', 'pg')->where('status', 'siap'),
                     'soal as esai_siap' => fn ($q) => $q->where('tipe', 'esai')->where('status', 'siap')])
                 ->orderBy('nama')->get(),
-            'daftarPengawas' => User::where('role', User::PENGAWAS)->where('aktif', true)->orderBy('nama')->get(),
             'periodeAktif' => Periode::where('aktif', true)->value('id'),
             'daftarDenah' => Denah::orderByDesc('id')->get(),
         ];
@@ -215,8 +213,6 @@ class JadwalUjianController extends Controller
             'batas_pelanggaran' => ['required', 'integer', 'between:1,10'],
             'bobot_pg' => ['required', 'integer', 'between:0,100'],
             'tampilkan_hasil' => ['required', Rule::in(['langsung', 'ditahan'])],
-            'pengawas_ids' => ['nullable', 'array'],
-            'pengawas_ids.*' => ['integer', Rule::exists('users', 'id')->where('role', User::PENGAWAS)],
             'denah_id' => ['nullable', 'integer', Rule::exists('denah_ujian', 'id')],
         ];
 
@@ -261,8 +257,6 @@ class JadwalUjianController extends Controller
             'tutup_pada' => ['required', 'date', 'after:now', 'after:'.$jadwal->mulai_pada->toDateTimeString()],
             'batas_pelanggaran' => ['required', 'integer', 'between:1,10'],
             'tampilkan_hasil' => ['required', Rule::in(['langsung', 'ditahan'])],
-            'pengawas_ids' => ['nullable', 'array'],
-            'pengawas_ids.*' => ['integer', Rule::exists('users', 'id')->where('role', User::PENGAWAS)],
             'denah_id' => ['nullable', 'integer', Rule::exists('denah_ujian', 'id')],
         ], [
             'tutup_pada.after' => 'Waktu tutup harus di masa depan dan setelah waktu mulai.',
@@ -287,32 +281,9 @@ class JadwalUjianController extends Controller
         ];
     }
 
-    /** Sinkronkan pengawas tanpa menghapus penugasan ruang mereka. */
-    private function syncPengawas(JadwalUjian $jadwal, array $ids): void
-    {
-        $ruang = $jadwal->pengawas()->get()->mapWithKeys(fn (User $u) => [$u->id => $u->pivot->ruang_id]);
-        $jadwal->pengawas()->sync(collect($ids)->mapWithKeys(fn ($id) => [(int) $id => ['ruang_id' => $ruang[(int) $id] ?? null]])->all());
-    }
-
-    /** Tugaskan pengawas ke ruang tertentu (kosong = semua ruang). */
-    public function pengawasRuang(Request $request, JadwalUjian $jadwal): RedirectResponse
-    {
-        abort_if($jadwal->berstatus(JadwalUjian::SELESAI), 403, 'Jadwal yang sudah selesai tidak dapat diubah.');
-        $data = $request->validate(['ruang' => ['nullable', 'array'], 'ruang.*' => ['nullable', 'integer', Rule::exists('ruang', 'id')]]);
-
-        foreach ($jadwal->pengawas()->get() as $u) {
-            $ruangId = $data['ruang'][$u->id] ?? null;
-            $jadwal->pengawas()->updateExistingPivot($u->id, ['ruang_id' => filled($ruangId) ? (int) $ruangId : null]);
-        }
-        AuditLog::catat('jadwal.pengawas_ruang', "jadwal {$jadwal->id}", $request->user('web'));
-
-        return back()->with('berhasil', 'Penugasan ruang pengawas disimpan.');
-    }
-
     private function simpanRelasi(JadwalUjian $jadwal, array $data): void
     {
         $jadwal->kelas()->sync($data['kelas_ids']);
-        $this->syncPengawas($jadwal, $data['pengawas_ids'] ?? []);
 
         $jadwal->bank()->delete();
         foreach ($data['bank_ids'] as $idBank) {

@@ -72,16 +72,14 @@ class KartuUjianController extends Controller
             ->header('Cache-Control', 'no-store, private');
     }
 
-    /** Daftar hadir per ruang: admin, atau pengawas yang ditugaskan (dibatasi ruangnya). */
+    /** Daftar hadir per ruang: admin dan pengawas (semua ruang; ?ruang= untuk satu ruang). */
     public function hadir(Request $request, JadwalUjian $jadwal): View
     {
         $user = $request->user('web');
-        abort_unless($user->role === 'admin' || ($user->role === 'pengawas' && $this->monitor->bolehLihat($user, $jadwal)), 403, 'Anda tidak berwenang mencetak daftar hadir ini.');
+        abort_unless($user->role === 'admin' || $this->monitor->bolehBertindak($user, $jadwal), 403, 'Anda tidak berwenang mencetak daftar hadir ini.');
 
-        $batas = $this->monitor->ruangDitugaskan($user, $jadwal);
         $peserta = $this->kartu->peserta($jadwal->load('mapel'))
-            ->when($batas !== null, fn ($c) => $c->filter(fn ($p) => in_array($p['ruang_id'], $batas, true)))
-            ->when($request->filled('ruang') && $batas === null, fn ($c) => $c->filter(fn ($p) => $p['ruang_id'] === (int) $request->query('ruang')));
+            ->when($request->filled('ruang'), fn ($c) => $c->filter(fn ($p) => $p['ruang_id'] === (int) $request->query('ruang')));
 
         $perRuang = $peserta->sortBy([['meja', 'asc'], ['nama', 'asc']])->groupBy(fn ($p) => $p['ruang'] ?? 'Belum ditempatkan')->sortKeys();
 

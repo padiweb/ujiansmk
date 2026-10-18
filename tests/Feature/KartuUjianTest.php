@@ -46,7 +46,6 @@ class KartuUjianTest extends TestCase
     {
         $guru = User::factory()->create();
         $pengawas = User::factory()->pengawas()->create();
-        $this->jadwal->pengawas()->sync([$pengawas->id]);
 
         $this->actingAs($this->admin, 'web')->get(route('staf.kartu.index', $this->jadwal))->assertOk();
         $this->actingAs($guru, 'web')->get(route('staf.kartu.index', $this->jadwal))->assertForbidden();
@@ -55,29 +54,30 @@ class KartuUjianTest extends TestCase
         $this->assertTrue($this->sandiLama($this->siswa[0]));
     }
 
-    public function test_daftar_hadir_untuk_admin_dan_pengawas_tertugas(): void
+    public function test_daftar_hadir_untuk_admin_dan_semua_pengawas_bukan_guru_biasa(): void
     {
-        $tertugas = User::factory()->pengawas()->create();
-        $lain = User::factory()->pengawas()->create();
+        $pengawas = User::factory()->pengawas()->create();
+        $guruPengawas = User::factory()->guruPengawas()->create();
         $guru = User::factory()->create();
-        $this->jadwal->pengawas()->sync([$tertugas->id]);
 
         $this->actingAs($this->admin, 'web')->get(route('staf.hadir', $this->jadwal))->assertOk();
-        $this->actingAs($tertugas, 'web')->get(route('staf.hadir', $this->jadwal))->assertOk();
-        $this->actingAs($lain, 'web')->get(route('staf.hadir', $this->jadwal))->assertForbidden();
+        $this->actingAs($pengawas, 'web')->get(route('staf.hadir', $this->jadwal))->assertOk();
+        $this->actingAs($guruPengawas, 'web')->get(route('staf.hadir', $this->jadwal))->assertOk();
         $this->actingAs($guru, 'web')->get(route('staf.hadir', $this->jadwal))->assertForbidden();
     }
 
-    public function test_pengawas_ruang_hanya_mencetak_ruangnya(): void
+    public function test_pengawas_melihat_semua_ruang_dan_bisa_memilih_satu_ruang(): void
     {
         $ruangLain = Ruang::create(['nama' => 'Ruang Teori']);
         $denah = $this->jadwal->denah;
         DenahRuang::create(['denah_id' => $denah->id, 'ruang_id' => $ruangLain->id, 'jumlah_meja' => 2, 'siswa_per_meja' => 1]);
         app(LayananDenah::class)->tempatkan($denah, $this->siswa[0], $ruangLain->id, 1, 1);
         $pengawas = User::factory()->pengawas()->create();
-        $this->jadwal->pengawas()->sync([$pengawas->id => ['ruang_id' => $this->ruang->id]]);
 
-        $r = $this->actingAs($pengawas, 'web')->get(route('staf.hadir', $this->jadwal))->assertOk();
+        $semua = $this->actingAs($pengawas, 'web')->get(route('staf.hadir', $this->jadwal))->assertOk();
+        $semua->assertSee('Lab Komputer')->assertSee('Ruang Teori');
+
+        $r = $this->actingAs($pengawas, 'web')->get(route('staf.hadir', [$this->jadwal, 'ruang' => $this->ruang->id]))->assertOk();
 
         $r->assertSee('Lab Komputer')->assertDontSee('Ruang Teori')->assertDontSee($this->siswa[0]->nama);
         $r->assertSee($this->siswa[1]->nama);

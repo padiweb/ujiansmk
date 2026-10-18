@@ -312,9 +312,9 @@ class DenahRuangTest extends TestCase
         $this->assertSame(0, DenahPenempatan::where('denah_id', $this->denah->id)->where('meja', '>', 2)->count());
     }
 
-    // ── Pengawas per ruang ──────────────────────────────────────────────────
+    // ── Pengawas lintas ruang ───────────────────────────────────────────────
 
-    public function test_pengawas_ruang_hanya_melihat_dan_menangani_ruangnya(): void
+    public function test_pengawas_melihat_dan_menangani_semua_ruang(): void
     {
         $r1 = $this->ruang('Lab 1', 2);
         $r2 = $this->ruang('Lab 2', 2);
@@ -322,34 +322,17 @@ class DenahRuangTest extends TestCase
         $this->jadwal->update(['denah_id' => $this->denah->id]);
         app(LayananDenah::class)->terapkan($this->jadwal->refresh());
         $pengawas = User::factory()->pengawas()->create();
-        $this->jadwal->pengawas()->sync([$pengawas->id => ['ruang_id' => $r1->id]]);
         foreach ($this->siswa as $s) {
             $this->mulaiSesi($s);
         }
 
         $d = $this->actingAs($pengawas, 'web')->getJson("/staf/monitor/{$this->jadwal->id}/data")->assertOk()->json();
-        $this->assertSame(4, count($d['peserta'])); // Lab 1: 2 meja x 2 siswa; sisanya di Lab 2
-        $this->assertSame([$r1->id], array_values(array_unique(array_column($d['peserta'], 'ruang_id'))));
-        $this->assertSame(4, $d['ringkasan']['mengerjakan']);
+        $this->assertSame(count($this->siswa), count($d['peserta']));
+        $this->assertEqualsCanonicalizing([$r1->id, $r2->id], array_values(array_unique(array_column($d['peserta'], 'ruang_id'))));
 
         $sesiLab1 = SesiUjian::where('jadwal_id', $this->jadwal->id)->where('ruang_id', $r1->id)->first();
         $sesiLab2 = SesiUjian::where('jadwal_id', $this->jadwal->id)->where('ruang_id', $r2->id)->first();
-        $this->postJson("/staf/monitor/{$this->jadwal->id}/sesi/{$sesiLab2->id}/reset")->assertForbidden();
-        $this->assertNotNull($sesiLab2->fresh()->token_perangkat);
+        $this->postJson("/staf/monitor/{$this->jadwal->id}/sesi/{$sesiLab2->id}/reset")->assertOk();
         $this->postJson("/staf/monitor/{$this->jadwal->id}/sesi/{$sesiLab1->id}/reset")->assertOk();
-    }
-
-    public function test_pengawas_tanpa_ruang_melihat_semua_dan_ubah_jadwal_menjaga_penugasan_ruang(): void
-    {
-        $r1 = $this->ruang('Lab 1', 5);
-        $pengawas = User::factory()->pengawas()->create();
-        $this->jadwal->pengawas()->sync([$pengawas->id => ['ruang_id' => $r1->id]]);
-        $dasar = ['tutup_pada' => now()->addHours(2)->format('Y-m-d H:i:s'), 'batas_pelanggaran' => 3, 'tampilkan_hasil' => 'langsung', 'pengawas_ids' => [$pengawas->id]];
-
-        $this->actingAs($this->admin, 'web')->put(route('staf.jadwal.update', $this->jadwal), $dasar)->assertRedirect();
-        $this->assertSame($r1->id, $this->jadwal->pengawas()->first()->pivot->ruang_id); // tidak terhapus
-
-        $this->post(route('staf.jadwal.pengawas-ruang', $this->jadwal), ['ruang' => [$pengawas->id => '']])->assertSessionHas('berhasil');
-        $this->assertNull($this->jadwal->pengawas()->first()->pivot->ruang_id);
     }
 }

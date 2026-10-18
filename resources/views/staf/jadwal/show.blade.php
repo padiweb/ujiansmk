@@ -51,34 +51,16 @@
         <div><dt>Batas pelanggaran</dt><dd>{{ $j->batas_pelanggaran }} (blokir pada pelanggaran ke-{{ $j->batas_pelanggaran }})</dd></div>
         <div><dt>Bobot nilai</dt><dd>PG {{ $j->bobot_pg }}% · Esai {{ $j->bobotEsai() }}%</dd></div>
         <div><dt>Nilai ke siswa</dt><dd>{{ $j->tampilkan_hasil === 'langsung' ? 'Langsung setelah dikirim' : 'Ditahan' }}</dd></div>
-        <div><dt>Pengawas</dt><dd>{{ $j->pengawas->pluck('nama')->implode(', ') ?: '—' }}</dd></div>
     </dl>
 </div>
 
 <div class="kartu">
-    <h2 class="judul-kartu">Ruang dan pengawas</h2>
+    <h2 class="judul-kartu">Ruang</h2>
     <p>Denah: @if ($j->denah) <a href="{{ route('staf.denah.show', $j->denah) }}"><strong>{{ $j->denah->nama }}</strong></a> @else <span class="sub">belum dipasang</span> @endif</p>
     @if (! is_null($tanpaTempat) && $tanpaTempat > 0)
         <div class="pesan-salah catatan" role="status" style="margin-top:8px"><x-ikon nama="peringatan" :ukuran="18" /><span>{{ $tanpaTempat }} peserta belum punya tempat di denah ini. Mereka tetap bisa ujian, tetapi tanpa ruang dan nomor meja.</span></div>
     @endif
-    @if ($j->pengawas->isNotEmpty() && $j->status !== 'selesai')
-        <form method="POST" action="{{ route('staf.jadwal.pengawas-ruang', $j) }}" style="margin-top:12px">
-            @csrf
-            <table class="tabel"><thead><tr><th>Pengawas</th><th>Bertugas di ruang</th></tr></thead><tbody>
-                @foreach ($j->pengawas as $u)
-                    <tr><td>{{ $u->nama }}</td><td>
-                        <select name="ruang[{{ $u->id }}]" aria-label="Ruang untuk {{ $u->nama }}">
-                            <option value="">Semua ruang</option>
-                            @foreach ($daftarRuang as $r)
-                                <option value="{{ $r->id }}" @selected($u->pivot->ruang_id === $r->id)>{{ $r->nama }}</option>
-                            @endforeach
-                        </select></td></tr>
-                @endforeach
-            </tbody></table>
-            <div class="aksi-form"><button class="tombol kecil garis" type="submit">Simpan penugasan ruang</button></div>
-            <small class="bantuan">Pengawas yang ditugaskan ke satu ruang hanya melihat dan menangani siswa di ruang itu.</small>
-        </form>
-    @endif
+    <small class="bantuan">Pengawas tidak ditugaskan per jadwal: semua pengawas dapat memantau semua ruang saat jadwal aktif.</small>
 </div>
 
 <div class="kartu">

@@ -26,7 +26,6 @@ class MonitorPengawasTest extends TestCase
         parent::setUp();
         $this->siapkanUjian(jumlahSiswa: 3);
         $this->pengawas = User::factory()->pengawas()->create();
-        $this->jadwal->pengawas()->sync([$this->pengawas->id]);
     }
 
     protected function tearDown(): void
@@ -66,22 +65,35 @@ class MonitorPengawasTest extends TestCase
 
     // ── Hak akses ───────────────────────────────────────────────────────────
 
-    public function test_admin_dan_pengawas_tertugas_boleh_melihat_pengawas_lain_tidak(): void
+    public function test_semua_pengawas_melihat_jadwal_aktif_dan_tokennya_tanpa_penugasan(): void
     {
         $lain = User::factory()->pengawas()->create();
+        $guruPengawas = User::factory()->guruPengawas()->create();
 
-        $this->actingAs($this->admin, 'web')->get("/staf/monitor/{$this->jadwal->id}")->assertOk()->assertSee($this->jadwal->token);
-        $this->actingAs($this->pengawas, 'web')->get("/staf/monitor/{$this->jadwal->id}")->assertOk();
-        $this->actingAs($lain, 'web')->get("/staf/monitor/{$this->jadwal->id}")->assertNotFound();
-        $this->actingAs($lain, 'web')->getJson("/staf/monitor/{$this->jadwal->id}/data")->assertNotFound();
+        foreach ([$this->admin, $this->pengawas, $lain, $guruPengawas] as $u) {
+            $this->actingAs($u, 'web')->get("/staf/monitor/{$this->jadwal->id}")->assertOk()->assertSee($this->jadwal->token);
+            $this->actingAs($u, 'web')->get('/staf/monitor')->assertOk()->assertSee('UTS Matematika');
+        }
     }
 
-    public function test_daftar_hanya_memuat_jadwal_yang_boleh_dilihat(): void
+    public function test_pengawas_nonaktif_atau_guru_tanpa_tanda_pengawas_tidak_melihat_apa_apa(): void
     {
-        $lain = User::factory()->pengawas()->create();
+        $nonaktif = User::factory()->pengawas()->nonaktif()->create();
+        $guru = User::factory()->create();
 
-        $this->actingAs($this->pengawas, 'web')->get('/staf/monitor')->assertOk()->assertSee('UTS Matematika');
-        $this->actingAs($lain, 'web')->get('/staf/monitor')->assertOk()->assertDontSee('UTS Matematika');
+        $this->actingAs($guru, 'web')->get("/staf/monitor/{$this->jadwal->id}")->assertNotFound();
+        $this->actingAs($guru, 'web')->get('/staf/monitor')->assertOk()->assertDontSee('UTS Matematika');
+        $this->actingAs($nonaktif, 'web')->get('/staf/monitor')->assertForbidden();
+    }
+
+    public function test_guru_pengawas_boleh_semua_tindakan(): void
+    {
+        $gp = User::factory()->guruPengawas()->create();
+        [$sesi] = $this->berjalan();
+
+        $this->aksi($gp, $sesi, 'reset')->assertOk();
+        $this->aksi($gp, $sesi, 'waktu', ['menit' => 5])->assertOk();
+        $this->actingAs($gp, 'web')->get("/staf/monitor/{$this->jadwal->id}")->assertSee('data-boleh="aktifkan,reset,waktu,selesai"', false);
     }
 
     public function test_guru_mapel_boleh_aktifkan_kembali_dan_paksa_selesai_tapi_tidak_reset_atau_tambah_waktu(): void
@@ -129,9 +141,9 @@ class MonitorPengawasTest extends TestCase
         $this->actingAs($this->siswa[0], 'siswa')->get("/staf/monitor/{$this->jadwal->id}")->assertRedirect();
     }
 
-    public function test_pengawas_lain_tidak_bisa_bertindak(): void
+    public function test_guru_lain_tidak_bisa_bertindak(): void
     {
-        $lain = User::factory()->pengawas()->create();
+        $lain = User::factory()->create();
         [$sesi] = $this->berjalan();
 
         $this->aksi($lain, $sesi, 'selesai')->assertForbidden();
@@ -144,7 +156,6 @@ class MonitorPengawasTest extends TestCase
         $lain = $this->jadwal->replicate(['token', 'media_kode']);
         $lain->nama = 'Lain';
         $lain->save();
-        $lain->pengawas()->sync([$this->pengawas->id]);
 
         $this->actingAs($this->pengawas, 'web')->postJson("/staf/monitor/{$lain->id}/sesi/{$sesi->id}/reset")->assertNotFound();
     }
@@ -216,7 +227,7 @@ class MonitorPengawasTest extends TestCase
 
     // ── Tindakan ────────────────────────────────────────────────────────────
 
-    public function test_aktifkan_kembali_membuka_blokir_dengan_satu_kesempatan(): void
+    public function test_aktifkan_kembali_membuka_blokir_dan_mengatur_ulang_hitungan_ke_nol(): void
     {
         [$sesi, $token] = $this->berjalan();
         $this->blokirkan($sesi);
@@ -225,13 +236,14 @@ class MonitorPengawasTest extends TestCase
 
         $s = $sesi->fresh();
         $this->assertSame(SesiUjian::BERLANGSUNG, $s->status);
-        $this->assertSame($this->jadwal->batas_pelanggaran - 1, $s->jumlah_pelanggaran);
+        $this->assertSame(0, $s->jumlah_pelanggaran);
         $this->assertDatabaseHas('aksi_pengawas', ['sesi_id' => $sesi->id, 'user_id' => $this->pengawas->id, 'aksi' => 'aktifkan_kembali']);
         $this->postJson("/api/ujian/{$sesi->id}/sinkron", [], $this->header($token))->assertOk()->assertJsonPath('status', 'berlangsung');
 
-        // Satu pelanggaran lagi memblokir kembali.
-        app(LayananPelanggaran::class)->catat($s, 'pindah_tab', null);
-        $this->assertSame(SesiUjian::DIBLOKIR, $sesi->fresh()->status);
+        // Satu pelanggaran lagi tidak langsung memblokir: kesempatan penuh lagi.
+        app(LayananPelanggaran::class)->catat($s->fresh(), 'pindah_tab', null);
+        $this->assertSame(SesiUjian::BERLANGSUNG, $sesi->fresh()->status);
+        $this->assertSame(1, $sesi->fresh()->jumlah_pelanggaran);
     }
 
     public function test_aktifkan_kembali_ditolak_bila_tidak_terblokir(): void

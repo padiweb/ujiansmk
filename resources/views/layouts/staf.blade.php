@@ -55,6 +55,10 @@
                        class="sisi-a {{ request()->routeIs('staf.jadwal.*') ? 'aktif' : '' }}">
                         <x-ikon nama="jam" /><span class="sisi-lbl">Jadwal Ujian</span>
                     </a>
+                    <a href="{{ route('staf.pengawas.index') }}" data-tip="Pengawas"
+                       class="sisi-a {{ request()->routeIs('staf.pengawas.*') ? 'aktif' : '' }}">
+                        <x-ikon nama="staf" /><span class="sisi-lbl">Pengawas</span>
+                    </a>
                     <a href="{{ route('staf.denah.index') }}" data-tip="Denah Ruang"
                        class="sisi-a {{ request()->routeIs('staf.denah.*') ? 'aktif' : '' }}">
                         <x-ikon nama="ruang" /><span class="sisi-lbl">Denah Ruang</span>

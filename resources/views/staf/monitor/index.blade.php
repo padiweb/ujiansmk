@@ -9,7 +9,7 @@
 <div class="kepala-halaman">
     <div>
         <h1 class="judul-halaman">Monitor Ujian</h1>
-        <p class="sub">Jadwal aktif{{ auth('web')->user()->role === 'pengawas' ? ' yang ditugaskan kepada Anda' : '' }}.</p>
+        <p class="sub">Jadwal yang sedang aktif.</p>
     </div>
 </div>
 
@@ -28,6 +28,6 @@
         </div>
     </a>
 @empty
-    <div class="kartu kosong-kartu">Tidak ada jadwal ujian aktif{{ auth('web')->user()->role === 'pengawas' ? ' yang ditugaskan kepada Anda' : '' }}.</div>
+    <div class="kartu kosong-kartu">Tidak ada jadwal ujian aktif.</div>
 @endforelse
 @endsection

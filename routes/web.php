@@ -14,6 +14,7 @@ use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
 use App\Http\Controllers\Staf\PengaturanSekolahController;
+use App\Http\Controllers\Staf\PengawasController;
 use App\Http\Controllers\Staf\SinkronEduwebController;
 use App\Http\Controllers\Staf\RekapController;
 use App\Http\Controllers\Siswa\UjianController;
@@ -130,6 +131,12 @@ Route::prefix('staf')->group(function () {
         Route::get('/pengaturan', [PengaturanSekolahController::class, 'edit'])->name('staf.pengaturan');
         Route::put('/pengaturan', [PengaturanSekolahController::class, 'update'])->name('staf.pengaturan.simpan');
 
+        Route::prefix('pengawas')->name('staf.pengawas.')->group(function () {
+            Route::get('/', [PengawasController::class, 'index'])->name('index');
+            Route::post('/', [PengawasController::class, 'tambah'])->middleware('throttle:20,1')->name('tambah');
+            Route::put('/{user}', [PengawasController::class, 'ubah'])->whereNumber('user')->name('ubah');
+        });
+
         Route::get('/impor/sandi/{token}', [ImporController::class, 'unduhSandi'])->name('staf.impor.sandi');
 
         Route::prefix('jadwal-ujian')->name('staf.jadwal.')->group(function () {
@@ -145,7 +152,6 @@ Route::prefix('staf')->group(function () {
                 Route::post('/batalkan', [JadwalUjianController::class, 'batalkan'])->name('batalkan');
                 Route::post('/token', [JadwalUjianController::class, 'regenerasiToken'])->name('token');
                 Route::post('/selesaikan', [JadwalUjianController::class, 'selesaikan'])->name('selesaikan');
-                Route::post('/pengawas-ruang', [JadwalUjianController::class, 'pengawasRuang'])->name('pengawas-ruang');
             });
         });
 

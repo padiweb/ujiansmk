@@ -108,16 +108,14 @@ class JadwalUjianTest extends TestCase
 
     public function test_buat_jadwal_draf_dengan_relasinya(): void
     {
-        $pengawas = User::factory()->pengawas()->create();
         $jadwal = $this->buat([
-            'kelas_ids' => [$this->kelasA->id], 'pengawas_ids' => [$pengawas->id],
+            'kelas_ids' => [$this->kelasA->id],
             'jumlah_pg' => [$this->bank->id => '5'], 'jumlah_esai' => [$this->bank->id => ''],
         ]);
 
         $this->assertSame('draf', $jadwal->status);
         $this->assertNull($jadwal->token);
         $this->assertSame([$this->kelasA->id], $jadwal->kelas()->pluck('kelas.id')->all());
-        $this->assertSame([$pengawas->id], $jadwal->pengawas()->pluck('users.id')->all());
         $bank = $jadwal->bank()->first();
         $this->assertSame(5, $bank->jumlah_pg);
         $this->assertNull($bank->jumlah_esai);
@@ -161,15 +159,11 @@ class JadwalUjianTest extends TestCase
         $this->assertSame(0, JadwalUjian::count());
     }
 
-    public function test_bank_terhapus_dan_pengawas_bukan_pengawas_ditolak(): void
+    public function test_bank_terhapus_ditolak(): void
     {
         $this->actingAs($this->admin, 'web');
         $this->bank->delete();
         $this->post('/staf/jadwal-ujian', $this->data())->assertSessionHasErrors('bank_ids.0');
-
-        $this->bank->restore();
-        $guru = User::factory()->create();
-        $this->post('/staf/jadwal-ujian', $this->data(['pengawas_ids' => [$guru->id]]))->assertSessionHasErrors('pengawas_ids.0');
     }
 
     public function test_kelas_tingkat_berbeda_untuk_mapel_sama_dalam_satu_jadwal(): void
@@ -369,11 +363,10 @@ class JadwalUjianTest extends TestCase
         $this->siswaDiKelas($this->kelasA);
         $jadwal = $this->buat();
         $this->post("/staf/jadwal-ujian/{$jadwal->id}/aktifkan");
-        $pengawas = User::factory()->pengawas()->create();
         $tutupBaru = now()->addDays(5)->format('Y-m-d\TH:i');
 
         $this->put("/staf/jadwal-ujian/{$jadwal->id}", [
-            'tutup_pada' => $tutupBaru, 'batas_pelanggaran' => 5, 'tampilkan_hasil' => 'ditahan', 'pengawas_ids' => [$pengawas->id],
+            'tutup_pada' => $tutupBaru, 'batas_pelanggaran' => 5, 'tampilkan_hasil' => 'ditahan',
             // Isian di bawah harus diabaikan karena soal dan peserta sudah dibekukan.
             'nama' => 'Dibajak', 'durasi_menit' => 1, 'kelas_ids' => [$this->kelasB->id], 'bank_ids' => [999],
         ])->assertSessionHasNoErrors();
@@ -385,7 +378,6 @@ class JadwalUjianTest extends TestCase
         $this->assertSame(5, $jadwal->batas_pelanggaran);
         $this->assertSame('ditahan', $jadwal->tampilkan_hasil);
         $this->assertSame($tutupBaru, $jadwal->tutup_pada->format('Y-m-d\TH:i'));
-        $this->assertSame([$pengawas->id], $jadwal->pengawas()->pluck('users.id')->all());
     }
 
     public function test_waktu_tutup_jadwal_aktif_tidak_boleh_di_masa_lalu(): void

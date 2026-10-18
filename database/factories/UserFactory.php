@@ -33,6 +33,12 @@ class UserFactory extends Factory
         return $this->state(fn () => ['role' => User::PENGAWAS]);
     }
 
+    /** Guru yang juga bertugas sebagai pengawas. */
+    public function guruPengawas(): static
+    {
+        return $this->state(fn () => ['role' => User::GURU, 'bisa_mengawasi' => true]);
+    }
+
     public function nonaktif(): static
     {
         return $this->state(fn () => ['aktif' => false]);

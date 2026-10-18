@@ -26,17 +26,18 @@ class LayananMonitor
 
     // ── Hak akses ───────────────────────────────────────────────────────────
 
-    /** Jadwal aktif yang boleh dipantau pengguna (admin semua, pengawas yang ditugaskan, guru mapelnya). */
+    /** Jadwal aktif yang boleh dipantau: admin dan pengawas semuanya (semua ruang); guru biasa hanya mapelnya. */
     public function jadwalUntuk(User $user): Builder
     {
         $kueri = JadwalUjian::query()->where('status', JadwalUjian::AKTIF);
 
-        return match ($user->role) {
-            'admin' => $kueri,
-            'pengawas' => $kueri->whereHas('pengawas', fn ($q) => $q->where('users.id', $user->id)),
-            'guru' => $kueri->whereIn('mapel_id', Pengampu::where('guru_id', $user->id)->select('mapel_id')),
-            default => $kueri->whereRaw('1 = 0'),
-        };
+        if ($user->role === 'admin' || $user->mengawasi()) {
+            return $kueri;
+        }
+
+        return $user->role === 'guru' && $user->aktif
+            ? $kueri->whereIn('mapel_id', Pengampu::where('guru_id', $user->id)->select('mapel_id'))
+            : $kueri->whereRaw('1 = 0');
     }
 
     public function bolehLihat(User $user, JadwalUjian $jadwal): bool
@@ -48,45 +49,24 @@ class LayananMonitor
     public const AKSI_GURU = ['aktifkan', 'selesai'];
 
     /**
-     * Tindakan yang boleh dilakukan pengguna pada sesi ini ($sesi null = secara umum di jadwal). Admin dan pengawas yang
-     * ditugaskan boleh semuanya (pengawas ruang hanya untuk siswa di ruangnya); guru mapel hanya AKSI_GURU.
+     * Tindakan yang boleh dilakukan pengguna pada jadwal ini. Admin dan pengawas boleh semuanya di semua ruang;
+     * guru mapel hanya AKSI_GURU.
      *
      * @return list<string>
      */
-    public function aksiBoleh(User $user, JadwalUjian $jadwal, ?SesiUjian $sesi = null): array
+    public function aksiBoleh(User $user, JadwalUjian $jadwal): array
     {
-        if ($this->bolehBertindak($user, $jadwal, $sesi)) {
+        if ($this->bolehBertindak($user, $jadwal)) {
             return ['aktifkan', 'reset', 'waktu', 'selesai'];
         }
 
         return $user->role === 'guru' && $this->bolehLihat($user, $jadwal) ? self::AKSI_GURU : [];
     }
 
-    /**
-     * Admin dan pengawas yang ditugaskan: seluruh tindakan, token, dan daftar hadir. Pengawas yang ditugaskan ke
-     * satu ruang hanya boleh menangani siswa di ruang itu (bila $sesi diberikan).
-     */
-    public function bolehBertindak(User $user, JadwalUjian $jadwal, ?SesiUjian $sesi = null): bool
+    /** Admin dan pengawas: seluruh tindakan, token, dan daftar hadir untuk semua ruang pada jadwal aktif. */
+    public function bolehBertindak(User $user, JadwalUjian $jadwal): bool
     {
-        if (! in_array($user->role, ['admin', 'pengawas'], true) || ! $this->bolehLihat($user, $jadwal)) {
-            return false;
-        }
-
-        $ruang = $this->ruangDitugaskan($user, $jadwal);
-
-        return $sesi === null || $ruang === null || in_array($sesi->ruang_id, $ruang, true);
-    }
-
-    /** Ruang yang dibatasi untuk pengawas ini pada jadwal; null = semua ruang. @return list<int>|null */
-    public function ruangDitugaskan(User $user, JadwalUjian $jadwal): ?array
-    {
-        if ($user->role !== 'pengawas') {
-            return null;
-        }
-
-        $ruangId = $jadwal->pengawas()->where('users.id', $user->id)->first()?->pivot->ruang_id;
-
-        return $ruangId === null ? null : [(int) $ruangId];
+        return ($user->role === 'admin' || $user->mengawasi()) && $this->bolehLihat($user, $jadwal);
     }
 
     // ── Data ────────────────────────────────────────────────────────────────
@@ -102,21 +82,6 @@ class LayananMonitor
         $this->sesi->sapuKedaluwarsa();
 
         return Cache::remember($this->kunci($jadwal), self::TTL_DATA, fn () => $this->susun($jadwal));
-    }
-
-    /** Data monitor untuk satu pengguna: pengawas yang dibatasi ruang hanya melihat ruangnya. @return array<string,mixed> */
-    public function dataUntuk(User $user, JadwalUjian $jadwal): array
-    {
-        $data = $this->data($jadwal);
-        $ruang = $this->ruangDitugaskan($user, $jadwal);
-        if ($ruang === null) {
-            return $data;
-        }
-
-        $data['peserta'] = array_values(array_filter($data['peserta'], fn ($b) => in_array($b['ruang_id'], $ruang, true)));
-        $data['ringkasan'] = $this->ringkas($data['peserta']);
-
-        return $data;
     }
 
     /** @param  list<array<string,mixed>>  $baris */
@@ -202,7 +167,7 @@ class LayananMonitor
 
     // ── Tindakan ────────────────────────────────────────────────────────────
 
-    /** Terblokir → berlangsung. Hitungan diturunkan ke batas−1: satu kesempatan lagi, bukan mulai dari nol. */
+    /** Terblokir → berlangsung. Hitungan pelanggaran diatur ulang ke 0 (riwayat pelanggaran tetap tercatat). */
     public function aktifkanKembali(SesiUjian $sesi, User $pelaku): SesiUjian
     {
         return $this->tindak($sesi, $pelaku, AksiPengawas::AKTIFKAN_KEMBALI, function (SesiUjian $s) {
@@ -211,10 +176,10 @@ class LayananMonitor
             }
             $s->update([
                 'status' => SesiUjian::BERLANGSUNG,
-                'jumlah_pelanggaran' => min($s->jumlah_pelanggaran, max(0, $s->jadwal->batas_pelanggaran - 1)),
+                'jumlah_pelanggaran' => 0,
             ]);
 
-            return "hitungan pelanggaran menjadi {$s->jumlah_pelanggaran}";
+            return 'hitungan pelanggaran diatur ulang ke 0';
         });
     }
 

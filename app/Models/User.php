@@ -22,7 +22,7 @@ class User extends Authenticatable
 
     protected $table = 'users';
 
-    protected $fillable = ['eduweb_id', 'nama', 'username', 'password', 'eduweb_hash_sandi', 'role', 'aktif', 'login_terakhir'];
+    protected $fillable = ['eduweb_id', 'nama', 'username', 'password', 'eduweb_hash_sandi', 'role', 'aktif', 'bisa_mengawasi', 'login_terakhir'];
 
     protected $hidden = ['password', 'eduweb_hash_sandi', 'remember_token'];
 
@@ -31,8 +31,15 @@ class User extends Authenticatable
         return [
             'password' => 'hashed',
             'aktif' => 'boolean',
+            'bisa_mengawasi' => 'boolean',
             'login_terakhir' => 'datetime',
         ];
+    }
+
+    /** Boleh mengawasi semua ruang: akun pengawas, atau guru yang ditandai admin sebagai pengawas. */
+    public function mengawasi(): bool
+    {
+        return $this->aktif && ($this->role === self::PENGAWAS || ($this->role === self::GURU && $this->bisa_mengawasi));
     }
 
     public function punyaPeran(string ...$peran): bool

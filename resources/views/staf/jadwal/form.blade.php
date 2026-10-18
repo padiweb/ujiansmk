@@ -6,7 +6,6 @@
     $format = fn ($waktu) => $waktu?->format('Y-m-d\TH:i');
     $kelasDipilih = collect(old('kelas_ids', $j?->kelas->pluck('id')->all() ?? []))->map(fn ($v) => (int) $v)->all();
     $bankDipilih = collect(old('bank_ids', $j?->bank->pluck('bank_soal_id')->all() ?? []))->map(fn ($v) => (int) $v)->all();
-    $pengawasDipilih = collect(old('pengawas_ids', $j?->pengawas->pluck('id')->all() ?? []))->map(fn ($v) => (int) $v)->all();
     $rinciBank = $j?->bank->keyBy('bank_soal_id') ?? collect();
     $periodeAwal = old('periode_id', $j?->periode_id ?? $periodeAktif);
 @endphp
@@ -14,7 +13,7 @@
 @section('konten')
 <h1 class="judul-halaman">{{ $j ? 'Ubah' : 'Buat' }} jadwal ujian</h1>
 @if ($terbatas)
-    <div class="info" style="margin-top:12px"><x-ikon nama="info" :ukuran="18" /><span>Jadwal ini sudah aktif, jadi soal dan peserta sudah dibekukan. Yang masih bisa diubah: waktu tutup, batas pelanggaran, tampilan hasil, dan pengawas.</span></div>
+    <div class="info" style="margin-top:12px"><x-ikon nama="info" :ukuran="18" /><span>Jadwal ini sudah aktif, jadi soal dan peserta sudah dibekukan. Yang masih bisa diubah: waktu tutup, batas pelanggaran, tampilan hasil, dan denah.</span></div>
 @endif
 
 <form class="kartu formulir" method="POST" action="{{ $j ? route('staf.jadwal.update', $j) : route('staf.jadwal.store') }}" id="formJadwal" style="max-width:760px">
@@ -144,15 +143,6 @@
         </select>
         <small class="bantuan">Atur denah di menu Denah Ruang. Penempatan siswa dari denah dipakai untuk ruang, nomor meja, dan kartu ujian.</small>
     </div>
-
-    <fieldset class="opsi-blok">
-        <legend>Pengawas</legend>
-        @forelse ($daftarPengawas as $u)
-            <label class="centang"><input type="checkbox" name="pengawas_ids[]" value="{{ $u->id }}" @checked(in_array($u->id, $pengawasDipilih, true))> {{ $u->nama }}</label>
-        @empty
-            <small class="bantuan">Belum ada akun pengawas. Tambahkan di Guru &amp; Staf.</small>
-        @endforelse
-    </fieldset>
 
     <div class="aksi-form">
         <button class="tombol kecil" type="submit">Simpan</button>
