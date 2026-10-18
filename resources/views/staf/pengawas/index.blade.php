@@ -5,7 +5,7 @@
 <div class="kepala-halaman">
     <div>
         <h1 class="judul-halaman">Pengawas</h1>
-        <p class="sub">Tetapkan siapa yang bertugas mengawasi. Pengawas dapat melihat token dan memantau <strong>semua ruang</strong> pada jadwal yang sedang aktif, serta membantu siswa (aktifkan kembali, reset perangkat, tambah waktu, paksa selesai).</p>
+        <p class="sub">Petugas pengawas ujian.</p>
     </div>
 </div>
 
@@ -15,7 +15,7 @@
 </form>
 
 <div class="kartu tanpa-padding">
-    <h2 class="judul-kartu" style="padding:16px 20px 0">Daftar pengawas ({{ $pengawas->count() }})</h2>
+    <h2 class="judul-kartu" style="padding:16px 20px 0">Pengawas ({{ $pengawas->count() }})</h2>
     <div class="gulir">
         <table class="tabel">
             <thead><tr><th>Nama</th><th>Nama pengguna</th><th>Sumber</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
@@ -50,7 +50,7 @@
 </div>
 
 <div class="kartu tanpa-padding">
-    <h2 class="judul-kartu" style="padding:16px 20px 0">Jadikan guru sebagai pengawas</h2>
+    <h2 class="judul-kartu" style="padding:16px 20px 0">Guru</h2>
     <div class="gulir">
         <table class="tabel">
             <thead><tr><th>Nama</th><th>Nama pengguna</th><th class="kanan">Aksi</th></tr></thead>
@@ -77,8 +77,7 @@
 
 <form class="kartu formulir" method="POST" action="{{ route('staf.pengawas.tambah') }}">
     @csrf
-    <h2 class="judul-kartu">Tambah pengawas baru</h2>
-    <p class="sub">Untuk staf yang bukan guru di EduWeb. Akun ini masuk lewat halaman masuk staf.</p>
+    <h2 class="judul-kartu">Pengawas non-guru</h2>
     @foreach ([['nama', 'Nama lengkap', 'text'], ['username', 'Nama pengguna', 'text'], ['password', 'Kata sandi (minimal 10 karakter)', 'password']] as [$n, $l, $t])
         <div class="bidang @error($n) salah @enderror">
             <label for="p-{{ $n }}">{{ $l }} <span class="wajib">*</span></label>

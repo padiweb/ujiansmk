@@ -12,8 +12,6 @@
     </div>
 </div>
 
-<div class="info" role="note"><x-ikon nama="info" :ukuran="18" /><span>Hanya jawaban siswa yang sudah selesai mengerjakan yang bisa dikoreksi. Jawaban kosong otomatis bernilai 0.</span></div>
-
 <div class="kartu tanpa-padding">
     <div class="gulir">
         <table class="tabel">

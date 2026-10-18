@@ -5,7 +5,7 @@
 <div class="kepala-halaman">
     <div>
         <h1 class="judul-halaman">Koreksi Esai</h1>
-        <p class="sub">Pilih mata pelajaran dan kelas{{ auth('web')->user()->role === 'guru' ? ' yang Anda ampu' : '' }} untuk mengoreksi jawaban esai.</p>
+        <p class="sub">Pilih mata pelajaran dan kelas.</p>
     </div>
 </div>
 

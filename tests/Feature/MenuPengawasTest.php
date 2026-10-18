@@ -23,7 +23,7 @@ class MenuPengawasTest extends TestCase
         $this->actingAs(User::factory()->create(), 'web')->get('/staf/pengawas')->assertForbidden();
         $this->actingAs(User::factory()->pengawas()->create(), 'web')->get('/staf/pengawas')->assertForbidden();
         $this->actingAs($this->admin, 'web')->get('/staf')->assertSee('Pengawas');
-        $this->get('/staf/pengawas')->assertOk()->assertSee('Jadikan guru sebagai pengawas');
+        $this->get('/staf/pengawas')->assertOk()->assertSee('Jadikan pengawas', false)->assertSee('Pengawas non-guru');
     }
 
     public function test_guru_dijadikan_dan_dicabut_sebagai_pengawas(): void

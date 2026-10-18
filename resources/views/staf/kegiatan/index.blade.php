@@ -5,7 +5,7 @@
 <div class="kepala-halaman">
     <div>
         <h1 class="judul-halaman">Kegiatan Ujian</h1>
-        <p class="sub">Isi nama kegiatan sekali (misalnya "Asesmen Semester Gasal"), lalu pilih saat membuat jadwal. Kegiatan yang <strong>tidak aktif</strong> disembunyikan dari daftar koreksi dan rekap guru, sehingga daftar tetap ringkas setelah dipakai bertahun-tahun.</p>
+        <p class="sub">Nama kegiatan dipilih saat membuat jadwal.</p>
     </div>
 </div>
 

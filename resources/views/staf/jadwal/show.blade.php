@@ -60,7 +60,6 @@
     @if (! is_null($tanpaTempat) && $tanpaTempat > 0)
         <div class="pesan-salah catatan" role="status" style="margin-top:8px"><x-ikon nama="peringatan" :ukuran="18" /><span>{{ $tanpaTempat }} peserta belum punya tempat di denah ini. Mereka tetap bisa ujian, tetapi tanpa ruang dan nomor meja.</span></div>
     @endif
-    <small class="bantuan">Pengawas tidak ditugaskan per jadwal: semua pengawas dapat memantau semua ruang saat jadwal aktif.</small>
 </div>
 
 <div class="kartu">

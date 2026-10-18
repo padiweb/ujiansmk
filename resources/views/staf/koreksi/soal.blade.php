@@ -23,20 +23,19 @@
 </div>
 
 @if ($terkunci)
-    <div class="info" role="status" id="korKunci"><x-ikon nama="info" :ukuran="18" /><span>Nilai kelas ini sedang dikunci. Bila Bapak/Ibu mengubah atau menambah nilai, kunci terbuka otomatis. Setelah selesai, kunci lagi di <a href="{{ route('staf.rekap.show', array_filter([$j, 'kelas' => $kelasId])) }}">Rekap Nilai</a>.</span></div>
+    <div class="info" role="status" id="korKunci"><x-ikon nama="info" :ukuran="18" /><span>Nilai kelas ini terkunci. Mengubah nilai akan membuka kunci; kunci lagi di <a href="{{ route('staf.rekap.show', array_filter([$j, 'kelas' => $kelasId])) }}">Rekap Nilai</a>.</span></div>
 @endif
 
 <form class="kartu" method="POST" action="{{ route('staf.koreksi.nilai-semua', [$j, $soal]) }}" onsubmit="return confirm('Beri nilai ini ke semua jawaban pada soal ini ('+(this.timpa.checked ? 'termasuk yang sudah dinilai' : 'yang belum dinilai')+')?')">
     @csrf
     @if ($kelasId) <input type="hidden" name="kelas" value="{{ $kelasId }}"> @endif
-    <h2 class="judul-kartu">Nilai yang sama untuk semua jawaban</h2>
+    <h2 class="judul-kartu">Nilai seragam</h2>
     <div class="aksi-form" style="align-items:flex-end;flex-wrap:wrap;gap:12px;margin-top:8px">
         <div class="bidang" style="margin:0"><label for="nilaiSemua">Nilai (0–100)</label>
             <input id="nilaiSemua" name="nilai" type="text" inputmode="decimal" style="width:110px" required autocomplete="off"></div>
         <label class="centang" style="margin:0"><input type="checkbox" name="timpa" value="1"> Timpa nilai yang sudah ada</label>
         <button class="tombol kecil" type="submit">Terapkan ke semua</button>
     </div>
-    <small class="bantuan">Mengisi jawaban yang belum dinilai pada kelas {{ $kelasPilihan }}. Jawaban kosong tetap bernilai 0.</small>
 </form>
 
 <div class="kartu" id="korKotak"

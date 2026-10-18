@@ -14,7 +14,7 @@
 @section('konten')
 <h1 class="judul-halaman">{{ $j ? 'Ubah' : 'Buat' }} jadwal ujian</h1>
 @if ($terbatas)
-    <div class="info" style="margin-top:12px"><x-ikon nama="info" :ukuran="18" /><span>Jadwal ini sudah aktif, jadi soal dan peserta sudah dibekukan. Yang masih bisa diubah: waktu tutup, batas pelanggaran, tampilan hasil, dan denah.</span></div>
+    <div class="info" style="margin-top:12px"><x-ikon nama="info" :ukuran="18" /><span>Jadwal aktif: hanya waktu tutup, batas pelanggaran, tampilan hasil, dan denah yang bisa diubah.</span></div>
 @endif
 
 <form class="kartu formulir" method="POST" action="{{ $j ? route('staf.jadwal.update', $j) : route('staf.jadwal.store') }}" id="formJadwal" style="max-width:760px">
@@ -30,7 +30,7 @@
                     <option value="{{ $k->id }}" data-tahun="{{ $k->periode->tahun_ajaran_id }}" @selected($kegiatanAwal === $k->id)>{{ $k->nama }} — {{ $k->periode->label() }}</option>
                 @endforeach
             </select>
-            <small class="bantuan">Nama jadwal dibuat otomatis dari kegiatan dan mata pelajaran. Kegiatan baru ditambahkan di menu <a href="{{ route('staf.kegiatan.index') }}">Kegiatan Ujian</a>.</small>
+            <small class="bantuan">Kegiatan baru ditambahkan di <a href="{{ route('staf.kegiatan.index') }}">Kegiatan Ujian</a>.</small>
             @error('kegiatan_id') <small class="galat-bidang">{{ $message }}</small> @enderror
         </div>
 
