@@ -2,7 +2,10 @@
 
 namespace App\Master;
 
+use App\Models\Denah;
+use App\Models\DenahPenempatan;
 use App\Models\Kelas;
+use App\Models\Ruang;
 use App\Models\Siswa;
 use App\Models\TahunAjaran;
 use App\Support\KataSandi;
@@ -17,6 +20,9 @@ class SiswaMaster extends DefinisiMaster
     private bool $tahunDimuat = false;
 
     private ?string $sandiBaru = null;
+
+    /** @var array<int,string>|null siswa_id => "Nama ruang · meja N" (penempatan tetap dari menu Ruang Ujian) */
+    private ?array $petaRuang = null;
 
     public function slug(): string
     {
@@ -55,6 +61,7 @@ class SiswaMaster extends DefinisiMaster
             ['nama', 'Nama'],
             ['jenis_kelamin', 'L/P'],
             ['kelas_aktif', 'Kelas', fn (Siswa $s) => $s->kelas->firstWhere('tahun_ajaran_id', $this->tahunAktif())?->nama ?? '—'],
+            ['ruang', 'Ruang', fn (Siswa $s) => $this->ruangSiswa()[$s->id] ?? '—'],
             ['status', 'Status', fn (Siswa $s) => ucfirst($s->status)],
         ];
     }
@@ -67,6 +74,14 @@ class SiswaMaster extends DefinisiMaster
                 'label' => 'Semua kelas',
                 'options' => Kelas::where('tahun_ajaran_id', $this->tahunAktif())->orderBy('nama')->pluck('nama', 'id')->all(),
                 'terapkan' => fn (Builder $q, $v) => $q->whereHas('kelas', fn ($k) => $k->where('kelas.id', $v)),
+            ],
+            [
+                'name' => 'ruang',
+                'label' => 'Semua ruang',
+                'options' => ['tanpa' => 'Belum punya ruang'] + Ruang::orderBy('nama')->pluck('nama', 'id')->all(),
+                'terapkan' => fn (Builder $q, $v) => $v === 'tanpa'
+                    ? $q->where('status', 'aktif')->whereNotIn('id', $this->kueriPenempatan()->select('siswa_id'))
+                    : $q->whereIn('id', $this->kueriPenempatan()->where('ruang_id', (int) $v)->select('siswa_id')),
             ],
             [
                 'name' => 'status',
@@ -132,6 +147,20 @@ class SiswaMaster extends DefinisiMaster
         }
 
         return $this->sandiBaru ? "Kata sandi sementara untuk {$m->nama}: {$this->sandiBaru} (hanya tampil sekali, catat sekarang)." : null;
+    }
+
+    private function kueriPenempatan()
+    {
+        $denah = Denah::where('utama', true)->value('id');
+
+        return DenahPenempatan::query()->where('denah_id', $denah ?? 0);
+    }
+
+    /** @return array<int,string> */
+    private function ruangSiswa(): array
+    {
+        return $this->petaRuang ??= $this->kueriPenempatan()->with('ruang:id,nama')->get()
+            ->mapWithKeys(fn ($p) => [$p->siswa_id => "{$p->ruang->nama} · meja {$p->meja}"])->all();
     }
 
     private function tahunAktif(): ?int

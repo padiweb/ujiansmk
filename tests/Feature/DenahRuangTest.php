@@ -569,4 +569,32 @@ class DenahRuangTest extends TestCase
         $this->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('catatan'); // sudah punya ruang semua
         $this->get(route('staf.ruang.show', $r))->assertOk()->assertSee('Semua siswa aktif sudah punya ruang');
     }
+
+    public function test_daftar_siswa_menampilkan_ruang_dan_menyaring_yang_belum_punya_ruang(): void
+    {
+        $this->actingAs($this->admin, 'web');
+        $r = Ruang::create(['nama' => 'Lab Siswa', 'kapasitas' => 4]);
+        $this->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]]); // 4 dari 6 siswa masuk
+
+        $this->get('/staf/master/siswa')->assertOk()->assertSee('Lab Siswa · meja 1')->assertSee('Semua ruang');
+
+        $tanpa = $this->get('/staf/master/siswa?ruang=tanpa')->assertOk()->getContent();
+        $belum = Siswa::whereNotIn('id', DenahPenempatan::select('siswa_id'))->get();
+        $sudah = Siswa::whereIn('id', DenahPenempatan::select('siswa_id'))->get();
+        $this->assertCount(2, $belum);
+        foreach ($belum as $s) {
+            $this->assertStringContainsString($s->nama, $tanpa);
+        }
+        foreach ($sudah as $s) {
+            $this->assertStringNotContainsString($s->nama, $tanpa);
+        }
+
+        $diRuang = $this->get("/staf/master/siswa?ruang={$r->id}")->assertOk()->getContent();
+        foreach ($sudah as $s) {
+            $this->assertStringContainsString($s->nama, $diRuang);
+        }
+        foreach ($belum as $s) {
+            $this->assertStringNotContainsString($s->nama, $diRuang);
+        }
+    }
 }
