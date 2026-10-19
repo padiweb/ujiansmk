@@ -39,17 +39,25 @@ class DenahController extends Controller
         $kelasSiswa = $this->kelasSiswa($penempatan->pluck('siswa_id')->all(), $tahunId);
         $komposisi = $penempatan->groupBy('ruang_id')->map(fn ($g) => $g->map(fn ($p) => $kelasSiswa[$p->siswa_id]->nama ?? '—')->countBy()->sortKeys());
 
-        $edit = $request->filled('edit_id') ? Ruang::find((int) $request->query('edit_id')) : null;
         $belumPunyaRuang = Siswa::where('status', 'aktif')->whereNotIn('id', $penempatan->pluck('siswa_id'))->count();
 
         return view('staf.denah.index', [
             'ruang' => Ruang::orderBy('nama')->get(),
             'terisi' => $terisi,
-            'edit' => $edit,
             'belumPunyaRuang' => $belumPunyaRuang,
             'komposisi' => $komposisi,
             'jumlah' => $penempatan->count(),
         ]);
+    }
+
+    public function create(): View
+    {
+        return view('staf.denah.form', ['ruang' => null]);
+    }
+
+    public function edit(Ruang $ruang): View
+    {
+        return view('staf.denah.form', ['ruang' => $ruang]);
     }
 
     public function store(Request $request): RedirectResponse

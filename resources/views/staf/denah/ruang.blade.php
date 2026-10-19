@@ -1,19 +1,21 @@
 @extends('layouts.staf')
-@section('judul', 'Detail Ruang: '.$ruang->nama)
+@section('judul', 'Ruang: '.$ruang->nama)
 
 @section('konten')
 <div class="kepala-halaman">
     <div>
-        <h1 class="judul-halaman">Detail Ruang: {{ $ruang->nama }}</h1>
-        <p class="sub">{{ $baris->count() }} dari {{ $dr->kapasitas() }} siswa</p>
+        <h1 class="judul-halaman">{{ $ruang->nama }}</h1>
+        <p class="sub">{{ $baris->count() }} dari {{ $dr->kapasitas() }} siswa · {{ $ruang->campur ? 'Campur tingkat' : 'Biasa' }}</p>
     </div>
     <div class="aksi-halaman">
-        <a class="tombol kecil garis" href="{{ route('staf.ruang.index') }}"><x-ikon nama="panah-kiri" :ukuran="16" />Kembali</a>
+        <a class="tombol kecil garis" href="{{ route('staf.ruang.index') }}"><x-ikon nama="panah-kiri" :ukuran="16" />Daftar</a>
+        <a class="tombol kecil garis" href="{{ route('staf.ruang.absen', $ruang) }}"><x-ikon nama="unduh" :ukuran="16" />Absen</a>
+        <a class="tombol kecil" href="{{ route('staf.ruang.no-meja', $ruang) }}" target="_blank" rel="noopener">Cetak no. meja</a>
     </div>
 </div>
 
 <div class="kartu">
-    <strong>Komposisi:</strong>
+    <h2 class="judul-kartu">Kelas di ruang ini</h2>
     @forelse ($komposisi as $kelas => $n)
         <span class="lencana">{{ $kelas }} · {{ $n }}</span>
         @if ($idKelasRuang->search($kelas) !== false)
@@ -24,19 +26,19 @@
         @endif
     @empty <span class="sub">Belum ada siswa di ruang ini.</span> @endforelse
     @if ($ruang->campur)
-        <p class="sub" style="margin:8px 0 0">Ruang campur tingkat: maksimal {{ $ruang->porsiTingkat($dr->kapasitas()) }} siswa per tingkat.
-            @foreach ($tingkatIsi as $t => $n) Tingkat {{ $t }}: {{ $n }}. @endforeach</p>
+        <p class="sub" style="margin:8px 0 0">Maksimal {{ $ruang->porsiTingkat($dr->kapasitas()) }} siswa per tingkat.
+            @foreach ($tingkatIsi as $t => $n) Tingkat {{ $t }}: {{ $n }}@if (! $loop->last), @endif @endforeach</p>
     @endif
 </div>
 
 <form class="kartu" method="POST" action="{{ route('staf.ruang.kelas', $ruang) }}">
     @csrf
-    <h2 class="judul-kartu">Masukkan kelas ke ruang ini</h2>
+    <h2 class="judul-kartu">Masukkan kelas</h2>
     @if ($kelasBelum->isEmpty())
         <p class="sub" style="margin:0">Semua siswa aktif sudah punya ruang.</p>
     @else
         <fieldset class="opsi-blok">
-            <legend>Kelas yang masih ada siswa tanpa ruang</legend>
+            <legend>Kelas yang masih punya siswa tanpa ruang</legend>
             @foreach ($kelasBelum->groupBy('tingkat') as $tingkat => $kelasTingkat)
                 <div class="baris-bank" style="display:block">
                     <strong>Tingkat {{ $tingkat }}</strong>
@@ -47,17 +49,13 @@
             @endforeach
             @error('kelas_ids') <small class="galat-bidang">{{ $message }}</small> @enderror
         </fieldset>
-        <div class="aksi-form"><button class="tombol kecil" type="submit">Masukkan ke {{ $ruang->nama }}</button></div>
+        <div class="aksi-form"><button class="tombol kecil" type="submit">Masukkan</button></div>
     @endif
 </form>
 
-<div class="kartu">
-    <div class="aksi-form" style="margin:0;flex-wrap:wrap">
-        <a class="tombol kecil" href="{{ route('staf.ruang.no-meja', $ruang) }}" target="_blank" rel="noopener">Cetak No. Meja</a>
-        <a class="tombol kecil garis" href="{{ route('staf.ruang.absen', $ruang) }}"><x-ikon nama="unduh" :ukuran="16" />Download Absen</a>
-        <form method="POST" action="{{ route('staf.ruang.urut-kelas', $ruang) }}">@csrf <button class="tombol kecil garis" type="submit">Urutkan per kelas</button></form>
-    </div>
-    <p class="sub" style="margin:10px 0 0">Seret baris untuk mengatur urutan nomor meja. <span id="drPesan" aria-live="polite"></span></p>
+<div class="aksi-form" style="margin:0 0 12px;align-items:center">
+    <form method="POST" action="{{ route('staf.ruang.urut-kelas', $ruang) }}">@csrf <button class="tombol kecil garis" type="submit">Urutkan per kelas</button></form>
+    <span class="sub">Seret baris untuk mengatur nomor meja. <span id="drPesan" aria-live="polite"></span></span>
 </div>
 
 <div class="kartu tanpa-padding">

@@ -362,8 +362,8 @@ class DenahRuangTest extends TestCase
         $guru = User::factory()->create();
         $pengawas = User::factory()->pengawas()->create();
 
-        $this->actingAs($this->admin, 'web')->get(route('staf.ruang.index'))->assertOk()->assertSee('Manajemen Ruang Ujian')->assertSee('Daftar Ruang');
-        $this->get('/staf')->assertSee('data-tip="Ruang"', false)->assertDontSee('Denah Ruang');
+        $this->actingAs($this->admin, 'web')->get(route('staf.ruang.index'))->assertOk()->assertSee('Ruang Ujian');
+        $this->get('/staf')->assertSee('data-tip="Ruang Ujian"', false)->assertDontSee('Denah Ruang');
         $this->actingAs($guru, 'web')->get(route('staf.ruang.index'))->assertForbidden();
         $r = Ruang::create(['nama' => 'Lab A', 'kapasitas' => 10]);
         $this->actingAs($pengawas, 'web')->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]])->assertForbidden();
@@ -379,7 +379,9 @@ class DenahRuangTest extends TestCase
         $this->assertSame(4, $r->kapasitas);
         $this->post(route('staf.ruang.store'), ['nama' => 'LAB TKJ 1', 'kapasitas' => 4])->assertSessionHasErrors('nama');
         $this->post(route('staf.ruang.store'), ['nama' => 'X', 'kapasitas' => 0])->assertSessionHasErrors('kapasitas');
-        $this->get(route('staf.ruang.index', ['edit_id' => $r->id]))->assertOk()->assertSee('Edit Data Ruang')->assertSee('LAB TKJ 1');
+        $this->get(route('staf.ruang.index')); // input lama dari validasi gagal tidak terbawa ke form
+        $this->get(route('staf.ruang.edit', $r))->assertOk()->assertSee('Ubah Ruang Ujian')->assertSee('LAB TKJ 1');
+        $this->get(route('staf.ruang.create'))->assertOk()->assertSee('Tambah Ruang Ujian');
 
         $this->put(route('staf.ruang.update', $r), ['nama' => 'LAB TKJ 1A', 'kapasitas' => 5])->assertSessionHas('berhasil');
         $this->assertSame('LAB TKJ 1A', $r->fresh()->nama);
@@ -439,7 +441,7 @@ class DenahRuangTest extends TestCase
         $r = Ruang::create(['nama' => 'Lab A', 'kapasitas' => 10]);
         $this->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]]);
 
-        $this->get(route('staf.ruang.show', $r))->assertOk()->assertSee('Detail Ruang: Lab A')->assertSee($this->siswa[0]->nama)->assertSee('Cetak No. Meja', false);
+        $this->get(route('staf.ruang.show', $r))->assertOk()->assertSee('Lab A')->assertSee($this->siswa[0]->nama)->assertSee('Cetak no. meja', false);
         $this->get(route('staf.ruang.no-meja', $r))->assertOk()->assertSee($this->siswa[0]->nama);
         $this->get(route('staf.ruang.absen', $r))->assertOk()->assertHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $this->post(route('staf.ruang.urut-kelas', $r))->assertSessionHas('berhasil');
@@ -562,7 +564,7 @@ class DenahRuangTest extends TestCase
         $this->actingAs($this->admin, 'web');
         $r = Ruang::create(['nama' => 'Lab 1', 'kapasitas' => 10]);
 
-        $this->get(route('staf.ruang.show', $r))->assertOk()->assertSee('Masukkan kelas ke ruang ini')->assertSee('X A');
+        $this->get(route('staf.ruang.show', $r))->assertOk()->assertSee('Masukkan kelas')->assertSee('X A');
         $this->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('berhasil');
         $this->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('catatan'); // sudah punya ruang semua
         $this->get(route('staf.ruang.show', $r))->assertOk()->assertSee('Semua siswa aktif sudah punya ruang');

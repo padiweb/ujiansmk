@@ -62,9 +62,9 @@
                        class="sisi-a {{ request()->routeIs('staf.pengawas.*') ? 'aktif' : '' }}">
                         <x-ikon nama="staf" /><span class="sisi-lbl">Pengawas</span>
                     </a>
-                    <a href="{{ route('staf.ruang.index') }}" data-tip="Ruang"
+                    <a href="{{ route('staf.ruang.index') }}" data-tip="Ruang Ujian"
                        class="sisi-a {{ request()->routeIs('staf.ruang.*') ? 'aktif' : '' }}">
-                        <x-ikon nama="ruang" /><span class="sisi-lbl">Ruang</span>
+                        <x-ikon nama="ruang" /><span class="sisi-lbl">Ruang Ujian</span>
                     </a>
                 @endif
                 <a href="{{ route('staf.koreksi.index') }}" data-tip="Koreksi Esai"

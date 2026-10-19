@@ -181,10 +181,12 @@ Route::prefix('staf')->group(function () {
 
         Route::prefix('ruang')->name('staf.ruang.')->group(function () {
             Route::get('/', [DenahController::class, 'index'])->name('index');
+            Route::get('/tambah', [DenahController::class, 'create'])->name('create');
             Route::post('/', [DenahController::class, 'store'])->name('store');
             Route::post('/siswa/{siswa}/pindah', [DenahController::class, 'pindah'])->whereNumber('siswa')->name('pindah');
             Route::post('/siswa/{siswa}/lepas', [DenahController::class, 'lepas'])->whereNumber('siswa')->name('lepas');
             Route::prefix('{ruang}')->whereNumber('ruang')->group(function () {
+                Route::get('/ubah', [DenahController::class, 'edit'])->name('edit');
                 Route::put('/', [DenahController::class, 'update'])->name('update');
                 Route::delete('/', [DenahController::class, 'destroy'])->name('destroy');
                 Route::get('/siswa', [DenahController::class, 'show'])->name('show');
