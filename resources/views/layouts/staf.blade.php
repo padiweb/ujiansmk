@@ -13,7 +13,6 @@
         ['siswa', 'Siswa', 'siswa'],
         ['staf', 'Guru & Staf', 'staf'],
         ['pengampu', 'Guru Pengampu', 'pengampu'],
-        ['ruang', 'Ruang Ujian', 'ruang'],
     ];
 @endphp
 
@@ -63,9 +62,9 @@
                        class="sisi-a {{ request()->routeIs('staf.pengawas.*') ? 'aktif' : '' }}">
                         <x-ikon nama="staf" /><span class="sisi-lbl">Pengawas</span>
                     </a>
-                    <a href="{{ route('staf.denah.index') }}" data-tip="Denah Ruang"
-                       class="sisi-a {{ request()->routeIs('staf.denah.*') ? 'aktif' : '' }}">
-                        <x-ikon nama="ruang" /><span class="sisi-lbl">Denah Ruang</span>
+                    <a href="{{ route('staf.ruang.index') }}" data-tip="Ruang"
+                       class="sisi-a {{ request()->routeIs('staf.ruang.*') ? 'aktif' : '' }}">
+                        <x-ikon nama="ruang" /><span class="sisi-lbl">Ruang</span>
                     </a>
                 @endif
                 <a href="{{ route('staf.koreksi.index') }}" data-tip="Koreksi Esai"

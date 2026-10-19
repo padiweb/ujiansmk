@@ -93,7 +93,7 @@ class JadwalUjianController extends Controller
         if ($jadwal->berstatus(JadwalUjian::AKTIF)) {
             $data = $this->validasiAktif($request, $jadwal);
             DB::transaction(function () use ($jadwal, $data) {
-                $jadwal->update(collect($data)->only(['tutup_pada', 'batas_pelanggaran', 'tampilkan_hasil'])->all() + ['denah_id' => $data['denah_id'] ?? $this->denahKegiatan($jadwal->kegiatan_id)]);
+                $jadwal->update(collect($data)->only(['tutup_pada', 'batas_pelanggaran', 'tampilkan_hasil'])->all() + ['denah_id' => $data['denah_id'] ?? $this->denahUtama()]);
             });
         } else {
             $data = $this->validasiLengkap($request, $jadwal);
@@ -188,7 +188,6 @@ class JadwalUjianController extends Controller
                     'soal as esai_siap' => fn ($q) => $q->where('tipe', 'esai')->where('status', 'siap')])
                 ->orderBy('nama')->get(),
             'daftarKegiatan' => KegiatanUjian::with('periode.tahunAjaran')->where('aktif', true)->orderByDesc('periode_id')->orderBy('nama')->get(),
-            'daftarDenah' => Denah::orderByDesc('id')->get(),
         ];
     }
 
@@ -293,14 +292,18 @@ class JadwalUjianController extends Controller
             'batas_pelanggaran' => $data['batas_pelanggaran'],
             'bobot_pg' => $data['bobot_pg'],
             'tampilkan_hasil' => $data['tampilkan_hasil'],
-            'denah_id' => $data['denah_id'] ?? $this->denahKegiatan($data['kegiatan_id'] ?? null),
+            'denah_id' => $data['denah_id'] ?? $this->denahUtama(),
         ];
     }
 
-    /** Denah milik kegiatan (dipakai otomatis bila jadwal tidak memilih denah lain). */
-    private function denahKegiatan(?int $kegiatanId): ?int
+    /** Penempatan ruang tetap (menu Ruang), dipakai semua jadwal kecuali ada denah lama yang dipilih. */
+    private function denahUtama(): ?int
     {
-        return $kegiatanId ? \App\Models\Denah::where('kegiatan_id', $kegiatanId)->value('id') : null;
+        try {
+            return $this->denah->utama()->id;
+        } catch (\App\Services\KesalahanJadwal) {
+            return null;
+        }
     }
 
     private function simpanRelasi(JadwalUjian $jadwal, array $data): void

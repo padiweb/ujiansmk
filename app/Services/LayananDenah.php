@@ -7,7 +7,8 @@ use App\Models\Denah;
 use App\Models\DenahPenempatan;
 use App\Models\DenahRuang;
 use App\Models\JadwalUjian;
-use App\Models\KegiatanUjian;
+use App\Models\Periode;
+use App\Models\Ruang;
 use App\Models\SesiUjian;
 use App\Models\Siswa;
 use App\Models\User;
@@ -147,7 +148,7 @@ class LayananDenah
         });
 
         $this->perbaruiJadwal($denah);
-        $this->ikatJadwalKegiatan($denah);
+        $this->ikatJadwalUtama($denah);
         if ($pelaku) {
             AuditLog::catat('denah.ruang', "denah {$denah->id}", $pelaku);
         }
@@ -236,22 +237,37 @@ class LayananDenah
         }
     }
 
-    /** Denah milik kegiatan ini (dibuat otomatis pada kunjungan pertama). */
-    public function untukKegiatan(KegiatanUjian $kegiatan, ?User $pembuat = null): Denah
+    /**
+     * Denah utama: satu penempatan tetap (siswa -> ruang -> nomor meja) yang dipakai semua jadwal, seperti aplikasi lama.
+     * Dibuat otomatis; setiap ruang selalu punya barisnya dengan kapasitas dari data ruang.
+     *
+     * @throws KesalahanJadwal
+     */
+    public function utama(?User $pembuat = null): Denah
     {
-        return Denah::firstOrCreate(['kegiatan_id' => $kegiatan->id], [
-            'nama' => $kegiatan->nama, 'periode_id' => $kegiatan->periode_id, 'dibuat_oleh' => $pembuat?->id,
-        ]);
+        $denah = Denah::where('utama', true)->first();
+        if (! $denah) {
+            $periode = Periode::where('aktif', true)->value('id') ?? Periode::orderByDesc('id')->value('id')
+                ?? throw new KesalahanJadwal('Isi data semester dulu di Master Data.');
+            $denah = Denah::create(['nama' => 'Denah Utama', 'periode_id' => $periode, 'utama' => true, 'dibuat_oleh' => $pembuat?->id]);
+        }
+
+        $sudah = $denah->ruang()->pluck('ruang_id')->all();
+        foreach (Ruang::whereNotIn('id', $sudah)->get() as $r) {
+            DenahRuang::create(['denah_id' => $denah->id, 'ruang_id' => $r->id, 'siswa_per_meja' => 1, 'kapasitas' => $r->kapasitas, 'jumlah_meja' => max(1, (int) $r->kapasitas)]);
+        }
+
+        return $denah;
     }
 
-    /** Jadwal kegiatan ini yang belum punya denah memakai denah kegiatan. */
-    public function ikatJadwalKegiatan(Denah $denah): void
+    /** Jadwal yang belum punya denah (belum selesai) memakai denah utama. */
+    public function ikatJadwalUtama(Denah $denah): void
     {
-        if (! $denah->kegiatan_id) {
+        if (! $denah->utama) {
             return;
         }
 
-        JadwalUjian::where('kegiatan_id', $denah->kegiatan_id)->whereNull('denah_id')->where('status', '!=', JadwalUjian::SELESAI)->get()->each(function (JadwalUjian $j) use ($denah) {
+        JadwalUjian::whereNull('denah_id')->where('status', '!=', JadwalUjian::SELESAI)->get()->each(function (JadwalUjian $j) use ($denah) {
             $j->update(['denah_id' => $denah->id]);
             $this->terapkan($j);
         });

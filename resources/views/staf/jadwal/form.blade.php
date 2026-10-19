@@ -14,7 +14,7 @@
 @section('konten')
 <h1 class="judul-halaman">{{ $j ? 'Ubah' : 'Buat' }} jadwal ujian</h1>
 @if ($terbatas)
-    <div class="info" style="margin-top:12px"><x-ikon nama="info" :ukuran="18" /><span>Jadwal aktif: hanya waktu tutup, batas pelanggaran, tampilan hasil, dan denah yang bisa diubah.</span></div>
+    <div class="info" style="margin-top:12px"><x-ikon nama="info" :ukuran="18" /><span>Jadwal aktif: hanya waktu tutup, batas pelanggaran, dan tampilan hasil yang bisa diubah.</span></div>
 @endif
 
 <form class="kartu formulir" method="POST" action="{{ $j ? route('staf.jadwal.update', $j) : route('staf.jadwal.store') }}" id="formJadwal" style="max-width:760px">
@@ -128,16 +128,6 @@
         </select>
     </div>
 
-    <div class="bidang">
-        <label for="denah_id">Denah ruang ujian</label>
-        <select id="denah_id" name="denah_id">
-            <option value="">Otomatis (denah kegiatan)</option>
-            @foreach ($daftarDenah as $d)
-                <option value="{{ $d->id }}" @selected((int) old('denah_id', $j?->denah_id) === $d->id)>{{ $d->nama }}</option>
-            @endforeach
-        </select>
-        <small class="bantuan">Denah diatur di menu Denah Ruang.</small>
-    </div>
 
     <div class="aksi-form">
         <button class="tombol kecil" type="submit">Simpan</button>

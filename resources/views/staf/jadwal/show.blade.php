@@ -56,9 +56,9 @@
 
 <div class="kartu">
     <h2 class="judul-kartu">Ruang</h2>
-    <p>Denah: @if ($j->denah) <a href="{{ route('staf.denah.show', $j->denah) }}"><strong>{{ $j->denah->nama }}</strong></a> @else <span class="sub">belum dipasang</span> @endif</p>
+    <p>Ruang: <a href="{{ route('staf.ruang.index') }}"><strong>Atur di menu Ruang</strong></a></p>
     @if (! is_null($tanpaTempat) && $tanpaTempat > 0)
-        <div class="pesan-salah catatan" role="status" style="margin-top:8px"><x-ikon nama="peringatan" :ukuran="18" /><span>{{ $tanpaTempat }} peserta belum punya tempat di denah ini. Mereka tetap bisa ujian, tetapi tanpa ruang dan nomor meja.</span></div>
+        <div class="pesan-salah catatan" role="status" style="margin-top:8px"><x-ikon nama="peringatan" :ukuran="18" /><span>{{ $tanpaTempat }} peserta belum punya ruang. Mereka tetap bisa ujian, tetapi tanpa ruang dan nomor meja.</span></div>
     @endif
 </div>
 

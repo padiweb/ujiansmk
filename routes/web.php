@@ -179,21 +179,20 @@ Route::prefix('staf')->group(function () {
             Route::get('/sandi/{token}', [SinkronEduwebController::class, 'unduhSandi'])->name('sandi');
         });
 
-        Route::prefix('denah')->name('staf.denah.')->group(function () {
+        Route::prefix('ruang')->name('staf.ruang.')->group(function () {
             Route::get('/', [DenahController::class, 'index'])->name('index');
-            Route::get('/kegiatan/{kegiatan}', [DenahController::class, 'bukaKegiatan'])->whereNumber('kegiatan')->name('kegiatan');
-            Route::prefix('{denah}')->whereNumber('denah')->group(function () {
-                Route::get('/', [DenahController::class, 'show'])->name('show');
+            Route::post('/', [DenahController::class, 'store'])->name('store');
+            Route::post('/bagi', [DenahController::class, 'bagi'])->name('bagi');
+            Route::post('/siswa/{siswa}/pindah', [DenahController::class, 'pindah'])->whereNumber('siswa')->name('pindah');
+            Route::post('/siswa/{siswa}/lepas', [DenahController::class, 'lepas'])->whereNumber('siswa')->name('lepas');
+            Route::prefix('{ruang}')->whereNumber('ruang')->group(function () {
+                Route::put('/', [DenahController::class, 'update'])->name('update');
                 Route::delete('/', [DenahController::class, 'destroy'])->name('destroy');
-                Route::post('/ruang', [DenahController::class, 'simpanRuang'])->name('ruang');
-                Route::post('/bagi', [DenahController::class, 'bagi'])->name('bagi');
-                Route::get('/ruang/{ruang}', [DenahController::class, 'ruang'])->whereNumber('ruang')->name('ruang.show');
-                Route::post('/ruang/{ruang}/urutan', [DenahController::class, 'urutan'])->whereNumber('ruang')->middleware('throttle:60,1')->name('ruang.urutan');
-                Route::post('/ruang/{ruang}/urut-kelas', [DenahController::class, 'urutkanPerKelas'])->whereNumber('ruang')->name('ruang.urut-kelas');
-                Route::get('/ruang/{ruang}/no-meja', [DenahController::class, 'cetakMeja'])->whereNumber('ruang')->name('ruang.no-meja');
-                Route::get('/ruang/{ruang}/absen', [DenahController::class, 'absen'])->whereNumber('ruang')->name('ruang.absen');
-                Route::post('/siswa/{siswa}/pindah', [DenahController::class, 'pindah'])->whereNumber('siswa')->name('pindah');
-                Route::post('/siswa/{siswa}/lepas', [DenahController::class, 'lepas'])->whereNumber('siswa')->name('lepas');
+                Route::get('/siswa', [DenahController::class, 'show'])->name('show');
+                Route::post('/urutan', [DenahController::class, 'urutan'])->middleware('throttle:60,1')->name('urutan');
+                Route::post('/urut-kelas', [DenahController::class, 'urutkanPerKelas'])->name('urut-kelas');
+                Route::get('/no-meja', [DenahController::class, 'cetakMeja'])->name('no-meja');
+                Route::get('/absen', [DenahController::class, 'absen'])->name('absen');
             });
         });
 

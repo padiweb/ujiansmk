@@ -10,7 +10,12 @@ class Denah extends Model
 {
     protected $table = 'denah_ujian';
 
-    protected $fillable = ['nama', 'periode_id', 'kegiatan_id', 'dibuat_oleh'];
+    protected $fillable = ['nama', 'periode_id', 'kegiatan_id', 'utama', 'dibuat_oleh'];
+
+    protected function casts(): array
+    {
+        return ['utama' => 'boolean'];
+    }
 
     public function periode(): BelongsTo
     {

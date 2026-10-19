@@ -22,7 +22,7 @@
     <div class="grid">
         @foreach ($baris as $p)
             <div class="kartu">
-                <small>{{ $d->nama }} · {{ $ruang->nama }}</small>
+                <small>{{ $ruang->nama }}</small>
                 <div class="no">{{ $p->meja }}</div>
                 <div class="nama">{{ $p->siswa->nama }}</div>
                 <small>{{ $kelasSiswa[$p->siswa_id]->nama ?? '' }} · {{ $p->siswa->nisn }}</small>

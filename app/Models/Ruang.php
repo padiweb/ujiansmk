@@ -8,5 +8,5 @@ class Ruang extends Model
 {
     protected $table = 'ruang';
 
-    protected $fillable = ['nama'];
+    protected $fillable = ['nama', 'kapasitas'];
 }
