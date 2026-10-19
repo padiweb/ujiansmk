@@ -33,6 +33,13 @@ class JadwalUjianController extends Controller
             ->orderByRaw("case status when 'aktif' then 0 when 'draf' then 1 else 2 end")
             ->orderByDesc('mulai_pada');
 
+        // Semester bawaan: yang sedang aktif ("semua" = tanpa batas).
+        $p = $request->query('periode');
+        $periodeId = $p === 'semua' ? null : (filled($p) ? (int) $p : Periode::where('aktif', true)->value('id'));
+        if ($periodeId) {
+            $kueri->where('periode_id', $periodeId);
+        }
+
         if (in_array($status = $request->query('status'), ['draf', 'aktif', 'selesai'], true)) {
             $kueri->where('status', $status);
         }
@@ -40,7 +47,11 @@ class JadwalUjianController extends Controller
             $kueri->where('nama', 'like', '%'.addcslashes($q, '%_\\').'%');
         }
 
-        return view('staf.jadwal.index', ['jadwal' => $kueri->paginate(20)->withQueryString()]);
+        return view('staf.jadwal.index', [
+            'jadwal' => $kueri->paginate(20)->withQueryString(),
+            'daftarPeriode' => Periode::with('tahunAjaran')->orderByDesc('tahun_ajaran_id')->orderBy('semester')->get(),
+            'periodeId' => $periodeId,
+        ]);
     }
 
     public function create(): View

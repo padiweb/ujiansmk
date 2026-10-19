@@ -12,7 +12,7 @@
     };
     var aksiBoleh = (tabel.getAttribute('data-boleh') || '').split(',');
     function boleh(kode) { return aksiBoleh.indexOf(kode) !== -1; }
-    var totalSoal = parseInt(tabel.getAttribute('data-total'), 10) || 0;
+    var totalSoal = parseInt(tabel.getAttribute('data-total'), 10) || 0; // 0 = tiap baris membawa total_soal sendiri (monitor ruang)
     var tubuh = document.getElementById('monIsi');
     var data = JSON.parse(document.getElementById('monAwal').textContent);
     var sebelumnya = null;   // peta id → baris pada pembaruan sebelumnya (tanpa bunyi pada muatan pertama)
@@ -103,7 +103,7 @@
 
         var tdNama = el('td');
         tdNama.appendChild(el('strong', null, b.nama));
-        tdNama.appendChild(el('small', 'bantuan', (b.nisn || '') + (b.ruang ? ' · ' + b.ruang + (b.meja ? ' / meja ' + b.meja : '') : '')));
+        tdNama.appendChild(el('small', 'bantuan', (b.nisn || '') + (b.ujian ? ' · ' + b.ujian : '') + (b.ruang ? ' · ' + b.ruang + (b.meja ? ' / meja ' + b.meja : '') : '')));
         tr.appendChild(tdNama);
 
         tr.appendChild(el('td', null, b.kelas || '—'));
@@ -126,10 +126,11 @@
         var tdJ = el('td');
         if (b.status === 'belum') tdJ.textContent = '—';
         else {
-            tdJ.appendChild(el('span', null, b.dijawab + '/' + totalSoal));
+            var total = b.total_soal !== undefined ? b.total_soal : totalSoal;
+            tdJ.appendChild(el('span', null, b.dijawab + '/' + total));
             var bar = el('div', 'mon-bar');
             var isi = el('span');
-            isi.style.width = (totalSoal ? Math.min(100, Math.round(b.dijawab / totalSoal * 100)) : 0) + '%';
+            isi.style.width = (total ? Math.min(100, Math.round(b.dijawab / total * 100)) : 0) + '%';
             bar.appendChild(isi);
             tdJ.appendChild(bar);
         }
@@ -201,7 +202,7 @@
         fetch(tabel.getAttribute('data-url'), { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin', cache: 'no-store' })
             .then(function (r) {
                 if (r.status === 401 || r.status === 419) { location.reload(); throw new Error('masuk'); }
-                if (r.status === 409) { location.href = tabel.getAttribute('data-url').replace(/\/data$/, '').replace(/\/\d+$/, ''); throw new Error('tidak_aktif'); }
+                if (r.status === 409) { location.href = tabel.getAttribute('data-url').replace(/\/data$/, '').replace(/\/\d+$/, '').replace(/\/ruang$/, ''); throw new Error('tidak_aktif'); }
                 if (!r.ok) throw new Error('gagal');
                 return r.json();
             })
@@ -224,7 +225,7 @@
 
     var dlg = { b: null, kode: null };
     var TEKS = {
-        aktifkan: ['Aktifkan kembali', function (b) { return b.nama + ' akan dapat melanjutkan ujian. Hitungan pelanggaran diturunkan sehingga satu pelanggaran lagi memblokir kembali.'; }],
+        aktifkan: ['Aktifkan kembali', function (b) { return b.nama + ' akan dapat melanjutkan ujian. Hitungan pelanggaran diatur ulang ke 0, jadi siswa mendapat kesempatan penuh lagi.'; }],
         reset: ['Reset perangkat', function (b) { return 'Perangkat ' + b.nama + ' saat ini dilepas. Siswa harus memasukkan token ujian lagi di perangkat yang akan dipakai; jawaban dan sisa waktu tetap.'; }],
         waktu: ['Tambah waktu', function (b) { return 'Tambahkan waktu mengerjakan untuk ' + b.nama + '.'; }],
         selesai: ['Paksa selesai', function (b) { return 'Ujian ' + b.nama + ' diakhiri sekarang dan dinilai dari jawaban yang sudah tersimpan. Tindakan ini tidak dapat dibatalkan.'; }],
@@ -253,7 +254,10 @@
         if (kode === 'waktu') badan.append('menit', $('monMenit').value);
         tombol.disabled = true;
 
-        fetch(tabel.getAttribute('data-aksi') + '/' + b.id + '/' + kode, {
+        // Monitor ruang: tiap baris membawa jadwal_id; monitor jadwal: alamat dasar sudah memuat jadwalnya.
+        var alamat = b.jadwal_id ? tabel.getAttribute('data-aksi') + '/' + b.jadwal_id + '/sesi/' + b.id + '/' + kode
+            : tabel.getAttribute('data-aksi') + '/' + b.id + '/' + kode;
+        fetch(alamat, {
             method: 'POST', body: badan, credentials: 'same-origin',
             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': tabel.getAttribute('data-token'), 'X-Requested-With': 'XMLHttpRequest' },
         }).then(function (r) {

@@ -8,6 +8,7 @@ use App\Models\JadwalUjian;
 use App\Models\Jawaban;
 use App\Models\Pelanggaran;
 use App\Models\Pengampu;
+use App\Models\Ruang;
 use App\Models\SesiUjian;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -97,6 +98,50 @@ class LayananMonitor
             'belum' => $hitung(fn ($b) => $b['status'] === SesiUjian::BELUM),
             'senyap' => $hitung(fn ($b) => $b['senyap']),
         ];
+    }
+
+    /** Jadwal aktif yang punya peserta di ruang ini (tiap ujian membawa tokennya sendiri). @return \Illuminate\Support\Collection<int,JadwalUjian> */
+    public function jadwalRuang(Ruang $ruang)
+    {
+        return JadwalUjian::query()->where('status', JadwalUjian::AKTIF)
+            ->whereHas('sesi', fn ($q) => $q->where('ruang_id', $ruang->id))->with('mapel')->orderBy('mulai_pada')->get();
+    }
+
+    /**
+     * Peserta semua ujian aktif di satu ruang, digabung dalam satu daftar. Tiap baris membawa jadwal_id dan nama ujiannya
+     * agar tindakan pengawas diarahkan ke jadwal yang benar. Memakai cache per jadwal yang sama dengan monitor jadwal.
+     *
+     * @return array<string,mixed>
+     */
+    public function dataRuang(Ruang $ruang): array
+    {
+        $this->sesi->sapuKedaluwarsa();
+
+        $peserta = [];
+        foreach ($this->jadwalRuang($ruang) as $j) {
+            $d = Cache::remember($this->kunci($j), self::TTL_DATA, fn () => $this->susun($j));
+            foreach ($d['peserta'] as $b) {
+                if ($b['ruang_id'] === $ruang->id) {
+                    $peserta[] = $b + ['jadwal_id' => $j->id, 'ujian' => $j->mapel->nama, 'total_soal' => $d['total_soal']];
+                }
+            }
+        }
+        usort($peserta, fn ($a, $b) => strcasecmp($a['nama'], $b['nama']));
+
+        return ['waktu' => now()->format('H:i:s'), 'total_soal' => 0, 'ringkasan' => $this->ringkas($peserta), 'peserta' => $peserta];
+    }
+
+    /** Ringkasan tiap ruang untuk halaman pilih ruang: siswa, sedang mengerjakan, terblokir (jadwal aktif saja). @return array<int,array<string,int>> */
+    public function ringkasRuang(): array
+    {
+        $hitung = SesiUjian::query()->whereIn('jadwal_id', JadwalUjian::where('status', JadwalUjian::AKTIF)->select('id'))->whereNotNull('ruang_id')
+            ->select('ruang_id', 'status', DB::raw('count(*) as n'))->groupBy('ruang_id', 'status')->get()->groupBy('ruang_id');
+
+        return $hitung->map(fn ($g) => [
+            'siswa' => (int) $g->sum('n'),
+            'mengerjakan' => (int) ($g->firstWhere('status', SesiUjian::BERLANGSUNG)->n ?? 0),
+            'terblokir' => (int) ($g->firstWhere('status', SesiUjian::DIBLOKIR)->n ?? 0),
+        ])->all();
     }
 
     public function lupakan(JadwalUjian|int $jadwal): void

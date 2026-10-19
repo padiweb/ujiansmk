@@ -59,6 +59,8 @@ Route::prefix('staf')->group(function () {
         // Monitor ujian: hak akses per jadwal dicek di pengendali (admin semua, pengawas yang ditugaskan, guru mapelnya).
         Route::prefix('monitor')->name('staf.monitor.')->group(function () {
             Route::get('/', [MonitorController::class, 'index'])->name('index');
+            Route::get('/ruang/{ruang}', [MonitorController::class, 'ruang'])->whereNumber('ruang')->name('ruang');
+            Route::get('/ruang/{ruang}/data', [MonitorController::class, 'dataRuang'])->whereNumber('ruang')->name('ruang.data');
             Route::prefix('{jadwal}')->whereNumber('jadwal')->group(function () {
                 Route::get('/', [MonitorController::class, 'show'])->name('show');
                 Route::get('/data', [MonitorController::class, 'data'])->name('data');

@@ -493,3 +493,6 @@ h1, h2, h3 { color: var(--teks); }
 .dr-pegang { text-align: center; color: var(--teks-3); cursor: grab; user-select: none; }
 #drIsi tr { cursor: grab; }
 #drIsi tr.dr-ambil { opacity: .45; background: var(--biru-muda); }
+.token-baris { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--garis-lembut); font-size: .9rem; }
+.token-baris:first-of-type { border-top: 0; }
+.token-nilai-kecil { font-family: 'Courier New', monospace; font-weight: 700; font-size: 1.1rem; letter-spacing: .16em; color: var(--biru-tua); }

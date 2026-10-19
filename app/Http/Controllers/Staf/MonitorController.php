@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Staf;
 use App\Http\Controllers\Controller;
 use App\Models\AksiPengawas;
 use App\Models\JadwalUjian;
+use App\Models\Ruang;
 use App\Models\SesiUjian;
 use App\Services\KesalahanUjian;
 use App\Services\LayananMonitor;
@@ -27,7 +28,39 @@ class MonitorController extends Controller
             ->select('jadwal_id', 'status', DB::raw('count(*) as jumlah'))->groupBy('jadwal_id', 'status')->get()
             ->groupBy('jadwal_id')->map(fn ($g) => $g->pluck('jumlah', 'status'));
 
-        return view('staf.monitor.index', ['jadwal' => $jadwal, 'hitung' => $hitung]);
+        $user = $request->user('web');
+        $pengawas = $user->role === 'admin' || $user->mengawasi();
+
+        return view('staf.monitor.index', [
+            'jadwal' => $jadwal,
+            'hitung' => $hitung,
+            'pengawas' => $pengawas,
+            'ruang' => $pengawas ? Ruang::orderBy('nama')->get() : collect(),
+            'ringkasRuang' => $pengawas ? $this->monitor->ringkasRuang() : [],
+        ]);
+    }
+
+    /** Pantau satu ruang: semua ujian aktif di ruang itu beserta tokennya (admin dan pengawas). */
+    public function ruang(Request $request, Ruang $ruang): View
+    {
+        $this->izinkanPengawas($request);
+
+        return view('staf.monitor.ruang', [
+            'ruang' => $ruang,
+            'jadwal' => $this->monitor->jadwalRuang($ruang),
+            'data' => $this->monitor->dataRuang($ruang),
+            'semuaRuang' => Ruang::orderBy('nama')->get(),
+            'aksiTerakhir' => AksiPengawas::query()
+                ->whereIn('sesi_id', SesiUjian::query()->where('ruang_id', $ruang->id)->whereIn('jadwal_id', JadwalUjian::where('status', JadwalUjian::AKTIF)->select('id'))->select('id'))
+                ->with('pelaku:id,nama', 'sesi.siswa:id,nama')->latest('id')->limit(8)->get(),
+        ]);
+    }
+
+    public function dataRuang(Request $request, Ruang $ruang): JsonResponse
+    {
+        $this->izinkanPengawas($request);
+
+        return response()->json($this->monitor->dataRuang($ruang))->header('Cache-Control', 'no-store');
     }
 
     public function show(Request $request, JadwalUjian $jadwal): View
@@ -83,6 +116,12 @@ class MonitorController extends Controller
             'pesan' => 'Tindakan dicatat.',
             'catatan' => now()->format('H:i').' · '.$user->nama.' — '.AksiPengawas::LABEL[$catatan->aksi].' · '.$sesi->siswa->nama.($catatan->detail ? " ({$catatan->detail})" : ''),
         ]);
+    }
+
+    private function izinkanPengawas(Request $request): void
+    {
+        $user = $request->user('web');
+        abort_unless($user->role === 'admin' || $user->mengawasi(), 403, 'Hanya pengawas yang dapat memantau per ruang.');
     }
 
     private function izinkanLihat(Request $request, JadwalUjian $jadwal): void

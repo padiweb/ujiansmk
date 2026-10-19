@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\AksiPengawas;
 use App\Models\Pelanggaran;
+use App\Models\Mapel;
 use App\Models\Pengampu;
+use App\Models\Ruang;
 use App\Models\SesiUjian;
 use App\Models\User;
 use App\Services\LayananPelanggaran;
@@ -390,5 +392,64 @@ class MonitorPengawasTest extends TestCase
 
         $this->postJson($this->urlAksi($sesi, 'reset'))->assertUnauthorized();
         $this->assertNotNull($sesi->fresh()->token_perangkat);
+    }
+
+    // ── Monitor per ruang (pilih ruang dulu, seperti aplikasi lama) ─────────
+
+    public function test_halaman_monitor_menampilkan_pilih_ruang_untuk_pengawas_tetapi_tidak_untuk_guru(): void
+    {
+        $ruang = Ruang::create(['nama' => 'Lab Pantau', 'kapasitas' => 10]);
+        SesiUjian::where('jadwal_id', $this->jadwal->id)->update(['ruang_id' => $ruang->id]);
+        $guru = User::factory()->create();
+        Pengampu::create(['guru_id' => $guru->id, 'mapel_id' => $this->mtk->id, 'kelas_id' => $this->kelas->id]);
+
+        $this->actingAs($this->pengawas, 'web')->get('/staf/monitor')->assertOk()->assertSee('Pilih ruang')->assertSee('Lab Pantau')->assertSee('Per ujian');
+        $this->actingAs($this->admin, 'web')->get('/staf/monitor')->assertOk()->assertSee('Lab Pantau');
+        $this->actingAs($guru, 'web')->get('/staf/monitor')->assertOk()->assertDontSee('Pilih ruang')->assertDontSee('Lab Pantau')->assertSee('UTS Matematika');
+        $this->get("/staf/monitor/ruang/{$ruang->id}")->assertForbidden();
+        $this->getJson("/staf/monitor/ruang/{$ruang->id}/data")->assertForbidden();
+    }
+
+    public function test_monitor_ruang_menggabungkan_semua_ujian_aktif_beserta_tokennya(): void
+    {
+        $ruang = Ruang::create(['nama' => 'Lab Campur', 'kapasitas' => 10]);
+        $lain = Ruang::create(['nama' => 'Lab Lain', 'kapasitas' => 10]);
+
+        // Jadwal kedua (mapel lain, token lain) dengan siswa dari kelas lain di ruang yang sama.
+        $ipa = Mapel::create(['kode' => 'IPA', 'nama' => 'IPA', 'kelompok' => 'A', 'kkm' => 75]);
+        $kedua = $this->jadwal->replicate(['token', 'media_kode']);
+        $kedua->fill(['mapel_id' => $ipa->id, 'nama' => 'UTS IPA', 'token' => 'TOKEN22'])->save();
+        $siswaLain = \App\Models\Siswa::factory()->create(['nama' => 'Zainal Lain Tingkat']);
+        SesiUjian::create(['jadwal_id' => $kedua->id, 'siswa_id' => $siswaLain->id, 'ruang_id' => $ruang->id, 'status' => SesiUjian::BELUM]);
+
+        SesiUjian::where('jadwal_id', $this->jadwal->id)->where('siswa_id', $this->siswa[0]->id)->update(['ruang_id' => $ruang->id]);
+        SesiUjian::where('jadwal_id', $this->jadwal->id)->where('siswa_id', $this->siswa[1]->id)->update(['ruang_id' => $ruang->id]);
+        SesiUjian::where('jadwal_id', $this->jadwal->id)->where('siswa_id', $this->siswa[2]->id)->update(['ruang_id' => $lain->id]);
+
+        $html = $this->actingAs($this->pengawas, 'web')->get("/staf/monitor/ruang/{$ruang->id}")->assertOk()
+            ->assertSee('Lab Campur')->assertSee('Ganti ruang')->assertSee($this->jadwal->token)->assertSee('TOKEN22')->getContent();
+        $this->assertStringContainsString('Matematika', $html);
+        $this->assertStringContainsString('IPA', $html);
+
+        $d = $this->getJson("/staf/monitor/ruang/{$ruang->id}/data")->assertOk()->json();
+        $this->assertCount(3, $d['peserta']); // 2 siswa matematika + 1 siswa IPA; siswa ruang lain tidak ikut
+        $this->assertEqualsCanonicalizing([$this->jadwal->id, $this->jadwal->id, $kedua->id], array_column($d['peserta'], 'jadwal_id'));
+        $this->assertEqualsCanonicalizing(['Matematika', 'Matematika', 'IPA'], array_column($d['peserta'], 'ujian'));
+        $this->assertSame(3, $d['ringkasan']['belum']);
+        $this->assertArrayNotHasKey('token', $d);
+
+        // Tindakan tetap lewat jadwal yang benar (baris membawa jadwal_id).
+        [$sesi] = $this->berjalan();
+        $this->aksi($this->pengawas, $sesi, 'reset')->assertOk();
+    }
+
+    public function test_monitor_ruang_tidak_menampilkan_ujian_yang_tidak_aktif(): void
+    {
+        $ruang = Ruang::create(['nama' => 'Lab Sepi', 'kapasitas' => 10]);
+        SesiUjian::where('jadwal_id', $this->jadwal->id)->update(['ruang_id' => $ruang->id]);
+        $this->jadwal->update(['status' => 'selesai']);
+
+        $this->actingAs($this->pengawas, 'web')->get("/staf/monitor/ruang/{$ruang->id}")->assertOk()->assertSee('Tidak ada ujian aktif di ruang ini');
+        $this->getJson("/staf/monitor/ruang/{$ruang->id}/data")->assertOk()->assertJsonPath('peserta', []);
     }
 }

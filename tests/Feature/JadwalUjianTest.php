@@ -108,6 +108,22 @@ class JadwalUjianTest extends TestCase
         $this->get("/staf/jadwal-ujian/{$jadwal->id}/ubah")->assertOk();
     }
 
+    public function test_daftar_jadwal_menyaring_semester_aktif_dan_menampilkan_token(): void
+    {
+        $this->soal('pg');
+        $this->siswaDiKelas($this->kelasA);
+        $jadwal = $this->buat();
+        $this->post("/staf/jadwal-ujian/{$jadwal->id}/aktifkan");
+
+        $this->get('/staf/jadwal-ujian')->assertOk()->assertSee('UTS – Matematika')->assertSee($jadwal->fresh()->token)->assertSee('Token');
+
+        $lain = Periode::create(['tahun_ajaran_id' => $this->tahun->id, 'semester' => 'genap', 'tipe' => 'reguler', 'aktif' => false]);
+        $jadwal->update(['periode_id' => $lain->id]);
+        $this->get('/staf/jadwal-ujian')->assertOk()->assertDontSee('UTS – Matematika'); // bukan semester aktif
+        $this->get("/staf/jadwal-ujian?periode={$lain->id}")->assertOk()->assertSee('UTS – Matematika');
+        $this->get('/staf/jadwal-ujian?periode=semua')->assertOk()->assertSee('UTS – Matematika');
+    }
+
     // ── Pembuatan dan validasi ──────────────────────────────────────────────
 
     public function test_buat_jadwal_draf_dengan_relasinya(): void

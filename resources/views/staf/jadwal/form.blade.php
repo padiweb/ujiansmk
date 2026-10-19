@@ -45,12 +45,17 @@
             @error('mapel_id') <small class="galat-bidang">{{ $message }}</small> @enderror
         </div>
 
-        <div class="bidang @error('durasi_menit') salah @enderror">
-            <label for="durasi_menit">Durasi pengerjaan (menit) <span class="wajib">*</span></label>
-            <input id="durasi_menit" name="durasi_menit" type="number" min="5" max="480" value="{{ old('durasi_menit', $j?->durasi_menit ?? 90) }}" required>
-            <small class="bantuan">Dihitung sejak masing-masing siswa menekan Mulai.</small>
-            @error('durasi_menit') <small class="galat-bidang">{{ $message }}</small> @enderror
-        </div>
+        <fieldset class="opsi-blok @error('kelas_ids') salah @enderror">
+            <legend>Kelas peserta <span class="wajib">*</span></legend>
+            <small class="bantuan" style="margin:0 0 8px">Hanya kelas dari tahun ajaran semester yang dipilih yang tampil.</small>
+            @foreach ($daftarKelas as $k)
+                <label class="centang" data-tahun="{{ $k->tahun_ajaran_id }}" data-kelas>
+                    <input type="checkbox" name="kelas_ids[]" value="{{ $k->id }}" @checked(in_array($k->id, $kelasDipilih, true))>
+                    {{ $k->nama }} <small class="bantuan" style="margin:0">Kelas {{ $k->tingkat }} · {{ $k->tahunAjaran->nama }}</small>
+                </label>
+            @endforeach
+            @error('kelas_ids') <small class="galat-bidang">{{ $message }}</small> @enderror
+        </fieldset>
 
         <div class="bidang @error('mulai_pada') salah @enderror">
             <label for="mulai_pada">Dibuka pada <span class="wajib">*</span></label>
@@ -67,17 +72,12 @@
     </div>
 
     @unless ($terbatas)
-        <fieldset class="opsi-blok @error('kelas_ids') salah @enderror">
-            <legend>Kelas peserta <span class="wajib">*</span></legend>
-            <small class="bantuan" style="margin:0 0 8px">Hanya kelas dari tahun ajaran semester yang dipilih yang tampil.</small>
-            @foreach ($daftarKelas as $k)
-                <label class="centang" data-tahun="{{ $k->tahun_ajaran_id }}" data-kelas>
-                    <input type="checkbox" name="kelas_ids[]" value="{{ $k->id }}" @checked(in_array($k->id, $kelasDipilih, true))>
-                    {{ $k->nama }} <small class="bantuan" style="margin:0">Kelas {{ $k->tingkat }} · {{ $k->tahunAjaran->nama }}</small>
-                </label>
-            @endforeach
-            @error('kelas_ids') <small class="galat-bidang">{{ $message }}</small> @enderror
-        </fieldset>
+        <div class="bidang @error('durasi_menit') salah @enderror">
+            <label for="durasi_menit">Durasi pengerjaan (menit) <span class="wajib">*</span></label>
+            <input id="durasi_menit" name="durasi_menit" type="number" min="5" max="480" value="{{ old('durasi_menit', $j?->durasi_menit ?? 90) }}" required>
+            <small class="bantuan">Dihitung sejak masing-masing siswa menekan Mulai.</small>
+            @error('durasi_menit') <small class="galat-bidang">{{ $message }}</small> @enderror
+        </div>
 
         <fieldset class="opsi-blok @error('bank_ids') salah @enderror">
             <legend>Bank soal <span class="wajib">*</span></legend>

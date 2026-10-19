@@ -18,6 +18,12 @@
 </div>
 
 <form class="saring" method="GET" action="{{ route('staf.jadwal.index') }}">
+    <select name="periode" aria-label="Semester" onchange="this.form.submit()">
+        @foreach ($daftarPeriode as $p)
+            <option value="{{ $p->id }}" @selected($periodeId === $p->id)>{{ $p->label() }}@if ($p->aktif) (aktif)@endif</option>
+        @endforeach
+        <option value="semua" @selected($periodeId === null)>Semua semester</option>
+    </select>
     <input type="search" name="q" value="{{ request('q') }}" placeholder="Cari nama jadwal…" aria-label="Cari">
     <select name="status" aria-label="Status">
         <option value="">Semua status</option>
@@ -31,7 +37,7 @@
 <div class="kartu tanpa-padding">
     <div class="gulir">
         <table class="tabel">
-            <thead><tr><th>Jadwal</th><th>Mapel</th><th>Waktu</th><th>Durasi</th><th>Kelas</th><th>Peserta</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
+            <thead><tr><th>Jadwal</th><th>Mapel</th><th>Waktu</th><th>Durasi</th><th>Kelas</th><th>Token</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($jadwal as $j)
                     <tr>
@@ -41,7 +47,7 @@
                         <td>{{ $j->mulai_pada->format('d/m/Y H:i') }}<br><small class="bantuan" style="margin:0">s.d. {{ $j->tutup_pada->format('d/m/Y H:i') }}</small></td>
                         <td>{{ $j->durasi_menit }} menit</td>
                         <td>{{ $j->kelas_count }}</td>
-                        <td>{{ $j->sesi_count ?: '—' }}</td>
+                        <td>@if ($j->token) <span class="token-nilai-kecil">{{ $j->token }}</span> @else — @endif</td>
                         <td>
                             <span class="lencana {{ $label[$j->status][1] }}">{{ $label[$j->status][0] }}</span>
                             @if ($j->status === 'aktif') <small class="bantuan" style="margin:2px 0 0">{{ $jendela[$j->jendela()] }}</small> @endif
