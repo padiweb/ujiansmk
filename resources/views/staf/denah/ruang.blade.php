@@ -14,8 +14,42 @@
 
 <div class="kartu">
     <strong>Komposisi:</strong>
-    @forelse ($komposisi as $kelas => $n) <span class="lencana">{{ $kelas }} · {{ $n }}</span> @empty <span class="sub">Belum ada siswa di ruang ini.</span> @endforelse
+    @forelse ($komposisi as $kelas => $n)
+        <span class="lencana">{{ $kelas }} · {{ $n }}</span>
+        @if ($idKelasRuang->search($kelas) !== false)
+            <form method="POST" action="{{ route('staf.ruang.kelas.keluar', [$ruang, $idKelasRuang->search($kelas)]) }}" style="display:inline" onsubmit="return confirm('Keluarkan semua siswa kelas {{ e($kelas) }} dari ruang ini?')">
+                @csrf @method('DELETE')
+                <button class="meja-lepas" type="submit" title="Keluarkan kelas {{ $kelas }}" aria-label="Keluarkan kelas {{ $kelas }}"><x-ikon nama="tutup" :ukuran="12" /></button>
+            </form>
+        @endif
+    @empty <span class="sub">Belum ada siswa di ruang ini.</span> @endforelse
+    @if ($ruang->campur)
+        <p class="sub" style="margin:8px 0 0">Ruang campur tingkat: maksimal {{ $ruang->porsiTingkat($dr->kapasitas()) }} siswa per tingkat.
+            @foreach ($tingkatIsi as $t => $n) Tingkat {{ $t }}: {{ $n }}. @endforeach</p>
+    @endif
 </div>
+
+<form class="kartu" method="POST" action="{{ route('staf.ruang.kelas', $ruang) }}">
+    @csrf
+    <h2 class="judul-kartu">Masukkan kelas ke ruang ini</h2>
+    @if ($kelasBelum->isEmpty())
+        <p class="sub" style="margin:0">Semua siswa aktif sudah punya ruang.</p>
+    @else
+        <fieldset class="opsi-blok">
+            <legend>Kelas yang masih ada siswa tanpa ruang</legend>
+            @foreach ($kelasBelum->groupBy('tingkat') as $tingkat => $kelasTingkat)
+                <div class="baris-bank" style="display:block">
+                    <strong>Tingkat {{ $tingkat }}</strong>
+                    @foreach ($kelasTingkat as $k)
+                        <label class="centang" style="display:inline-flex;margin-right:14px"><input type="checkbox" name="kelas_ids[]" value="{{ $k->id }}"> {{ $k->nama }} <small class="bantuan" style="margin:0">({{ $k->belum }} siswa)</small></label>
+                    @endforeach
+                </div>
+            @endforeach
+            @error('kelas_ids') <small class="galat-bidang">{{ $message }}</small> @enderror
+        </fieldset>
+        <div class="aksi-form"><button class="tombol kecil" type="submit">Masukkan ke {{ $ruang->nama }}</button></div>
+    @endif
+</form>
 
 <div class="kartu">
     <div class="aksi-form" style="margin:0;flex-wrap:wrap">

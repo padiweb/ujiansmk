@@ -10,7 +10,6 @@ use App\Models\DenahRuang;
 use App\Models\Kelas;
 use App\Models\Ruang;
 use App\Models\Siswa;
-use App\Models\TahunAjaran;
 use App\Services\KesalahanJadwal;
 use App\Services\LayananDenah;
 use Illuminate\Http\JsonResponse;
@@ -37,6 +36,9 @@ class DenahController extends Controller
         $penempatan = DenahPenempatan::where('denah_id', $denah->id)->get(['siswa_id', 'ruang_id']);
         $terisi = $penempatan->countBy('ruang_id');
 
+        $kelasSiswa = $this->kelasSiswa($penempatan->pluck('siswa_id')->all(), $tahunId);
+        $komposisi = $penempatan->groupBy('ruang_id')->map(fn ($g) => $g->map(fn ($p) => $kelasSiswa[$p->siswa_id]->nama ?? '—')->countBy()->sortKeys());
+
         $edit = $request->filled('edit_id') ? Ruang::find((int) $request->query('edit_id')) : null;
         $belumPunyaRuang = Siswa::where('status', 'aktif')->whereNotIn('id', $penempatan->pluck('siswa_id'))->count();
 
@@ -45,8 +47,8 @@ class DenahController extends Controller
             'terisi' => $terisi,
             'edit' => $edit,
             'belumPunyaRuang' => $belumPunyaRuang,
+            'komposisi' => $komposisi,
             'jumlah' => $penempatan->count(),
-            'daftarKelas' => Kelas::where('tahun_ajaran_id', $tahunId)->orderBy('tingkat')->orderBy('nama')->get(),
         ]);
     }
 
@@ -63,8 +65,17 @@ class DenahController extends Controller
     public function update(Request $request, Ruang $ruang): RedirectResponse
     {
         $data = $this->validasiRuang($request, $ruang);
-        $ruang->update($data);
         $denah = $this->layanan->utama($request->user('web'));
+
+        if ($data['campur']) {
+            $maks = $ruang->porsiTingkat($data['kapasitas']);
+            foreach ($this->layanan->komposisiTingkat($denah, $ruang) as $tingkat => $n) {
+                if ($n > $maks) {
+                    return back()->withInput()->with('gagal', "Ruang ini berisi {$n} siswa tingkat {$tingkat}, melebihi 50% kapasitas ({$maks}). Keluarkan sebagian kelasnya dulu.");
+                }
+            }
+        }
+        $ruang->update($data);
         $this->layanan->aturRuang($denah, [$ruang->id => $ruang->kapasitas], $request->user('web'));
         AuditLog::catat('ruang.ubah', "ruang {$ruang->id}", $request->user('web'));
 
@@ -85,31 +96,35 @@ class DenahController extends Controller
         return redirect()->route('staf.ruang.index')->with('berhasil', 'Ruang berhasil dihapus.'.($dilepas > 0 ? " {$dilepas} siswa dilepas dari ruang (data siswa tetap ada)." : ''));
     }
 
-    public function bagi(Request $request): RedirectResponse
+    /** Masukkan satu atau beberapa kelas sekaligus ke ruang ini. */
+    public function masukkanKelas(Request $request, Ruang $ruang): RedirectResponse
     {
         $denah = $this->layanan->utama($request->user('web'));
         $data = $request->validate([
             'kelas_ids' => ['required', 'array', 'min:1'],
             'kelas_ids.*' => ['integer', Rule::exists('kelas', 'id')->where('tahun_ajaran_id', $this->tahunId($denah))],
-            'campur' => ['nullable', 'boolean'],
         ], ['kelas_ids.required' => 'Pilih minimal satu kelas.'], ['kelas_ids' => 'Kelas']);
 
-        try {
-            $h = $this->layanan->bagi($denah, array_map('intval', $data['kelas_ids']), $request->user('web'), null, (bool) ($data['campur'] ?? false));
-        } catch (KesalahanJadwal $e) {
-            return back()->with('gagal', $e->getMessage())->withInput();
-        }
-        $this->layanan->ikatJadwalUtama($denah);
+        $h = $this->layanan->masukkanKelas($denah, $ruang, array_map('intval', $data['kelas_ids']), $request->user('web'));
 
-        $pesan = "{$h['ditempatkan']} siswa ditempatkan di ruang.";
-        if ($h['tanpa_tempat'] > 0) {
-            return back()->with('catatan', "{$pesan} {$h['tanpa_tempat']} siswa belum mendapat ruang: naikkan kapasitas atau tambah ruang, lalu bagi ulang.");
+        if ($h['masuk'] === 0) {
+            return back()->with('catatan', $ruang->campur
+                ? 'Tidak ada siswa yang masuk: ruang penuh, porsi tingkat sudah 50%, atau kelas itu sudah punya ruang semua.'
+                : 'Tidak ada siswa yang masuk: ruang penuh atau kelas itu sudah punya ruang semua.');
         }
-        if ($h['meja_sejenis'] > 0) {
-            return back()->with('catatan', "{$pesan} {$h['meja_sejenis']} meja terpaksa berisi siswa dari tingkat yang sama.");
+        $pesan = "{$h['masuk']} siswa dimasukkan ke {$ruang->nama}.";
+        if ($h['sisa'] > 0) {
+            return back()->with('catatan', "{$pesan} {$h['sisa']} siswa belum muat; masukkan sisanya ke ruang lain.");
         }
 
         return back()->with('berhasil', $pesan);
+    }
+
+    public function keluarkanKelas(Request $request, Ruang $ruang, Kelas $kelas): RedirectResponse
+    {
+        $n = $this->layanan->keluarkanKelas($this->layanan->utama(), $ruang, $kelas, $request->user('web'));
+
+        return back()->with('berhasil', "{$n} siswa kelas {$kelas->nama} dikeluarkan dari ruang.");
     }
 
     // ── Satu ruang ("Lihat Siswa") ──────────────────────────────────────────
@@ -128,6 +143,9 @@ class DenahController extends Controller
             'baris' => $baris,
             'kelasSiswa' => $kelasSiswa,
             'komposisi' => $baris->map(fn ($p) => $kelasSiswa[$p->siswa_id]->nama ?? '—')->countBy()->sortKeys(),
+            'tingkatIsi' => $this->layanan->komposisiTingkat($denah, $ruang),
+            'kelasBelum' => $this->kelasBelumPunyaRuang($denah),
+            'idKelasRuang' => Kelas::whereIn('nama', $baris->map(fn ($p) => $kelasSiswa[$p->siswa_id]->nama ?? null)->filter()->unique())->where('tahun_ajaran_id', $this->tahunId($denah))->pluck('nama', 'id'),
             'ruangLain' => Ruang::where('id', '!=', $ruang->id)->orderBy('nama')->get(),
         ]);
     }
@@ -217,14 +235,28 @@ class DenahController extends Controller
         ]);
     }
 
-    /** @return array{nama:string,kapasitas:int} */
+    /** Kelas (tahun ajaran berjalan) beserta jumlah siswa aktifnya yang belum punya ruang; hanya yang masih ada sisa. */
+    private function kelasBelumPunyaRuang(Denah $denah)
+    {
+        $hitung = DB::table('keanggotaan_kelas as k')->join('siswa as s', 's.id', '=', 'k.siswa_id')
+            ->where('k.status', 'aktif')->where('s.status', 'aktif')
+            ->whereNotIn('s.id', DenahPenempatan::where('denah_id', $denah->id)->select('siswa_id'))
+            ->select('k.kelas_id', DB::raw('count(distinct s.id) as n'))->groupBy('k.kelas_id')->pluck('n', 'kelas_id');
+
+        return Kelas::where('tahun_ajaran_id', $this->tahunId($denah))->orderBy('tingkat')->orderBy('nama')->get()
+            ->filter(fn ($k) => ($hitung[$k->id] ?? 0) > 0)->each(fn ($k) => $k->belum = (int) $hitung[$k->id])->values();
+    }
+
+    /** @return array{nama:string,kapasitas:int,campur:bool} */
     private function validasiRuang(Request $request, ?Ruang $ruang = null): array
     {
         $data = $request->validate([
             'nama' => ['required', 'string', 'max:50', Rule::unique('ruang', 'nama')->ignore($ruang?->id)],
             'kapasitas' => ['required', 'integer', 'between:1,500'],
+            'campur' => ['nullable', 'boolean'],
         ], ['nama.unique' => 'Nama ruang itu sudah ada.'], ['nama' => 'Nama ruang', 'kapasitas' => 'Kapasitas']);
         $data['nama'] = trim($data['nama']);
+        $data['campur'] = (bool) ($data['campur'] ?? false);
 
         return $data;
     }
@@ -236,7 +268,7 @@ class DenahController extends Controller
 
     private function tahunId(Denah $denah): int
     {
-        return (int) (TahunAjaran::where('aktif', true)->value('id') ?? $denah->periode()->value('tahun_ajaran_id'));
+        return $this->layanan->tahunId($denah);
     }
 
     /** Kelas (pada tahun ajaran yang dipakai) tiap siswa. @param list<int> $siswaIds */

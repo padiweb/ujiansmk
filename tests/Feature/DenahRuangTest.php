@@ -365,7 +365,8 @@ class DenahRuangTest extends TestCase
         $this->actingAs($this->admin, 'web')->get(route('staf.ruang.index'))->assertOk()->assertSee('Manajemen Ruang Ujian')->assertSee('Daftar Ruang');
         $this->get('/staf')->assertSee('data-tip="Ruang"', false)->assertDontSee('Denah Ruang');
         $this->actingAs($guru, 'web')->get(route('staf.ruang.index'))->assertForbidden();
-        $this->actingAs($pengawas, 'web')->post(route('staf.ruang.bagi'), ['kelas_ids' => [$this->kelas->id]])->assertForbidden();
+        $r = Ruang::create(['nama' => 'Lab A', 'kapasitas' => 10]);
+        $this->actingAs($pengawas, 'web')->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]])->assertForbidden();
         $this->assertSame(0, DenahPenempatan::count());
     }
 
@@ -383,7 +384,7 @@ class DenahRuangTest extends TestCase
         $this->put(route('staf.ruang.update', $r), ['nama' => 'LAB TKJ 1A', 'kapasitas' => 5])->assertSessionHas('berhasil');
         $this->assertSame('LAB TKJ 1A', $r->fresh()->nama);
 
-        $this->post(route('staf.ruang.bagi'), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('catatan'); // 5 dari 6 siswa
+        $this->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('catatan'); // 5 dari 6 siswa
         $this->assertSame(5, DenahPenempatan::count());
 
         $this->delete(route('staf.ruang.destroy', $r))->assertSessionHas('berhasil');
@@ -399,8 +400,10 @@ class DenahRuangTest extends TestCase
         $r2 = Ruang::create(['nama' => 'Lab B', 'kapasitas' => 10]);
 
         $this->get(route('staf.ruang.index'))->assertSee('6 siswa aktif');
-        $this->post(route('staf.ruang.bagi'), ['kelas_ids' => []])->assertSessionHasErrors('kelas_ids');
-        $this->post(route('staf.ruang.bagi'), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('berhasil');
+        $this->post(route('staf.ruang.kelas', $r1), ['kelas_ids' => []])->assertSessionHasErrors('kelas_ids');
+        $this->post(route('staf.ruang.kelas', $r1), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('catatan'); // 4 muat, 2 sisa
+        $this->get(route('staf.ruang.index'))->assertSee('2 siswa aktif');
+        $this->post(route('staf.ruang.kelas', $r2), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('berhasil'); // sisanya ke ruang lain
         $this->assertSame(4, DenahPenempatan::where('ruang_id', $r1->id)->count());
         $this->assertSame(2, DenahPenempatan::where('ruang_id', $r2->id)->count());
         $this->get(route('staf.ruang.index'))->assertDontSee('siswa aktif</strong> yang belum', false);
@@ -421,7 +424,7 @@ class DenahRuangTest extends TestCase
     {
         $this->actingAs($this->admin, 'web');
         $r = Ruang::create(['nama' => 'Lab A', 'kapasitas' => 10]);
-        $this->post(route('staf.ruang.bagi'), ['kelas_ids' => [$this->kelas->id]]);
+        $this->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]]);
         $this->assertSame(6, DenahPenempatan::count());
 
         $this->put(route('staf.ruang.update', $r), ['nama' => 'Lab A', 'kapasitas' => 4])->assertSessionHasNoErrors();
@@ -434,7 +437,7 @@ class DenahRuangTest extends TestCase
     {
         $this->actingAs($this->admin, 'web');
         $r = Ruang::create(['nama' => 'Lab A', 'kapasitas' => 10]);
-        $this->post(route('staf.ruang.bagi'), ['kelas_ids' => [$this->kelas->id]]);
+        $this->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]]);
 
         $this->get(route('staf.ruang.show', $r))->assertOk()->assertSee('Detail Ruang: Lab A')->assertSee($this->siswa[0]->nama)->assertSee('Cetak No. Meja', false);
         $this->get(route('staf.ruang.no-meja', $r))->assertOk()->assertSee($this->siswa[0]->nama);
@@ -454,11 +457,114 @@ class DenahRuangTest extends TestCase
         $r = Ruang::create(['nama' => 'Lab K', 'kapasitas' => 10]);
         $this->assertNull($this->jadwal->fresh()->denah_id);
 
-        $this->post(route('staf.ruang.bagi'), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('berhasil');
+        $this->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('berhasil');
 
         $this->assertSame($this->utama()->id, $this->jadwal->fresh()->denah_id);
         $sesi = $this->sesiDari($this->siswa[0]);
         $this->assertSame($r->id, $sesi->ruang_id);
         $this->assertNotNull($sesi->no_meja);
+    }
+
+    // ── Masukkan kelas ke ruang (biasa dan campur tingkat) ──────────────────
+
+    /** @return array<string,int> tingkat => jumlah siswa di ruang */
+    private function tingkatDiRuang(Ruang $r): array
+    {
+        $tingkat = Kelas::pluck('tingkat', 'id');
+        $kelasSiswa = DB::table('keanggotaan_kelas')->pluck('kelas_id', 'siswa_id');
+
+        return DenahPenempatan::where('ruang_id', $r->id)->get()->map(fn ($p) => $tingkat[$kelasSiswa[$p->siswa_id]])->countBy()->all();
+    }
+
+    public function test_satu_ruang_biasa_menampung_beberapa_kelas_dan_sisanya_ke_ruang_lain(): void
+    {
+        $this->actingAs($this->admin, 'web');
+        $kelasB = $this->kelasBaru('X', 5, 'X B');
+        $besar = Ruang::create(['nama' => 'Aula', 'kapasitas' => 8]);
+        $kecil = Ruang::create(['nama' => 'Kelas 1', 'kapasitas' => 10]);
+
+        $this->post(route('staf.ruang.kelas', $besar), ['kelas_ids' => [$this->kelas->id, $kelasB->id]])->assertSessionHas('catatan');
+        $this->assertSame(8, DenahPenempatan::where('ruang_id', $besar->id)->count()); // 6 kelas A + 2 dari kelas B
+        $this->assertSame(range(1, 8), DenahPenempatan::where('ruang_id', $besar->id)->orderBy('meja')->pluck('meja')->all());
+
+        $this->post(route('staf.ruang.kelas', $kecil), ['kelas_ids' => [$kelasB->id]])->assertSessionHas('berhasil'); // 3 sisa kelas B
+        $this->assertSame(3, DenahPenempatan::where('ruang_id', $kecil->id)->count());
+        $this->assertSame(11, DenahPenempatan::count());
+        $this->assertSame(11, DenahPenempatan::distinct('siswa_id')->count('siswa_id'));
+    }
+
+    public function test_ruang_campur_membatasi_tiap_tingkat_maksimal_setengah_kapasitas(): void
+    {
+        $this->actingAs($this->admin, 'web');
+        $xi = $this->kelasBaru('XI', 8, 'XI A');
+        $r1 = Ruang::create(['nama' => 'Lab 1', 'kapasitas' => 10, 'campur' => true]);
+        $r2 = Ruang::create(['nama' => 'Lab 2', 'kapasitas' => 10, 'campur' => true]);
+
+        $this->post(route('staf.ruang.kelas', $r1), ['kelas_ids' => [$this->kelas->id, $xi->id]])->assertSessionHas('catatan');
+        $this->assertEquals(['X' => 5, 'XI' => 5], $this->tingkatDiRuang($r1)); // 6 X dan 8 XI, masing-masing dibatasi 5
+
+        $this->post(route('staf.ruang.kelas', $r2), ['kelas_ids' => [$this->kelas->id, $xi->id]])->assertSessionHas('berhasil'); // sisa semuanya muat
+        $this->assertEquals(['X' => 1, 'XI' => 3], $this->tingkatDiRuang($r2));
+        $this->assertSame(14, DenahPenempatan::count());
+
+        // Setiap meja di ruang campur berisi tingkat berbeda (selang-seling).
+        $tingkat = Kelas::pluck('tingkat', 'id');
+        $kelasSiswa = DB::table('keanggotaan_kelas')->pluck('kelas_id', 'siswa_id');
+        $meja = DenahPenempatan::where('ruang_id', $r1->id)->get()->groupBy('meja')->map(fn ($g) => $g->map(fn ($p) => $tingkat[$kelasSiswa[$p->siswa_id]])->all());
+        $this->assertCount(5, $meja);
+        foreach ($meja as $isi) {
+            $this->assertCount(2, array_unique($isi), 'meja campur harus berisi dua tingkat berbeda');
+        }
+    }
+
+    public function test_porsi_tingkat_dihitung_dari_semua_kelas_sejenis_dalam_ruang_campur(): void
+    {
+        $this->actingAs($this->admin, 'web');
+        $kelasB = $this->kelasBaru('X', 3, 'X B');
+        $r = Ruang::create(['nama' => 'Lab 1', 'kapasitas' => 8, 'campur' => true]); // maksimal 4 per tingkat
+
+        $this->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$kelasB->id, $this->kelas->id]]);
+
+        $this->assertSame(['X' => 4], $this->tingkatDiRuang($r)); // 3 dari X B + 1 dari X A
+    }
+
+    public function test_pindah_ke_ruang_campur_ditolak_bila_porsi_tingkat_penuh(): void
+    {
+        $this->actingAs($this->admin, 'web');
+        $r = Ruang::create(['nama' => 'Lab 1', 'kapasitas' => 4, 'campur' => true]); // maksimal 2 per tingkat
+        $biasa = Ruang::create(['nama' => 'Aula', 'kapasitas' => 10]);
+        $this->post(route('staf.ruang.kelas', $biasa), ['kelas_ids' => [$this->kelas->id]]);
+        $ids = DenahPenempatan::where('ruang_id', $biasa->id)->orderBy('meja')->pluck('siswa_id')->all();
+
+        $this->post(route('staf.ruang.pindah', Siswa::find($ids[0])), ['ruang_id' => $r->id])->assertSessionHas('berhasil');
+        $this->post(route('staf.ruang.pindah', Siswa::find($ids[1])), ['ruang_id' => $r->id])->assertSessionHas('berhasil');
+        $this->post(route('staf.ruang.pindah', Siswa::find($ids[2])), ['ruang_id' => $r->id])->assertSessionHas('gagal');
+        $this->assertSame(2, DenahPenempatan::where('ruang_id', $r->id)->count());
+    }
+
+    public function test_mengaktifkan_campur_ditolak_bila_satu_tingkat_sudah_lebih_dari_setengah(): void
+    {
+        $this->actingAs($this->admin, 'web');
+        $r = Ruang::create(['nama' => 'Lab 1', 'kapasitas' => 10]);
+        $this->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]]); // 6 siswa tingkat X
+
+        $this->put(route('staf.ruang.update', $r), ['nama' => 'Lab 1', 'kapasitas' => 10, 'campur' => '1'])->assertSessionHas('gagal');
+        $this->assertFalse($r->fresh()->campur);
+
+        $this->delete(route('staf.ruang.kelas.keluar', [$r, $this->kelas]))->assertSessionHas('berhasil');
+        $this->assertSame(0, DenahPenempatan::where('ruang_id', $r->id)->count());
+        $this->put(route('staf.ruang.update', $r), ['nama' => 'Lab 1', 'kapasitas' => 10, 'campur' => '1'])->assertSessionHas('berhasil');
+        $this->assertTrue($r->fresh()->campur);
+    }
+
+    public function test_kelas_tanpa_siswa_tersisa_tidak_masuk_dan_halaman_ruang_menampilkan_kelas_belum_beruang(): void
+    {
+        $this->actingAs($this->admin, 'web');
+        $r = Ruang::create(['nama' => 'Lab 1', 'kapasitas' => 10]);
+
+        $this->get(route('staf.ruang.show', $r))->assertOk()->assertSee('Masukkan kelas ke ruang ini')->assertSee('X A');
+        $this->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('berhasil');
+        $this->post(route('staf.ruang.kelas', $r), ['kelas_ids' => [$this->kelas->id]])->assertSessionHas('catatan'); // sudah punya ruang semua
+        $this->get(route('staf.ruang.show', $r))->assertOk()->assertSee('Semua siswa aktif sudah punya ruang');
     }
 }

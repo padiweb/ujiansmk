@@ -182,13 +182,14 @@ Route::prefix('staf')->group(function () {
         Route::prefix('ruang')->name('staf.ruang.')->group(function () {
             Route::get('/', [DenahController::class, 'index'])->name('index');
             Route::post('/', [DenahController::class, 'store'])->name('store');
-            Route::post('/bagi', [DenahController::class, 'bagi'])->name('bagi');
             Route::post('/siswa/{siswa}/pindah', [DenahController::class, 'pindah'])->whereNumber('siswa')->name('pindah');
             Route::post('/siswa/{siswa}/lepas', [DenahController::class, 'lepas'])->whereNumber('siswa')->name('lepas');
             Route::prefix('{ruang}')->whereNumber('ruang')->group(function () {
                 Route::put('/', [DenahController::class, 'update'])->name('update');
                 Route::delete('/', [DenahController::class, 'destroy'])->name('destroy');
                 Route::get('/siswa', [DenahController::class, 'show'])->name('show');
+                Route::post('/kelas', [DenahController::class, 'masukkanKelas'])->middleware('throttle:30,1')->name('kelas');
+                Route::delete('/kelas/{kelas}', [DenahController::class, 'keluarkanKelas'])->whereNumber('kelas')->name('kelas.keluar');
                 Route::post('/urutan', [DenahController::class, 'urutan'])->middleware('throttle:60,1')->name('urutan');
                 Route::post('/urut-kelas', [DenahController::class, 'urutkanPerKelas'])->name('urut-kelas');
                 Route::get('/no-meja', [DenahController::class, 'cetakMeja'])->name('no-meja');

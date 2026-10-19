@@ -7,10 +7,12 @@ use App\Models\Denah;
 use App\Models\DenahPenempatan;
 use App\Models\DenahRuang;
 use App\Models\JadwalUjian;
+use App\Models\Kelas;
 use App\Models\Periode;
 use App\Models\Ruang;
 use App\Models\SesiUjian;
 use App\Models\Siswa;
+use App\Models\TahunAjaran;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -116,7 +118,7 @@ class LayananDenah
     }
 
     /**
-     * Atur kapasitas ruang pada denah (null/0 = ruang tidak dipakai). Penempatan di luar kapasitas baru dilepas.
+     * Atur kapasitas ruang pada denah (0 = ruang tidak dipakai). Penempatan di luar kapasitas baru dilepas.
      *
      * @param  array<int,int|null>  $kapasitas  ruang_id => kapasitas
      */
@@ -125,24 +127,13 @@ class LayananDenah
         DB::transaction(function () use ($denah, $kapasitas) {
             foreach ($kapasitas as $ruangId => $kap) {
                 $kap = (int) $kap;
-                $r = DenahRuang::where('denah_id', $denah->id)->where('ruang_id', $ruangId)->first();
-
                 if ($kap < 1) {
-                    if ($r) {
-                        DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $ruangId)->delete();
-                        $r->delete();
-                    }
+                    DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $ruangId)->delete();
+                    DenahRuang::where('denah_id', $denah->id)->where('ruang_id', $ruangId)->delete();
                     continue;
                 }
-
-                $per = $r ? max(1, (int) $r->siswa_per_meja) : 1;
-                $r = DenahRuang::updateOrCreate(['denah_id' => $denah->id, 'ruang_id' => $ruangId], [
-                    'kapasitas' => $kap, 'siswa_per_meja' => $per, 'jumlah_meja' => max(1, (int) ceil($kap / $per)),
-                ]);
-                $this->rapikan($denah, $r);
-                $urutan = DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $ruangId)->orderBy('meja')->orderBy('posisi')->pluck('id');
-                if ($urutan->count() > $kap) {
-                    DenahPenempatan::whereIn('id', $urutan->slice($kap)->all())->delete(); // kelebihan kapasitas dilepas
+                if ($ruang = Ruang::find($ruangId)) {
+                    $this->selaraskan($denah, $ruang, $kap);
                 }
             }
         });
@@ -151,6 +142,174 @@ class LayananDenah
         $this->ikatJadwalUtama($denah);
         if ($pelaku) {
             AuditLog::catat('denah.ruang', "denah {$denah->id}", $pelaku);
+        }
+    }
+
+    /**
+     * Samakan baris ruang pada denah dengan data ruang (kapasitas, campur): siswa per meja, jumlah meja, kelebihan
+     * kapasitas dilepas, dan urutan duduk (ruang campur: tingkat selang-seling per meja).
+     */
+    public function selaraskan(Denah $denah, Ruang $ruang, ?int $kapasitas = null): DenahRuang
+    {
+        $kap = max(1, $kapasitas ?? (int) $ruang->kapasitas);
+        $dr = DenahRuang::firstOrNew(['denah_id' => $denah->id, 'ruang_id' => $ruang->id]);
+        $tahun = $this->tahunId($denah);
+
+        $urut = DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $ruang->id)->orderBy('meja')->orderBy('posisi')->pluck('siswa_id')->map(fn ($v) => (int) $v)->all();
+        if ($ruang->campur) {
+            $tingkat = $this->tingkatSiswa($urut, $tahun);
+            $urut = $this->selangSeling($urut, $tingkat);
+            $per = max(2, min(3, count(array_unique(array_filter($tingkat)))));
+        } else {
+            $per = 1;
+        }
+        $urut = array_slice($urut, 0, $kap); // kelebihan kapasitas dilepas
+
+        $dr->fill(['siswa_per_meja' => $per, 'kapasitas' => $kap, 'jumlah_meja' => max(1, (int) ceil($kap / $per))])->save();
+        $this->susun($denah, $dr, $urut);
+
+        return $dr;
+    }
+
+    /**
+     * Masukkan semua siswa aktif yang belum punya ruang dari kelas-kelas terpilih ke ruang ini, sebanyak yang muat.
+     * Ruang campur: tiap tingkat maksimal 50% kapasitas. Sisanya tetap belum punya ruang untuk ruang lain.
+     *
+     * @param  list<int>  $kelasIds
+     * @return array{masuk:int,sisa:int,per_kelas:array<int,array{nama:string,masuk:int,sisa:int}>}
+     *
+     * @throws KesalahanJadwal
+     */
+    public function masukkanKelas(Denah $denah, Ruang $ruang, array $kelasIds, ?User $pelaku = null): array
+    {
+        $tahun = $this->tahunId($denah);
+        $hasil = ['masuk' => 0, 'sisa' => 0, 'per_kelas' => []];
+
+        DB::transaction(function () use ($denah, $ruang, $kelasIds, $tahun, &$hasil) {
+            $dr = $this->selaraskan($denah, $ruang);
+            $kap = $dr->kapasitas();
+
+            foreach ($kelasIds as $kelasId) {
+                $kelas = Kelas::find($kelasId);
+                if (! $kelas || $kelas->tahun_ajaran_id !== $tahun) {
+                    continue;
+                }
+
+                $calon = DB::table('keanggotaan_kelas as k')->join('siswa as s', 's.id', '=', 'k.siswa_id')
+                    ->where('k.kelas_id', $kelas->id)->where('k.status', 'aktif')->where('s.status', 'aktif')
+                    ->whereNotIn('s.id', DenahPenempatan::where('denah_id', $denah->id)->select('siswa_id'))
+                    ->orderBy('s.nama')->pluck('s.id')->map(fn ($v) => (int) $v)->all();
+
+                $isi = DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $ruang->id)->count();
+                $boleh = $kap - $isi;
+                if ($ruang->campur) {
+                    $sudah = $this->komposisiTingkat($denah, $ruang)[$kelas->tingkat] ?? 0;
+                    $boleh = min($boleh, $ruang->porsiTingkat($kap) - $sudah);
+                }
+                $ambil = array_slice($calon, 0, max(0, $boleh));
+
+                foreach ($ambil as $siswaId) {
+                    [$meja, $posisi] = $dr->tempatKe($isi++);
+                    DenahPenempatan::create(['denah_id' => $denah->id, 'siswa_id' => $siswaId, 'ruang_id' => $ruang->id, 'meja' => $meja, 'posisi' => $posisi]);
+                }
+
+                $hasil['masuk'] += count($ambil);
+                $hasil['sisa'] += count($calon) - count($ambil);
+                $hasil['per_kelas'][$kelas->id] = ['nama' => $kelas->nama, 'masuk' => count($ambil), 'sisa' => count($calon) - count($ambil)];
+            }
+
+            $this->selaraskan($denah, $ruang); // ruang campur: susun ulang selang-seling per tingkat
+        });
+
+        $this->perbaruiJadwal($denah);
+        $this->ikatJadwalUtama($denah);
+        if ($pelaku) {
+            AuditLog::catat('ruang.masukkan_kelas', "ruang {$ruang->id}: {$hasil['masuk']} siswa dari kelas ".implode(',', $kelasIds), $pelaku);
+        }
+
+        return $hasil;
+    }
+
+    /** Keluarkan semua siswa satu kelas dari ruang ini. @return int jumlah siswa yang dikeluarkan */
+    public function keluarkanKelas(Denah $denah, Ruang $ruang, Kelas $kelas, ?User $pelaku = null): int
+    {
+        $n = DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $ruang->id)
+            ->whereIn('siswa_id', DB::table('keanggotaan_kelas')->where('kelas_id', $kelas->id)->select('siswa_id'))->delete();
+
+        $this->selaraskan($denah, $ruang);
+        $this->perbaruiJadwal($denah);
+        if ($pelaku) {
+            AuditLog::catat('ruang.keluarkan_kelas', "ruang {$ruang->id}: kelas {$kelas->id} ({$n} siswa)", $pelaku);
+        }
+
+        return $n;
+    }
+
+    /** Jumlah siswa per tingkat di ruang ini. @return array<string,int> */
+    public function komposisiTingkat(Denah $denah, Ruang $ruang): array
+    {
+        $ids = DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $ruang->id)->pluck('siswa_id')->all();
+
+        return collect($this->tingkatSiswa($ids, $this->tahunId($denah)))->filter()->countBy()->all();
+    }
+
+    /** Tahun ajaran yang dipakai menentukan kelas/tingkat siswa: yang aktif, atau tahun semester denah. */
+    public function tahunId(Denah $denah): int
+    {
+        return (int) (TahunAjaran::where('aktif', true)->value('id') ?? $denah->periode()->value('tahun_ajaran_id'));
+    }
+
+    /** @param list<int> $siswaIds  @return array<int,string|null> siswa_id => tingkat */
+    public function tingkatSiswa(array $siswaIds, int $tahunId): array
+    {
+        $peta = DB::table('keanggotaan_kelas as k')->join('kelas as kl', 'kl.id', '=', 'k.kelas_id')
+            ->whereIn('k.siswa_id', $siswaIds)->where('kl.tahun_ajaran_id', $tahunId)
+            ->select('k.siswa_id', 'kl.tingkat')->get()->unique('siswa_id')->pluck('tingkat', 'siswa_id')->all();
+
+        $hasil = [];
+        foreach ($siswaIds as $id) {
+            $hasil[$id] = $peta[$id] ?? null;
+        }
+
+        return $hasil;
+    }
+
+    /**
+     * Urutan selang-seling antar tingkat (X, XI, X, XI, ...) agar satu meja berisi tingkat berbeda.
+     *
+     * @param  list<int>  $siswaIds
+     * @param  array<int,string|null>  $tingkat
+     * @return list<int>
+     */
+    private function selangSeling(array $siswaIds, array $tingkat): array
+    {
+        $kelompok = [];
+        foreach ($siswaIds as $id) {
+            $kelompok[$tingkat[$id] ?? '-'][] = $id;
+        }
+        uasort($kelompok, fn ($a, $b) => count($b) <=> count($a));
+
+        $hasil = [];
+        while ($kelompok !== []) {
+            foreach ($kelompok as $k => $g) {
+                $hasil[] = array_shift($kelompok[$k]);
+                if ($kelompok[$k] === []) {
+                    unset($kelompok[$k]);
+                }
+            }
+        }
+
+        return $hasil;
+    }
+
+    /** Selaraskan ruang dari barisnya di denah (mempertahankan kapasitas denah itu). */
+    private function selaraskanDari(Denah $denah, DenahRuang $dr): void
+    {
+        $ruang = Ruang::find($dr->ruang_id);
+        if ($ruang && $ruang->campur) {
+            $this->selaraskan($denah, $ruang, $dr->kapasitas());
+        } else {
+            $this->rapikan($denah, $dr);
         }
     }
 
@@ -216,6 +375,14 @@ class LayananDenah
                 if ($isi >= $tujuan->kapasitas()) {
                     throw new KesalahanJadwal('Ruang tujuan sudah penuh ('.$tujuan->kapasitas().' siswa). Naikkan kapasitasnya atau pilih ruang lain.');
                 }
+                $ruangTujuan = Ruang::find($tujuan->ruang_id);
+                if ($ruangTujuan?->campur) {
+                    $tingkat = $this->tingkatSiswa([$siswa->id], $this->tahunId($denah))[$siswa->id] ?? null;
+                    $sudah = $this->komposisiTingkat($denah, $ruangTujuan)[$tingkat] ?? 0;
+                    if ($tingkat !== null && $sudah >= $ruangTujuan->porsiTingkat($tujuan->kapasitas())) {
+                        throw new KesalahanJadwal("Porsi tingkat {$tingkat} di ruang ini sudah 50% dari kapasitas. Pilih ruang lain.");
+                    }
+                }
             }
 
             $lama?->delete();
@@ -227,7 +394,10 @@ class LayananDenah
                 DenahPenempatan::create($lama->only(['denah_id', 'siswa_id', 'ruang_id', 'meja', 'posisi'])); // ruang sama: tidak berubah
             }
             if ($asal) {
-                $this->rapikan($denah, $asal); // tutup celah nomor meja di ruang asal
+                $this->selaraskanDari($denah, $asal); // tutup celah nomor meja di ruang asal
+            }
+            if ($tujuan) {
+                $this->selaraskanDari($denah, $tujuan);
             }
         });
 
