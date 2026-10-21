@@ -14,6 +14,7 @@ use App\Http\Controllers\Staf\ImporSoalController;
 use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
+use App\Http\Controllers\Staf\PengaturanRaporController;
 use App\Http\Controllers\Staf\PengaturanSekolahController;
 use App\Http\Controllers\Staf\PengawasController;
 use App\Http\Controllers\Staf\SinkronEduwebController;
@@ -134,6 +135,13 @@ Route::prefix('staf')->group(function () {
     Route::middleware(['auth:web', 'peran:admin'])->group(function () {
         Route::get('/pengaturan', [PengaturanSekolahController::class, 'edit'])->name('staf.pengaturan');
         Route::put('/pengaturan', [PengaturanSekolahController::class, 'update'])->name('staf.pengaturan.simpan');
+
+        Route::prefix('pengaturan-rapor')->name('staf.rapor.')->group(function () {
+            Route::get('/', [PengaturanRaporController::class, 'edit'])->name('pengaturan');
+            Route::put('/bobot', [PengaturanRaporController::class, 'bobot'])->name('bobot');
+            Route::put('/skala', [PengaturanRaporController::class, 'skala'])->name('skala');
+            Route::put('/periode', [PengaturanRaporController::class, 'periode'])->name('periode');
+        });
 
         Route::prefix('kegiatan')->name('staf.kegiatan.')->group(function () {
             Route::get('/', [KegiatanUjianController::class, 'index'])->name('index');

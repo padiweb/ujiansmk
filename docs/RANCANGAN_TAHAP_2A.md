@@ -11,9 +11,10 @@ Revisi 2 memuat keputusan pemilik (21 Okt 2026): nilai Ujian otomatis dari jadwa
 - Klien EduWeb (`KlienEduweb`), `siswa.eduweb_id`, `mapel.eduweb_id`, `kelas.eduweb_id` untuk mencocokkan data.
 
 ## 2. Rumus (dari aplikasi lama; bobot dapat diatur admin)
-- `NP (Pengetahuan) = Ujian×20% + Harian×60% + TugasAkhir×20%` (bulat)
-- `NK (Keterampilan) = Praktik×70% + Adab×30%` (bulat)
-- `NA = (NP + NK) / 2` (bulat). NK=0 dan NP>0 → NA=NP; NP=0 dan NK>0 → NA=NK.
+- Bobot **semua komponen diatur admin** di Pengaturan Rapor (tiap sekolah bisa berbeda). Komponen berbobot 0 tidak dipakai.
+- `NP (Pengetahuan) = Ujian + Tugas + Harian + TugasAkhir`, masing-masing × bobotnya (bawaan lama: 20/0/60/20; total 100; bulat)
+- `NK (Keterampilan) = Praktik + Adab` × bobot (bawaan 70/30; total 100, atau semua 0 bila tidak dipakai; bulat)
+- `NA = NP × bobot NP + NK × bobot NK` (bawaan 50/50; bulat). NK=0 dan NP>0 → NA=NP; NP=0 dan NK>0 → NA=NK.
 - Predikat dari skala; ketuntasan dibanding KKM mapel. Bobot yang tidak berjumlah 100 per kelompok ditolak.
 - Rumus dihitung ulang di server setiap simpan; tidak ada rumus yang dipercaya dari peramban.
 
@@ -21,8 +22,8 @@ Revisi 2 memuat keputusan pemilik (21 Okt 2026): nilai Ujian otomatis dari jadwa
 | Komponen | Sumber awal | Dapat diedit guru |
 |---|---|---|
 | Ujian | otomatis: rata-rata `skor_akhir` jadwal yang dipilih sebagai sumber, hanya bila kelas siswa sudah **dikunci** | ya (ditandai "diubah guru") |
-| Harian | otomatis: **rata-rata nilai tugas siswa di EduWeb** (mapel + kelas + rentang semester; nilai dinormalkan ke 0–100 memakai `max_score`; hanya tugas yang sudah dinilai) | ya (ditandai "diubah guru") |
-| Tugas Akhir, Praktik, Adab | diisi guru mapel | ya |
+| Tugas | otomatis: **rata-rata nilai tugas biasa dan kuis siswa di EduWeb** (mapel + kelas + rentang semester; dinormalkan ke 0–100 memakai `max_score`; hanya yang sudah dinilai). Rata-rata itu lalu dihitung ulang menurut bobot Tugas yang diatur admin (mis. rata-rata 90 × bobot 25% = 22,5) | ya (ditandai "diubah guru") |
+| Harian, Tugas Akhir, Praktik, Adab | diisi guru mapel | ya |
 Penanda sumber (`otomatis`/`manual`) disimpan per komponen; tombol "Ambil ulang dari sumber" mengembalikan nilai otomatis. Bila EduWeb tidak terjangkau, kolom Harian kosong dan guru mengisi sendiri (tidak menghalangi).
 
 ## 4. Alur kerja (nama menu mengikuti aplikasi lama)

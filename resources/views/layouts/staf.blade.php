@@ -97,6 +97,10 @@
                         <x-ikon nama="unduh" /><span class="sisi-lbl">Diagnosis Sistem</span>
                     </a>
                 @endif
+                <a href="{{ route('staf.rapor.pengaturan') }}" data-tip="Pengaturan Rapor"
+                   class="sisi-a {{ request()->routeIs('staf.rapor.*') ? 'aktif' : '' }}">
+                    <x-ikon nama="pengaturan" /><span class="sisi-lbl">Pengaturan Rapor</span>
+                </a>
                 <a href="{{ route('staf.pengaturan') }}" data-tip="Pengaturan Sekolah"
                    class="sisi-a {{ request()->routeIs('staf.pengaturan') ? 'aktif' : '' }}">
                     <x-ikon nama="pengaturan" /><span class="sisi-lbl">Pengaturan Sekolah</span>
