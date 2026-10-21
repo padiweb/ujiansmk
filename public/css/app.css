@@ -496,3 +496,7 @@ h1, h2, h3 { color: var(--teks); }
 .token-baris { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--garis-lembut); font-size: .9rem; }
 .token-baris:first-of-type { border-top: 0; }
 .token-nilai-kecil { font-family: 'Courier New', monospace; font-weight: 700; font-size: 1.1rem; letter-spacing: .16em; color: var(--biru-tua); }
+.tabel-nilai input { width: 78px; text-align: center; padding: 6px 8px; }
+.tabel-nilai td:last-child input { width: 100%; min-width: 160px; text-align: left; }
+.tabel-nilai th small { display: block; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.tabel .tengah, .tabel th.tengah { text-align: center; }

@@ -32,7 +32,7 @@
 <div class="kartu tanpa-padding">
     <div class="gulir">
         <table class="tabel">
-            <thead><tr><th>Kegiatan</th><th>Semester</th><th>Jadwal</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
+            <thead><tr><th>Kegiatan</th><th>Semester</th><th>Jadwal</th><th>Rapor</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($kegiatan as $k)
                     <tr>
@@ -45,6 +45,13 @@
                         </td>
                         <td>{{ $k->periode->label() }}</td>
                         <td>{{ $k->jadwal_count }}</td>
+                        <td>
+                            <form method="POST" action="{{ route('staf.kegiatan.update', $k) }}">
+                                @csrf @method('PUT')
+                                <input type="hidden" name="untuk_rapor" value="{{ $k->untuk_rapor ? 0 : 1 }}">
+                                <button type="submit" class="tautan" title="Nilai kegiatan ini menjadi sumber nilai Ujian di rapor">{{ $k->untuk_rapor ? 'Dipakai' : 'Tidak dipakai' }}</button>
+                            </form>
+                        </td>
                         <td>@if ($k->aktif) <span class="lencana">Aktif</span> @else <span class="lencana pucat">Tidak aktif</span> @endif</td>
                         <td class="kanan aksi-baris">
                             <form method="POST" action="{{ route('staf.kegiatan.update', $k) }}" style="display:inline">
@@ -61,7 +68,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="kosong">Belum ada kegiatan. Tambahkan di atas, misalnya "Asesmen Semester Gasal".</td></tr>
+                    <tr><td colspan="6" class="kosong">Belum ada kegiatan. Tambahkan di atas, misalnya "Asesmen Semester Gasal".</td></tr>
                 @endforelse
             </tbody>
         </table>

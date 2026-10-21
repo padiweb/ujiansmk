@@ -14,6 +14,7 @@ use App\Http\Controllers\Staf\ImporSoalController;
 use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
+use App\Http\Controllers\Staf\NilaiRaporController;
 use App\Http\Controllers\Staf\PengaturanRaporController;
 use App\Http\Controllers\Staf\PengaturanSekolahController;
 use App\Http\Controllers\Staf\PengawasController;
@@ -115,6 +116,16 @@ Route::prefix('staf')->group(function () {
             Route::post('/soal/{soal}/nilai-semua', [KoreksiController::class, 'nilaiSemua'])->whereNumber('soal')->middleware('throttle:20,1')->name('nilai-semua');
             Route::post('/soal/{soal}/saran', [KoreksiController::class, 'saran'])->whereNumber('soal')->middleware('throttle:20,1')->name('saran');
             Route::post('/jawaban/{jawaban}/nilai', [KoreksiController::class, 'nilai'])->whereNumber('jawaban')->middleware('throttle:240,1')->name('nilai');
+        });
+    });
+
+    // Input nilai rapor: admin semua, guru hanya mapel dan kelas yang diampunya (dicek di layanan).
+    Route::middleware(['auth:web', 'peran:admin,guru'])->prefix('nilai')->name('staf.nilai.')->group(function () {
+        Route::get('/', [NilaiRaporController::class, 'index'])->name('index');
+        Route::prefix('{mapel}/{kelas}')->whereNumber(['mapel', 'kelas'])->group(function () {
+            Route::get('/', [NilaiRaporController::class, 'show'])->name('tabel');
+            Route::post('/', [NilaiRaporController::class, 'simpan'])->middleware('throttle:30,1')->name('simpan');
+            Route::post('/ambil-ulang', [NilaiRaporController::class, 'ambilUlang'])->middleware('throttle:10,1')->name('ambil-ulang');
         });
     });
 

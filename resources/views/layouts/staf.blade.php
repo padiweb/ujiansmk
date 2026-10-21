@@ -71,6 +71,10 @@
                    class="sisi-a {{ request()->routeIs('staf.koreksi.*') ? 'aktif' : '' }}">
                     <x-ikon nama="koreksi" /><span class="sisi-lbl">Koreksi Esai</span>
                 </a>
+                <a href="{{ route('staf.nilai.index') }}" data-tip="Input Nilai"
+                   class="sisi-a {{ request()->routeIs('staf.nilai.*') ? 'aktif' : '' }}">
+                    <x-ikon nama="berkas" /><span class="sisi-lbl">Input Nilai</span>
+                </a>
                 <a href="{{ route('staf.rekap.index') }}" data-tip="Rekap Nilai"
                    class="sisi-a {{ request()->routeIs('staf.rekap.*') ? 'aktif' : '' }}">
                     <x-ikon nama="berkas" /><span class="sisi-lbl">Rekap Nilai</span>

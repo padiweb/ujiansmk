@@ -42,6 +42,7 @@ class KegiatanUjianController extends Controller
         $data = $request->validate([
             'nama' => ['sometimes', 'required', 'string', 'max:120', Rule::unique('kegiatan_ujian', 'nama')->where('periode_id', $kegiatan->periode_id)->ignore($kegiatan->id)],
             'aktif' => ['sometimes', 'boolean'],
+            'untuk_rapor' => ['sometimes', 'boolean'],
         ], ['nama.unique' => 'Kegiatan dengan nama itu sudah ada pada semester ini.'], ['nama' => 'Nama kegiatan']);
 
         if (isset($data['nama'])) {
@@ -50,6 +51,9 @@ class KegiatanUjianController extends Controller
         }
         if (array_key_exists('aktif', $data)) {
             $kegiatan->update(['aktif' => (bool) $data['aktif']]);
+        }
+        if (array_key_exists('untuk_rapor', $data)) {
+            $kegiatan->update(['untuk_rapor' => (bool) $data['untuk_rapor']]);
         }
         AuditLog::catat('kegiatan.ubah', "kegiatan {$kegiatan->id}", $request->user('web'));
 

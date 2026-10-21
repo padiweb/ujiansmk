@@ -12,11 +12,11 @@ class KegiatanUjian extends Model
 {
     protected $table = 'kegiatan_ujian';
 
-    protected $fillable = ['periode_id', 'nama', 'aktif'];
+    protected $fillable = ['periode_id', 'nama', 'aktif', 'untuk_rapor'];
 
     protected function casts(): array
     {
-        return ['aktif' => 'boolean'];
+        return ['aktif' => 'boolean', 'untuk_rapor' => 'boolean'];
     }
 
     public function periode(): BelongsTo
