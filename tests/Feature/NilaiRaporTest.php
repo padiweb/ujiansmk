@@ -191,6 +191,70 @@ class NilaiRaporTest extends TestCase
         $this->get($this->url())->assertOk()->assertSee('disabled', false);
     }
 
+    // ── Harian dari tugas EduWeb ────────────────────────────────────────────
+
+    private function hubungkanEduweb(): void
+    {
+        config(['eduweb.url' => 'http://127.0.0.1:8000/api/exam/v1', 'eduweb.kunci' => 'exu_'.str_repeat('a', 40)]);
+        $this->mtk->update(['eduweb_id' => 501]);
+        $this->kelas->update(['eduweb_id' => 77]);
+        foreach ($this->siswa as $i => $s) {
+            $s->update(['eduweb_id' => 9000 + $i]);
+        }
+    }
+
+    public function test_harian_diisi_dari_rata_rata_tugas_eduweb_dan_bisa_diubah_guru(): void
+    {
+        $this->hubungkanEduweb();
+        \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response(['data' => [
+            ['student_id' => 9000, 'average' => 90.5, 'graded' => 3],
+            ['student_id' => 9001, 'average' => 72, 'graded' => 2],
+            ['student_id' => 5555, 'average' => 99, 'graded' => 1], // bukan siswa kelas ini
+        ]])]);
+
+        $this->actingAs($this->guru, 'web')->post($this->url('/ambil-ulang'))->assertSessionHas('berhasil');
+
+        \Illuminate\Support\Facades\Http::assertSent(fn ($r) => str_contains($r->url(), 'assignment-scores') && $r['classroom_id'] == 77 && $r['subject_id'] == 501);
+        $this->assertEquals(90.5, $this->nilai(0)->harian);
+        $this->assertSame('otomatis', $this->nilai(0)->harian_sumber);
+        $this->assertEquals(72, $this->nilai(1)->harian);
+        $this->assertNull($this->nilai(2)); // tidak ada nilai tugas: tidak dibuatkan baris
+        $this->get($this->url())->assertOk()->assertSee('dari tugas EduWeb');
+
+        // Menyimpan tanpa mengubah Harian mempertahankan sumbernya; mengubahnya menandai diubah guru.
+        $this->post($this->url(), ['nilai' => [$this->siswa[0]->id => ['harian' => '90.5', 'tugas_akhir' => '80'], $this->siswa[1]->id => ['harian' => '85']]]);
+        $this->assertSame('otomatis', $this->nilai(0)->harian_sumber);
+        $this->assertSame('manual', $this->nilai(1)->harian_sumber);
+        $this->get($this->url())->assertSee('diubah guru');
+    }
+
+    public function test_galat_eduweb_tidak_menghalangi_dan_tidak_menghapus_isian(): void
+    {
+        $this->hubungkanEduweb();
+        $this->actingAs($this->guru, 'web')->post($this->url(), ['nilai' => [$this->siswa[0]->id => ['harian' => '70']]]);
+
+        \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response(['message' => 'x'], 403)]);
+        $this->post($this->url('/ambil-ulang'))->assertSessionHas('catatan', fn ($m) => str_contains($m, 'Akses nilai tugas'));
+        $this->assertEquals(70, $this->nilai(0)->harian);
+
+        \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response('', 500)]);
+        $this->post($this->url('/ambil-ulang'))->assertSessionHas('catatan');
+        $this->assertEquals(70, $this->nilai(0)->harian);
+        $this->get($this->url())->assertOk();
+    }
+
+    public function test_harian_final_tidak_ditimpa_dari_eduweb(): void
+    {
+        $this->hubungkanEduweb();
+        $this->actingAs($this->guru, 'web')->post($this->url(), ['nilai' => [$this->siswa[0]->id => ['harian' => '70']]]);
+        $this->nilai(0)->update(['status' => 'final']);
+        \Illuminate\Support\Facades\Http::fake(['*' => \Illuminate\Support\Facades\Http::response(['data' => [['student_id' => 9000, 'average' => 95, 'graded' => 1]]])]);
+
+        $this->post($this->url('/ambil-ulang'));
+
+        $this->assertEquals(70, $this->nilai(0)->harian);
+    }
+
     public function test_status_input_di_daftar(): void
     {
         $this->actingAs($this->guru, 'web')->get('/staf/nilai')->assertSee('Belum diisi');

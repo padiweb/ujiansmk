@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Eduweb\KesalahanEduweb;
+use App\Eduweb\KlienEduweb;
 use App\Models\AuditLog;
 use App\Models\Kelas;
 use App\Models\Mapel;
@@ -19,7 +21,7 @@ class LayananNilaiRapor
     /** Komponen yang diisi/ditimpa guru di layar (Ujian dan Harian bisa terisi otomatis). */
     public const KOMPONEN = ['ujian', 'harian', 'tugas_akhir', 'praktik', 'adab'];
 
-    public function __construct(private LayananRapor $rapor) {}
+    public function __construct(private LayananRapor $rapor, private KlienEduweb $eduweb) {}
 
     // ── Hak akses ───────────────────────────────────────────────────────────
 
@@ -127,7 +129,7 @@ class LayananNilaiRapor
             $hasil = $this->rapor->hitung($nilai, $bobot, $skala);
 
             return [
-                'siswa' => $s, 'nilai' => $nilai, 'catatan' => $n?->catatan_guru, 'auto_ujian' => $auto,
+                'siswa' => $s, 'nilai' => $nilai, 'catatan' => $n?->catatan_guru, 'auto_ujian' => $auto, 'harian_sumber' => $nilai['harian'] === null ? null : $n?->harian_sumber,
                 'ujian_sumber' => $nilai['ujian'] === null ? null : ($auto !== null && abs($nilai['ujian'] - $auto) < 0.005 ? 'otomatis' : ($n?->ujian_sumber ?? null)),
                 'final' => $n?->final() ?? false, 'ada' => $n !== null,
             ] + $hasil;
@@ -181,11 +183,15 @@ class LayananNilaiRapor
                     $sumber = ($auto !== null && abs($nilai['ujian'] - $auto) < 0.005) ? 'otomatis' : 'manual';
                 }
 
+                // Harian: sama dengan nilai tersimpan = sumber lama dipertahankan; selain itu diubah guru.
+                $lama = $n?->harian !== null ? (float) $n->harian : null;
+                $sumberHarian = $nilai['harian'] === null ? null : (($lama !== null && abs($nilai['harian'] - $lama) < 0.005) ? $n->harian_sumber : 'manual');
+
                 $hasil = $this->rapor->hitung($nilai, $bobot, $skala);
                 $catatan = isset($baris['catatan']) ? mb_substr(trim((string) $baris['catatan']), 0, 500) : $n?->catatan_guru;
 
                 $data = $nilai + [
-                    'ujian_sumber' => $sumber, 'harian_sumber' => $n?->harian_sumber, 'catatan_guru' => $catatan ?: null, 'guru_id' => $pelaku->id,
+                    'ujian_sumber' => $sumber, 'harian_sumber' => $sumberHarian, 'catatan_guru' => $catatan ?: null, 'guru_id' => $pelaku->id,
                     'np' => $hasil['np'], 'nk' => $hasil['nk'], 'na' => $hasil['na'], 'predikat' => $hasil['predikat'], 'status' => 'draf',
                 ];
                 if ($n) {
@@ -221,6 +227,89 @@ class LayananNilaiRapor
             $n++;
         }
         AuditLog::catat('nilai_rapor.ambil_ulang_ujian', "mapel {$mapel->id} kelas {$kelas->id}: {$n} siswa", $pelaku);
+
+        return $n;
+    }
+
+    /**
+     * Rata-rata nilai tugas dan kuis siswa di EduWeb (0-100) untuk mapel dan kelas ini pada rentang semester.
+     * Kelas/mapel yang belum terhubung ke EduWeb menghasilkan daftar kosong.
+     *
+     * @return array<int,float> siswa_id => nilai
+     *
+     * @throws KesalahanEduweb
+     */
+    public function harianEduweb(Mapel $mapel, Kelas $kelas, Periode $periode): array
+    {
+        if (! $mapel->eduweb_id || ! $kelas->eduweb_id) {
+            return [];
+        }
+
+        $query = ['classroom_id' => $kelas->eduweb_id, 'subject_id' => $mapel->eduweb_id];
+        if ($periode->mulai && $periode->selesai) {
+            $query += ['from' => $periode->mulai->format('Y-m-d'), 'to' => $periode->selesai->format('Y-m-d')];
+        }
+
+        try {
+            $jawab = $this->eduweb->get('assignment-scores', $query);
+        } catch (KesalahanEduweb $e) {
+            if ($e->status === 403) {
+                throw new KesalahanEduweb('Kunci EduWeb belum diizinkan membaca nilai tugas. Admin EduWeb menyalakannya di menu Integrasi Ujian ("Akses nilai tugas").', 'tanpa_lingkup', 403);
+            }
+            throw $e;
+        }
+
+        $peta = Siswa::whereIn('id', $this->siswa($kelas)->pluck('id'))->whereNotNull('eduweb_id')->pluck('id', 'eduweb_id');
+        $hasil = [];
+        foreach ($jawab['data'] ?? [] as $baris) {
+            $id = $peta[(int) ($baris['student_id'] ?? 0)] ?? null;
+            if ($id !== null && isset($baris['average']) && is_numeric($baris['average'])) {
+                $hasil[$id] = round(max(0.0, min(100.0, (float) $baris['average'])), 2);
+            }
+        }
+
+        return $hasil;
+    }
+
+    /**
+     * Isi Harian semua siswa kelas ini dari EduWeb (menimpa isian lama yang belum final).
+     *
+     * @return int jumlah siswa yang terisi
+     *
+     * @throws KesalahanEduweb
+     */
+    public function ambilUlangHarian(User $pelaku, Mapel $mapel, Kelas $kelas, Periode $periode): int
+    {
+        $harian = $this->harianEduweb($mapel, $kelas, $periode);
+        $bobot = $this->rapor->bobot();
+        $skala = $this->rapor->skala();
+        $otomatis = $this->ujianOtomatis($mapel, $kelas, $periode);
+        $n = 0;
+
+        DB::transaction(function () use ($pelaku, $mapel, $kelas, $periode, $harian, $bobot, $skala, $otomatis, &$n) {
+            $ada = NilaiRapor::where('mapel_id', $mapel->id)->where('periode_id', $periode->id)->where('kelas_id', $kelas->id)->lockForUpdate()->get()->keyBy('siswa_id');
+
+            foreach ($harian as $siswaId => $nilaiHarian) {
+                $baris = $ada[$siswaId] ?? null;
+                if ($baris?->final()) {
+                    continue;
+                }
+                $nilai = collect(self::KOMPONEN)->mapWithKeys(fn ($k) => [$k => $baris?->{$k} !== null ? (float) $baris->{$k} : null])->all();
+                $nilai['harian'] = $nilaiHarian;
+                if ($nilai['ujian'] === null && isset($otomatis[$siswaId])) {
+                    $nilai['ujian'] = $otomatis[$siswaId];
+                }
+                $hasil = $this->rapor->hitung($nilai, $bobot, $skala);
+                $data = $nilai + ['harian_sumber' => 'otomatis', 'guru_id' => $pelaku->id, 'status' => 'draf'] + $hasil;
+                if ($baris) {
+                    $baris->update($data);
+                } else {
+                    NilaiRapor::create($data + ['ujian_sumber' => isset($otomatis[$siswaId]) ? 'otomatis' : null, 'siswa_id' => $siswaId, 'mapel_id' => $mapel->id, 'periode_id' => $periode->id, 'kelas_id' => $kelas->id]);
+                }
+                $n++;
+            }
+        });
+        AuditLog::catat('nilai_rapor.ambil_ulang_harian', "mapel {$mapel->id} kelas {$kelas->id}: {$n} siswa", $pelaku);
 
         return $n;
     }

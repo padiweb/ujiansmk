@@ -63,9 +63,30 @@ class NilaiRaporController extends Controller
     public function ambilUlang(Request $request, Mapel $mapel, Kelas $kelas): RedirectResponse
     {
         $periode = $this->izinkan($request, $mapel, $kelas);
-        $n = $this->nilai->ambilUlangUjian($request->user('web'), $mapel, $kelas, $periode);
+        $pelaku = $request->user('web');
+        $aktif = app(\App\Services\LayananRapor::class)->komponenAktif();
+        $pesan = [];
 
-        return back()->with($n > 0 ? 'berhasil' : 'catatan', $n > 0 ? "Nilai Ujian {$n} siswa dikembalikan ke hasil ujian." : 'Tidak ada nilai Ujian otomatis yang bisa diambil. Pastikan nilai ujian kelas ini sudah dikunci.');
+        if (in_array('ujian', $aktif, true)) {
+            $u = $this->nilai->ambilUlangUjian($pelaku, $mapel, $kelas, $periode);
+            $pesan[] = $u > 0 ? "Nilai Ujian {$u} siswa dikembalikan ke hasil ujian." : 'Tidak ada nilai Ujian otomatis (nilai ujian kelas ini belum dikunci).';
+        }
+
+        $gagal = null;
+        if (in_array('harian', $aktif, true)) {
+            try {
+                $h = $this->nilai->ambilUlangHarian($pelaku, $mapel, $kelas, $periode);
+                $pesan[] = $h > 0 ? "Harian {$h} siswa diisi dari tugas EduWeb." : 'Belum ada nilai tugas yang sudah dinilai di EduWeb.';
+            } catch (\App\Eduweb\KesalahanEduweb $e) {
+                $gagal = $e->getMessage();
+            }
+        }
+
+        $teks = implode(' ', $pesan);
+
+        return $gagal
+            ? back()->with('catatan', trim($teks.' Harian tidak diambil: '.$gagal))
+            : back()->with('berhasil', $teks);
     }
 
     private function izinkan(Request $request, Mapel $mapel, Kelas $kelas): Periode

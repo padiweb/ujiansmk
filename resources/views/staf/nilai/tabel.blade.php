@@ -9,9 +9,9 @@
     </div>
     <div class="aksi-halaman">
         <a class="tombol kecil garis" href="{{ route('staf.nilai.index', ['periode' => $periode->id]) }}"><x-ikon nama="panah-kiri" :ukuran="16" />Daftar</a>
-        @if (in_array('ujian', $aktif, true))
-            <form method="POST" action="{{ route('staf.nilai.ambil-ulang', [$mapel, $kelas, 'periode' => $periode->id]) }}" onsubmit="return confirm('Kembalikan nilai Ujian semua siswa ke hasil ujian yang sudah dikunci? Nilai yang Anda ubah akan tertimpa.')">
-                @csrf <button class="tombol kecil garis" type="submit">Ambil ulang nilai ujian</button>
+        @if (in_array('ujian', $aktif, true) || in_array('harian', $aktif, true))
+            <form method="POST" action="{{ route('staf.nilai.ambil-ulang', [$mapel, $kelas, 'periode' => $periode->id]) }}" onsubmit="return confirm('Ambil ulang nilai Ujian (hasil terkunci) dan Harian (tugas EduWeb) semua siswa? Nilai yang Anda ubah akan tertimpa.')">
+                @csrf <button class="tombol kecil garis" type="submit">Ambil ulang nilai otomatis</button>
             </form>
         @endif
     </div>
@@ -42,6 +42,9 @@
                                            value="{{ $b['nilai'][$k] !== null ? rtrim(rtrim(number_format($b['nilai'][$k], 2, '.', ''), '0'), '.') : '' }}" @disabled($kunci) aria-label="{{ $label[$k] }} {{ $s->nama }}">
                                     @if ($k === 'ujian' && $b['auto_ujian'] !== null)
                                         <small class="bantuan" style="margin:2px 0 0">{{ $b['ujian_sumber'] === 'otomatis' ? 'dari ujian' : 'diubah (ujian: '.rtrim(rtrim(number_format($b['auto_ujian'], 2, '.', ''), '0'), '.').')' }}</small>
+                                    @endif
+                                    @if ($k === 'harian' && $b['harian_sumber'] !== null)
+                                        <small class="bantuan" style="margin:2px 0 0">{{ $b['harian_sumber'] === 'otomatis' ? 'dari tugas EduWeb' : 'diubah guru' }}</small>
                                     @endif
                                 </td>
                             @endforeach
