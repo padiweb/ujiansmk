@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\DB;
 /** Input nilai rapor oleh guru mapel: hak akses, nilai Ujian otomatis dari kelas yang terkunci, dan penyimpanan. */
 class LayananNilaiRapor
 {
-    /** Komponen yang diisi/ditimpa guru di layar (Ujian dan Tugas bisa terisi otomatis). */
-    public const KOMPONEN = ['ujian', 'tugas', 'harian', 'tugas_akhir', 'praktik', 'adab'];
+    /** Komponen yang diisi/ditimpa guru di layar (Ujian dan Harian bisa terisi otomatis). */
+    public const KOMPONEN = ['ujian', 'harian', 'tugas_akhir', 'praktik', 'adab'];
 
     public function __construct(private LayananRapor $rapor) {}
 
@@ -185,7 +185,7 @@ class LayananNilaiRapor
                 $catatan = isset($baris['catatan']) ? mb_substr(trim((string) $baris['catatan']), 0, 500) : $n?->catatan_guru;
 
                 $data = $nilai + [
-                    'ujian_sumber' => $sumber, 'tugas_sumber' => $n?->tugas_sumber, 'catatan_guru' => $catatan ?: null, 'guru_id' => $pelaku->id,
+                    'ujian_sumber' => $sumber, 'harian_sumber' => $n?->harian_sumber, 'catatan_guru' => $catatan ?: null, 'guru_id' => $pelaku->id,
                     'np' => $hasil['np'], 'nk' => $hasil['nk'], 'na' => $hasil['na'], 'predikat' => $hasil['predikat'], 'status' => 'draf',
                 ];
                 if ($n) {

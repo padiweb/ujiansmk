@@ -8,7 +8,7 @@
     var bobot = JSON.parse(form.getAttribute('data-bobot'));
     var skala = JSON.parse(form.getAttribute('data-skala')); // urut dari batas tertinggi
     var kkm = parseFloat(form.getAttribute('data-kkm')) || 0;
-    var PENGETAHUAN = ['ujian', 'tugas', 'harian', 'tugas_akhir'];
+    var PENGETAHUAN = ['ujian', 'harian', 'tugas_akhir'];
     var KETERAMPILAN = ['praktik', 'adab'];
 
     function angka(v) {

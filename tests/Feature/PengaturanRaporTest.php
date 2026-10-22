@@ -52,18 +52,17 @@ class PengaturanRaporTest extends TestCase
         $this->assertSame('-', $kosong['predikat']);
     }
 
-    public function test_tugas_eduweb_ikut_dihitung_menurut_bobot_yang_diatur_admin(): void
+    public function test_harian_dari_tugas_eduweb_dihitung_menurut_bobot_yang_diatur_admin(): void
     {
-        // Tugas rata-rata 90 dihitung ulang dengan bobot 25%: ujian 20, tugas 25, harian 35, tugas akhir 20.
-        $bobot = $this->bobot(['ujian' => 20, 'tugas' => 25, 'harian' => 35, 'tugas_akhir' => 20]);
-        $h = $this->rapor->hitung(['ujian' => 80, 'tugas' => 90, 'harian' => 70, 'tugas_akhir' => 60], $bobot);
+        // Harian = rata-rata nilai tugas EduWeb, dihitung ulang dengan bobot yang diatur admin (di sini 40%).
+        $bobot = $this->bobot(['ujian' => 30, 'harian' => 40, 'tugas_akhir' => 30]);
+        $h = $this->rapor->hitung(['ujian' => 80, 'harian' => 90, 'tugas_akhir' => 60], $bobot);
 
-        $this->assertSame(75, $h['np']); // 16 + 22,5 + 24,5 + 12 = 75
-        $this->assertSame(75, $h['na']);
-        $this->assertSame('B-', $h['predikat']);
+        $this->assertSame(78, $h['np']); // 24 + 36 + 18 = 78
+        $this->assertSame(78, $h['na']);
 
-        // Dengan bobot tugas 0 (mati) nilai tugas tidak berpengaruh.
-        $h2 = $this->rapor->hitung(['ujian' => 80, 'tugas' => 0, 'harian' => 90, 'tugas_akhir' => 70]);
+        // Bobot bawaan (20/60/20) memakai nilai yang sama.
+        $h2 = $this->rapor->hitung(['ujian' => 80, 'harian' => 90, 'tugas_akhir' => 70]);
         $this->assertSame(84, $h2['np']);
     }
 
@@ -98,7 +97,7 @@ class PengaturanRaporTest extends TestCase
     public function test_komponen_aktif_hanya_yang_berbobot(): void
     {
         $this->assertSame(['ujian', 'harian', 'tugas_akhir', 'praktik', 'adab'], $this->rapor->komponenAktif());
-        $this->assertSame(['ujian', 'tugas', 'harian', 'praktik', 'adab'], $this->rapor->komponenAktif($this->bobot(['tugas' => 10, 'tugas_akhir' => 0, 'harian' => 70])));
+        $this->assertSame(['ujian', 'harian', 'praktik', 'adab'], $this->rapor->komponenAktif($this->bobot(['tugas_akhir' => 0, 'harian' => 80])));
     }
 
     // ── Layar pengaturan ────────────────────────────────────────────────────
@@ -114,7 +113,7 @@ class PengaturanRaporTest extends TestCase
     public function test_bobot_disimpan_dan_dipakai_perhitungan(): void
     {
         $this->actingAs(User::factory()->admin()->create(), 'web');
-        $baru = $this->bobot(['ujian' => 30, 'tugas' => 20, 'harian' => 30, 'tugas_akhir' => 20, 'np' => 60, 'nk' => 40]);
+        $baru = $this->bobot(['ujian' => 30, 'harian' => 50, 'tugas_akhir' => 20, 'np' => 60, 'nk' => 40]);
 
         $this->put('/staf/pengaturan-rapor/bobot', $baru)->assertSessionHas('berhasil');
 
@@ -171,7 +170,7 @@ class PengaturanRaporTest extends TestCase
     public function test_pengaturan_baru_bernilai_bawaan(): void
     {
         $p = PengaturanSekolah::ambil()->fresh();
-        $this->assertSame(0, (int) $p->bobot_tugas);
+        $this->assertSame(60, (int) $p->bobot_harian);
         $this->assertSame(50, (int) $p->bobot_np);
     }
 }

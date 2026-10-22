@@ -3,7 +3,7 @@
 
 @php
     $kelompok = [
-        'Pengetahuan (NP)' => ['ujian', 'tugas', 'harian', 'tugas_akhir'],
+        'Pengetahuan (NP)' => ['ujian', 'harian', 'tugas_akhir'],
         'Keterampilan (NK)' => ['praktik', 'adab'],
     ];
     $label = \App\Services\LayananRapor::LABEL;
@@ -21,7 +21,7 @@
     @csrf
     @method('PUT')
     <h2 class="judul-kartu">Bobot nilai (%)</h2>
-    <small class="bantuan">Komponen berbobot 0 tidak dipakai. Tugas diambil dari rata-rata nilai tugas dan kuis di EduWeb.</small>
+    <small class="bantuan">Komponen berbobot 0 tidak dipakai. Harian diisi dari rata-rata nilai tugas dan kuis di EduWeb.</small>
     @error('bobot') @foreach ($errors->get('bobot') as $m) <div class="pesan-salah" role="alert">{{ $m }}</div> @endforeach @enderror
 
     @foreach ($kelompok as $judul => $kunci)

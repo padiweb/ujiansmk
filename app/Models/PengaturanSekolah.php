@@ -10,7 +10,7 @@ class PengaturanSekolah extends Model
 
     protected $fillable = [
         'nama', 'alamat', 'kota', 'provinsi', 'npsn', 'kepala_sekolah', 'nip_kepala_sekolah',
-        'kurikulum', 'bobot_ujian', 'bobot_tugas', 'bobot_harian', 'bobot_tugas_akhir', 'bobot_praktik', 'bobot_adab', 'bobot_np', 'bobot_nk', 'mode_sinkron_eduweb', 'eduweb_kejadian_terakhir', 'eduweb_sinkron_penuh_pada',
+        'kurikulum', 'bobot_ujian', 'bobot_harian', 'bobot_tugas_akhir', 'bobot_praktik', 'bobot_adab', 'bobot_np', 'bobot_nk', 'mode_sinkron_eduweb', 'eduweb_kejadian_terakhir', 'eduweb_sinkron_penuh_pada',
         'eduweb_cek_terakhir', 'eduweb_webhook_terakhir', 'eduweb_kejadian_tertahan', 'eduweb_kredensial',
     ];
 

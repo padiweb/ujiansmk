@@ -158,23 +158,24 @@ class NilaiRaporTest extends TestCase
     public function test_kolom_tampil_menurut_bobot_yang_diatur_admin(): void
     {
         $html = $this->actingAs($this->guru, 'web')->get($this->url())->assertOk()->getContent();
-        $this->assertStringNotContainsString('data-k="tugas"', $html); // bobot Tugas 0 = tidak dipakai
         $this->assertStringContainsString('data-k="harian"', $html);
+        $this->assertStringNotContainsString('data-k="tugas"', $html); // nilai tugas EduWeb = Harian
 
-        \App\Models\PengaturanSekolah::ambil()->update(['bobot_tugas' => 20, 'bobot_harian' => 40]);
-        $this->get($this->url())->assertOk()->assertSee('data-k="tugas"', false);
+        \App\Models\PengaturanSekolah::ambil()->update(['bobot_harian' => 80, 'bobot_tugas_akhir' => 0]);
+        $this->get($this->url())->assertOk()->assertDontSee('data-k="tugas_akhir"', false);
 
-        $this->post($this->url(), ['nilai' => [$this->siswa[0]->id => ['ujian' => '80', 'tugas' => '90', 'harian' => '70', 'tugas_akhir' => '60']]]);
-        $this->assertSame(74, $this->nilai(0)->np); // 16 + 18 + 28 + 12
-        $this->assertSame(74, $this->nilai(0)->na);
+        $this->post($this->url(), ['nilai' => [$this->siswa[0]->id => ['ujian' => '80', 'harian' => '70', 'tugas_akhir' => '60']]]);
+        $this->assertSame(72, $this->nilai(0)->np); // 80x20% + 70x80% = 16 + 56; tugas akhir tidak dipakai
+        $this->assertSame(72, $this->nilai(0)->na);
         $this->assertSame('C', $this->nilai(0)->predikat);
     }
 
     public function test_komponen_nonaktif_tidak_bisa_diisi_lewat_permintaan_langsung(): void
     {
-        $this->actingAs($this->guru, 'web')->post($this->url(), ['nilai' => [$this->siswa[0]->id => ['tugas' => '99', 'harian' => '80']]]);
+        \App\Models\PengaturanSekolah::ambil()->update(['bobot_harian' => 80, 'bobot_tugas_akhir' => 0]);
+        $this->actingAs($this->guru, 'web')->post($this->url(), ['nilai' => [$this->siswa[0]->id => ['tugas_akhir' => '99', 'harian' => '80']]]);
 
-        $this->assertNull($this->nilai(0)->tugas); // bobot Tugas 0
+        $this->assertNull($this->nilai(0)->tugas_akhir); // bobot 0
         $this->assertEquals(80, $this->nilai(0)->harian);
     }
 

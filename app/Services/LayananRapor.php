@@ -9,7 +9,7 @@ use Illuminate\Support\Collection;
 /**
  * Perhitungan nilai rapor. Bobot tiap komponen diatur admin (Pengaturan Rapor); komponen berbobot 0 tidak dipakai.
  *
- *  NP (pengetahuan)  = jumlah (komponen x bobot%) dari ujian, tugas (EduWeb), harian, tugas akhir
+ *  NP (pengetahuan)  = jumlah (komponen x bobot%) dari ujian, harian (rata-rata nilai tugas dan kuis EduWeb), tugas akhir
  *  NK (keterampilan) = jumlah (komponen x bobot%) dari praktik, adab
  *  NA (nilai akhir)  = NP x bobotNP% + NK x bobotNK%  (NK 0 dan NP > 0 -> NA = NP; NP 0 dan NK > 0 -> NA = NK)
  * Semua hasil dibulatkan ke bilangan bulat seperti aplikasi lama.
@@ -17,19 +17,19 @@ use Illuminate\Support\Collection;
 class LayananRapor
 {
     /** @var list<string> */
-    public const KOMPONEN_PENGETAHUAN = ['ujian', 'tugas', 'harian', 'tugas_akhir'];
+    public const KOMPONEN_PENGETAHUAN = ['ujian', 'harian', 'tugas_akhir'];
 
     /** @var list<string> */
     public const KOMPONEN_KETERAMPILAN = ['praktik', 'adab'];
 
     public const LABEL = [
-        'ujian' => 'Ujian', 'tugas' => 'Tugas', 'harian' => 'Harian', 'tugas_akhir' => 'Tugas Akhir',
+        'ujian' => 'Ujian', 'harian' => 'Harian', 'tugas_akhir' => 'Tugas Akhir',
         'praktik' => 'Praktik', 'adab' => 'Adab',
     ];
 
-    /** Bobot bawaan (mengikuti aplikasi lama; Tugas EduWeb mati sampai admin menyalakannya). */
+    /** Bobot bawaan (mengikuti aplikasi lama). */
     public const BAWAAN = [
-        'ujian' => 20, 'tugas' => 0, 'harian' => 60, 'tugas_akhir' => 20, 'praktik' => 70, 'adab' => 30, 'np' => 50, 'nk' => 50,
+        'ujian' => 20, 'harian' => 60, 'tugas_akhir' => 20, 'praktik' => 70, 'adab' => 30, 'np' => 50, 'nk' => 50,
     ];
 
     /** Bobot yang berlaku sekarang. @return array<string,int> */
@@ -60,7 +60,7 @@ class LayananRapor
         $nk = array_sum(array_map(fn ($k) => (int) $b[$k], self::KOMPONEN_KETERAMPILAN));
 
         if ($np !== 100) {
-            $galat[] = "Bobot Pengetahuan (Ujian, Tugas, Harian, Tugas Akhir) harus berjumlah 100; sekarang {$np}.";
+            $galat[] = "Bobot Pengetahuan (Ujian, Harian, Tugas Akhir) harus berjumlah 100; sekarang {$np}.";
         }
         if ($nk !== 0 && $nk !== 100) {
             $galat[] = "Bobot Keterampilan (Praktik, Adab) harus berjumlah 100, atau 0 semua bila tidak dipakai; sekarang {$nk}.";

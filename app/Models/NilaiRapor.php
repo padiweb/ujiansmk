@@ -11,7 +11,7 @@ class NilaiRapor extends Model
 
     protected $fillable = [
         'siswa_id', 'mapel_id', 'periode_id', 'kelas_id', 'guru_id',
-        'ujian', 'ujian_sumber', 'tugas', 'tugas_sumber', 'harian', 'tugas_akhir', 'praktik', 'adab', 'catatan_guru',
+        'ujian', 'ujian_sumber', 'harian', 'harian_sumber', 'tugas_akhir', 'praktik', 'adab', 'catatan_guru',
         'np', 'nk', 'na', 'predikat', 'status', 'snapshot',
     ];
 

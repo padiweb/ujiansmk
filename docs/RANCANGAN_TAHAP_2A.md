@@ -22,7 +22,7 @@ Revisi 2 memuat keputusan pemilik (21 Okt 2026): nilai Ujian otomatis dari jadwa
 | Komponen | Sumber awal | Dapat diedit guru |
 |---|---|---|
 | Ujian | otomatis: rata-rata `skor_akhir` jadwal yang dipilih sebagai sumber, hanya bila kelas siswa sudah **dikunci** | ya (ditandai "diubah guru") |
-| Tugas | otomatis: **rata-rata nilai tugas biasa dan kuis siswa di EduWeb** (mapel + kelas + rentang semester; dinormalkan ke 0–100 memakai `max_score`; hanya yang sudah dinilai). Rata-rata itu lalu dihitung ulang menurut bobot Tugas yang diatur admin (mis. rata-rata 90 × bobot 25% = 22,5) | ya (ditandai "diubah guru") |
+| Harian | otomatis: **rata-rata nilai tugas biasa dan kuis siswa di EduWeb** (mapel + kelas + rentang semester; dinormalkan ke 0–100 memakai `max_score`; hanya yang sudah dinilai). Nilai tugas EduWeb adalah komponen Harian itu sendiri (bukan komponen terpisah); bobotnya diatur admin | ya (ditandai "diubah guru") |
 | Harian, Tugas Akhir, Praktik, Adab | diisi guru mapel | ya |
 Penanda sumber (`otomatis`/`manual`) disimpan per komponen; tombol "Ambil ulang dari sumber" mengembalikan nilai otomatis. Bila EduWeb tidak terjangkau, kolom Harian kosong dan guru mengisi sendiri (tidak menghalangi).
 
@@ -60,5 +60,5 @@ Penanda sumber (`otomatis`/`manual`) disimpan per komponen; tombol "Ambil ulang 
 5. Cetak rapor, tampilan siswa, API baca-saja + dokumentasi.
 
 ## 9. Hal yang perlu dikonfirmasi
-- **Pemetaan tugas → Harian** (usulan ini): rata-rata nilai tugas EduWeb mengisi komponen **Harian** (bobot 60% pada NP). Alternatif: komponen "Tugas" terpisah dengan bobot sendiri.
+- **Pemetaan tugas → Harian** (keputusan pemilik, 22 Okt 2026): rata-rata nilai tugas EduWeb mengisi komponen **Harian**; tidak ada komponen "Tugas" terpisah (kolom `harian_sumber` menandai otomatis/manual).
 - Tugas bertipe kuis dan tugas biasa **sama-sama** dihitung selama sudah bernilai.
