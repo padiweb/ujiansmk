@@ -78,25 +78,26 @@
 <form class="kartu formulir" method="POST" action="{{ route('staf.rapor.periode') }}" style="max-width:760px">
     @csrf
     @method('PUT')
-    <h2 class="judul-kartu">Rentang semester</h2>
-    <small class="bantuan">Dipakai untuk menarik absensi dan nilai tugas dari EduWeb.</small>
+    <h2 class="judul-kartu">Semester</h2>
+    <small class="bantuan">Rentang tanggal dipakai untuk menarik absensi dan nilai tugas dari EduWeb. Hilangkan centang "Rapor di sini" bila rapor semester itu tidak diisi di aplikasi ini (mis. ujian kembali ke kertas).</small>
     @error('periode') <div class="pesan-salah" role="alert">{{ $message }}</div> @enderror
     @foreach ($errors->get('periode.*') as $m) @foreach ($m as $x) <div class="pesan-salah" role="alert">{{ $x }}</div> @endforeach @endforeach
     <table class="tabel" style="margin-top:8px">
-        <thead><tr><th>Semester</th><th>Mulai</th><th>Selesai</th></tr></thead>
+        <thead><tr><th>Semester</th><th>Mulai</th><th>Selesai</th><th>Rapor di sini</th></tr></thead>
         <tbody>
             @forelse ($periode as $p)
                 <tr>
                     <td>{{ $p->label() }}@if ($p->aktif) <span class="lencana">Aktif</span> @endif</td>
                     <td><input type="date" name="periode[{{ $p->id }}][mulai]" value="{{ old("periode.{$p->id}.mulai", $p->mulai?->format('Y-m-d')) }}" aria-label="Mulai {{ $p->label() }}"></td>
                     <td><input type="date" name="periode[{{ $p->id }}][selesai]" value="{{ old("periode.{$p->id}.selesai", $p->selesai?->format('Y-m-d')) }}" aria-label="Selesai {{ $p->label() }}"></td>
+                    <td class="tengah"><input type="hidden" name="periode[{{ $p->id }}][rapor_di_sini]" value="0"><input type="checkbox" name="periode[{{ $p->id }}][rapor_di_sini]" value="1" @checked(old("periode.{$p->id}.rapor_di_sini", $p->rapor_di_sini)) aria-label="Rapor {{ $p->label() }} diisi di aplikasi ini"></td>
                 </tr>
             @empty
-                <tr><td colspan="3" class="kosong">Belum ada semester.</td></tr>
+                <tr><td colspan="4" class="kosong">Belum ada semester.</td></tr>
             @endforelse
         </tbody>
     </table>
-    <div class="aksi-form"><button class="tombol kecil" type="submit" @disabled($periode->isEmpty())>Simpan rentang</button></div>
+    <div class="aksi-form"><button class="tombol kecil" type="submit" @disabled($periode->isEmpty())>Simpan semester</button></div>
 </form>
 @endsection
 

@@ -95,6 +95,7 @@ class PengaturanRaporController extends Controller
             'periode' => ['nullable', 'array'],
             'periode.*.mulai' => ['nullable', 'date'],
             'periode.*.selesai' => ['nullable', 'date'],
+            'periode.*.rapor_di_sini' => ['nullable', 'boolean'],
         ], [], ['periode.*.mulai' => 'Tanggal mulai', 'periode.*.selesai' => 'Tanggal selesai']);
 
         $ada = Periode::pluck('id')->all();
@@ -108,11 +109,12 @@ class PengaturanRaporController extends Controller
         }
         foreach ($data['periode'] ?? [] as $id => $t) {
             if (in_array((int) $id, $ada, true)) {
-                Periode::whereKey($id)->update(['mulai' => $t['mulai'] ?: null, 'selesai' => $t['selesai'] ?: null]);
+                Periode::whereKey($id)->update(['mulai' => $t['mulai'] ?: null, 'selesai' => $t['selesai'] ?: null]
+                    + (array_key_exists('rapor_di_sini', $t) ? ['rapor_di_sini' => (bool) $t['rapor_di_sini']] : []));
             }
         }
         AuditLog::catat('rapor.periode', 'rentang semester', $request->user('web'));
 
-        return back()->with('berhasil', 'Rentang semester disimpan.');
+        return back()->with('berhasil', 'Pengaturan semester disimpan.');
     }
 }

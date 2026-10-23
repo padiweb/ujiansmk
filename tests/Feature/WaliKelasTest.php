@@ -230,4 +230,48 @@ class WaliKelasTest extends TestCase
         $this->actingAs($this->guruMapel, 'web')->post("/staf/nilai/{$this->mtk->id}/{$this->kelas->id}", ['nilai' => [$this->siswa[0]->id => ['harian' => '90']]])->assertSessionHas('berhasil');
         $this->assertEquals(90, NilaiRapor::where('siswa_id', $this->siswa[0]->id)->first()->harian);
     }
+
+    // ── Penanda semester dan siswa yang sudah dinaikkan ─────────────────────
+
+    public function test_semester_yang_rapornya_tidak_diisi_di_sini_ditutup(): void
+    {
+        $this->periode->update(['rapor_di_sini' => false]);
+
+        $this->actingAs($this->wali, 'web')->get('/staf/wali-kelas')->assertOk()->assertSee('tidak diisi di aplikasi ini')->assertDontSee('Siap difinalkan');
+        $this->get($this->url())->assertNotFound();
+        $this->post($this->url('/finalkan'))->assertNotFound();
+        $this->actingAs($this->guruMapel, 'web')->get('/staf/nilai')->assertOk()->assertSee('tidak diisi di aplikasi ini')->assertDontSee('Matematika');
+        $this->get("/staf/nilai/{$this->mtk->id}/{$this->kelas->id}")->assertNotFound();
+    }
+
+    public function test_admin_mengatur_penanda_rapor_di_sini_per_semester(): void
+    {
+        $this->actingAs($this->admin, 'web')->put('/staf/pengaturan-rapor/periode', ['periode' => [$this->periode->id => ['mulai' => '2025-07-14', 'selesai' => '2025-12-20', 'rapor_di_sini' => '0']]])->assertSessionHas('berhasil');
+        $this->assertFalse($this->periode->fresh()->rapor_di_sini);
+
+        // Tanpa isian penanda, nilai penanda tidak berubah
+        $this->put('/staf/pengaturan-rapor/periode', ['periode' => [$this->periode->id => ['mulai' => '2025-07-15', 'selesai' => '2025-12-20']]]);
+        $this->assertFalse($this->periode->fresh()->rapor_di_sini);
+
+        $this->put('/staf/pengaturan-rapor/periode', ['periode' => [$this->periode->id => ['mulai' => '2025-07-15', 'selesai' => '2025-12-20', 'rapor_di_sini' => '1']]]);
+        $this->assertTrue($this->periode->fresh()->rapor_di_sini);
+    }
+
+    public function test_siswa_yang_sudah_naik_tetap_ikut_rapor_kelas_lama_sampai_final(): void
+    {
+        $this->isiNilaiLengkap();
+        $this->siswa[0]->kelas()->updateExistingPivot($this->kelas->id, ['status' => 'naik']);
+        $this->siswa[1]->kelas()->updateExistingPivot($this->kelas->id, ['status' => 'lulus']);
+        $this->siswa[2]->update(['status' => 'keluar']);
+
+        $this->actingAs($this->wali, 'web')->get($this->url())->assertOk()
+            ->assertSee($this->siswa[0]->nama)->assertSee($this->siswa[1]->nama)->assertDontSee($this->siswa[2]->nama)
+            ->assertSee('2 siswa sudah dinaikkan');
+
+        $this->actingAs($this->guruMapel, 'web')->get("/staf/nilai/{$this->mtk->id}/{$this->kelas->id}")->assertOk()->assertSee($this->siswa[0]->nama);
+
+        $this->actingAs($this->wali, 'web')->post($this->url('/finalkan'))->assertSessionHas('berhasil');
+        $this->get($this->url())->assertDontSee('sudah dinaikkan');
+        $this->assertSame('final', $this->rapor(0)->status);
+    }
 }

@@ -17,6 +17,10 @@
     </select>
 </form>
 
+@if ($periode && ! $periode->rapor_di_sini)
+    <div class="pesan-salah catatan" role="status"><x-ikon nama="info" :ukuran="18" /><span>Rapor semester ini tidak diisi di aplikasi ini.</span></div>
+@endif
+
 <div class="kartu tanpa-padding">
     <div class="gulir">
         <table class="tabel">

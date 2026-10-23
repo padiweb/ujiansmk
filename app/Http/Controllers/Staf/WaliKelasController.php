@@ -46,6 +46,7 @@ class WaliKelasController extends Controller
             'mapel' => $this->wali->kelengkapan($kelas, $periode),
             'baris' => $this->wali->baris($kelas, $periode),
             'final' => $this->wali->final($kelas, $periode),
+            'sudahPindah' => $this->wali->sudahPindah($kelas, $periode),
             'hambatan' => $this->wali->hambatanFinal($kelas, $periode),
             'admin' => $request->user('web')->role === 'admin',
             'keputusan' => LayananWaliKelas::KEPUTUSAN,
@@ -110,7 +111,7 @@ class WaliKelasController extends Controller
         abort_unless($this->wali->boleh($request->user('web'), $kelas), 404);
 
         $periode = $this->periode($request, $kelas);
-        abort_if(! $periode || $periode->tahun_ajaran_id !== $kelas->tahun_ajaran_id, 404);
+        abort_if(! $periode || ! $periode->rapor_di_sini || $periode->tahun_ajaran_id !== $kelas->tahun_ajaran_id, 404);
 
         return $periode;
     }

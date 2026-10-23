@@ -94,7 +94,7 @@ class NilaiRaporController extends Controller
         abort_unless($this->nilai->boleh($request->user('web'), $mapel, $kelas), 404);
 
         $periode = $this->periode($request, $kelas);
-        abort_if(! $periode || $periode->tahun_ajaran_id !== $kelas->tahun_ajaran_id, 404);
+        abort_if(! $periode || ! $periode->rapor_di_sini || $periode->tahun_ajaran_id !== $kelas->tahun_ajaran_id, 404);
 
         return $periode;
     }

@@ -42,6 +42,10 @@ class LayananWaliKelas
     /** @return Collection<int,Kelas> kelas pada tahun ajaran semester ini yang boleh dikelola */
     public function kelas(User $user, Periode $periode): Collection
     {
+        if (! $periode->rapor_di_sini) {
+            return collect();
+        }
+
         return Kelas::query()->with('waliKelas:id,nama')->where('tahun_ajaran_id', $periode->tahun_ajaran_id)
             ->when($user->role !== 'admin', fn ($q) => $q->where('wali_kelas_id', $user->id))
             ->orderBy('nama')->get()
@@ -98,6 +102,16 @@ class LayananWaliKelas
                 'final' => $r?->status === 'final',
             ];
         })->all();
+    }
+
+    /** Jumlah siswa kelas ini yang sudah dinaikkan/ditinggalkan/diluluskan (di EduWeb) padahal rapornya belum final. */
+    public function sudahPindah(Kelas $kelas, Periode $periode): int
+    {
+        if ($this->final($kelas, $periode)) {
+            return 0;
+        }
+
+        return DB::table('keanggotaan_kelas')->where('kelas_id', $kelas->id)->whereIn('status', ['naik', 'tinggal', 'lulus'])->count();
     }
 
     public function final(Kelas $kelas, Periode $periode): bool

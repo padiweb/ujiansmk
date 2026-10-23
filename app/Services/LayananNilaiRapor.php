@@ -21,6 +21,9 @@ class LayananNilaiRapor
     /** Komponen yang diisi/ditimpa guru di layar (Ujian dan Harian bisa terisi otomatis). */
     public const KOMPONEN = ['ujian', 'harian', 'tugas_akhir', 'praktik', 'adab'];
 
+    /** Status keanggotaan kelas yang masih ikut rapor kelas itu. */
+    public const STATUS_ANGGOTA = ['aktif', 'naik', 'tinggal', 'lulus'];
+
     public function __construct(private LayananRapor $rapor, private KlienEduweb $eduweb) {}
 
     // ── Hak akses ───────────────────────────────────────────────────────────
@@ -48,12 +51,16 @@ class LayananNilaiRapor
      */
     public function pasangan(User $user, Periode $periode): Collection
     {
+        if (! $periode->rapor_di_sini) {
+            return collect();
+        }
+
         $pengampu = Pengampu::query()->with('mapel', 'kelas', 'guru:id,nama')
             ->whereHas('kelas', fn ($k) => $k->where('tahun_ajaran_id', $periode->tahun_ajaran_id))
             ->when($user->role !== 'admin', fn ($q) => $q->where('guru_id', $user->id))->get();
 
         $jumlah = DB::table('keanggotaan_kelas as k')->join('siswa as s', 's.id', '=', 'k.siswa_id')
-            ->whereIn('k.kelas_id', $pengampu->pluck('kelas_id')->unique())->where('k.status', 'aktif')->where('s.status', 'aktif')
+            ->whereIn('k.kelas_id', $pengampu->pluck('kelas_id')->unique())->whereIn('k.status', self::STATUS_ANGGOTA)->whereIn('s.status', ['aktif', 'lulus'])
             ->select('k.kelas_id', DB::raw('count(distinct s.id) as n'))->groupBy('k.kelas_id')->pluck('n', 'kelas_id');
 
         $aktif = $this->rapor->komponenAktif();
@@ -74,11 +81,16 @@ class LayananNilaiRapor
 
     // ── Data tabel ──────────────────────────────────────────────────────────
 
-    /** @return Collection<int,Siswa> siswa aktif kelas ini, urut nama */
+    /**
+     * Siswa kelas ini, urut nama: yang aktif, dan yang sudah dinaikkan/ditinggalkan/diluluskan dari kelas ini di EduWeb
+     * (rapor semester kelas ini tetap harus bisa diselesaikan). Siswa yang keluar atau pindah tidak termasuk.
+     *
+     * @return Collection<int,Siswa>
+     */
     public function siswa(Kelas $kelas): Collection
     {
-        return Siswa::query()->where('status', 'aktif')
-            ->whereIn('id', DB::table('keanggotaan_kelas')->where('kelas_id', $kelas->id)->where('status', 'aktif')->select('siswa_id'))
+        return Siswa::query()->whereIn('status', ['aktif', 'lulus'])
+            ->whereIn('id', DB::table('keanggotaan_kelas')->where('kelas_id', $kelas->id)->whereIn('status', self::STATUS_ANGGOTA)->select('siswa_id'))
             ->orderBy('nama')->get(['id', 'nama', 'nisn']);
     }
 

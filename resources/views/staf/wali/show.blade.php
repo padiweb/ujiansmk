@@ -17,6 +17,10 @@
     </div>
 </div>
 
+@if ($sudahPindah > 0)
+    <div class="pesan-salah catatan" role="status"><x-ikon nama="info" :ukuran="18" /><span>{{ $sudahPindah }} siswa sudah dinaikkan, ditinggalkan, atau diluluskan dari kelas ini di EduWeb. Rapor kelas ini belum final; selesaikan dan finalkan segera.</span></div>
+@endif
+
 <div class="kartu tanpa-padding" style="margin-bottom:16px">
     <div class="gulir">
         <table class="tabel">
