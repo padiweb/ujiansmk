@@ -165,6 +165,8 @@ Route::prefix('staf')->group(function () {
             Route::put('/bobot', [PengaturanRaporController::class, 'bobot'])->name('bobot');
             Route::put('/skala', [PengaturanRaporController::class, 'skala'])->name('skala');
             Route::put('/periode', [PengaturanRaporController::class, 'periode'])->name('periode');
+            Route::post('/klien-api', [PengaturanRaporController::class, 'klienBaru'])->middleware('throttle:10,1')->name('klien-baru');
+            Route::post('/klien-api/{klien}/cabut', [PengaturanRaporController::class, 'klienCabut'])->whereNumber('klien')->name('klien-cabut');
         });
 
         Route::prefix('kegiatan')->name('staf.kegiatan.')->group(function () {

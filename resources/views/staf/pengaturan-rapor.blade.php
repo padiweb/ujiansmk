@@ -99,6 +99,42 @@
     </table>
     <div class="aksi-form"><button class="tombol kecil" type="submit" @disabled($periode->isEmpty())>Simpan semester</button></div>
 </form>
+
+<div class="kartu" style="max-width:760px;margin-top:16px">
+    <h2 class="judul-kartu">Akses EduWeb ke status rapor</h2>
+    <small class="bantuan">Kunci ini dipakai EduWeb untuk membaca status final rapor sebelum menaikkan atau meluluskan siswa. Hanya status dan keputusan wali kelas yang dapat dibaca.</small>
+    @if (session('kunci_api_baru'))
+        <div class="pesan-salah catatan" role="status"><x-ikon nama="info" :ukuran="18" /><span>Kunci baru: <code>{{ session('kunci_api_baru') }}</code></span></div>
+    @endif
+    <table class="tabel" style="margin-top:8px">
+        <thead><tr><th>Nama</th><th>Kunci</th><th>Terakhir dipakai</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
+        <tbody>
+            @forelse ($klienApi as $k)
+                <tr>
+                    <td>{{ $k->nama }}</td>
+                    <td><code>{{ $k->awalan }}…</code></td>
+                    <td>{{ $k->terakhir_dipakai ? $k->terakhir_dipakai->diffForHumans().' dari '.$k->ip_terakhir : 'belum pernah' }}</td>
+                    <td>@if ($k->aktif()) <span class="lencana">Aktif</span> @else <span class="lencana pucat">Dicabut</span> @endif</td>
+                    <td class="kanan aksi-baris">
+                        @if ($k->aktif())
+                            <form method="POST" action="{{ route('staf.rapor.klien-cabut', $k) }}" onsubmit="return confirm('Cabut kunci ini? Aplikasi yang memakainya langsung kehilangan akses.')" style="display:inline">
+                                @csrf <button type="submit" class="tombol kecil garis">Cabut</button>
+                            </form>
+                        @endif
+                    </td>
+                </tr>
+            @empty
+                <tr><td colspan="5" class="kosong">Belum ada kunci.</td></tr>
+            @endforelse
+        </tbody>
+    </table>
+    <form method="POST" action="{{ route('staf.rapor.klien-baru') }}" class="aksi-form" style="margin-top:10px">
+        @csrf
+        <input type="text" name="nama" required maxlength="80" placeholder="Nama (mis. EduWeb)" aria-label="Nama kunci" style="max-width:260px">
+        <button class="tombol kecil" type="submit">Buat kunci</button>
+    </form>
+    @error('nama') <div class="pesan-salah" role="alert">{{ $message }}</div> @enderror
+</div>
 @endsection
 
 @push('skrip')

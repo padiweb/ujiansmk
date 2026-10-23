@@ -4,6 +4,7 @@ use App\Http\Middleware\KunciSinkronEduweb;
 use App\Http\Middleware\ModePengembang;
 use App\Http\Middleware\PastikanPerangkatUjian;
 use App\Http\Middleware\PeriksaSinkronEduweb;
+use App\Http\Middleware\AutentikasiApiRapor;
 use App\Http\Middleware\PastikanPeran;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -21,11 +22,13 @@ return Application::configure(basePath: dirname(__DIR__))
         then: function () {
             Route::prefix('api/ujian')->group(base_path('routes/ujian-api.php'));
             Route::prefix('api/eduweb')->group(base_path('routes/eduweb-api.php'));
+            Route::prefix('api/rapor/v1')->group(base_path('routes/rapor-api.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'peran' => PastikanPeran::class,
+            'api.rapor' => AutentikasiApiRapor::class,
             'sinkron.kunci' => KunciSinkronEduweb::class,
             'mode.pengembang' => ModePengembang::class,
             'perangkat.ujian' => PastikanPerangkatUjian::class,

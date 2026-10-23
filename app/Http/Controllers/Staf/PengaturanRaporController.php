@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Staf;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\KlienApi;
 use App\Models\PengaturanSekolah;
 use App\Models\Periode;
 use App\Models\SkalaPredikat;
@@ -25,7 +26,28 @@ class PengaturanRaporController extends Controller
             'bobot' => $this->rapor->bobot(),
             'skala' => $this->rapor->skala(),
             'periode' => Periode::with('tahunAjaran')->orderByDesc('tahun_ajaran_id')->orderByDesc('semester')->get(),
+            'klienApi' => KlienApi::orderByDesc('id')->get(),
         ]);
+    }
+
+    /** Terbitkan kunci akses API rapor (untuk EduWeb). Kunci asli hanya ditampilkan sekali. */
+    public function klienBaru(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['nama' => ['required', 'string', 'max:80']], [], ['nama' => 'Nama']);
+        [$klien, $kunci] = KlienApi::terbitkan(trim($data['nama']), $request->user('web')->id);
+        AuditLog::catat('rapor.api_kunci_baru', "klien {$klien->id}", $request->user('web'));
+
+        return back()->with('kunci_api_baru', $kunci)->with('berhasil', 'Kunci dibuat. Salin sekarang; tidak akan ditampilkan lagi.');
+    }
+
+    public function klienCabut(Request $request, KlienApi $klien): RedirectResponse
+    {
+        if ($klien->aktif()) {
+            $klien->update(['dicabut_pada' => now()]);
+            AuditLog::catat('rapor.api_kunci_cabut', "klien {$klien->id}", $request->user('web'));
+        }
+
+        return back()->with('berhasil', 'Kunci dicabut. Aplikasi yang memakainya langsung kehilangan akses.');
     }
 
     public function bobot(Request $request): RedirectResponse
