@@ -436,6 +436,30 @@ class SinkronEduwebTest extends TestCase
         $this->assertSame(2, DB::table('keanggotaan_kelas')->where('siswa_id', $ani)->count());
     }
 
+    public function test_pembatalan_promosi_mengembalikan_keanggotaan_dan_menghapus_kelas_tujuan(): void
+    {
+        $this->sinkron();
+        $ani = Siswa::where('eduweb_id', 6)->value('id');
+        $dodi = Siswa::where('eduweb_id', 9)->value('id');
+        $kelasX = Kelas::where('eduweb_id', 1)->value('id');
+        $kelasXII = Kelas::where('eduweb_id', 2)->value('id');
+        $this->edu['events'] = [
+            $this->kejadian(1, 6, 'naik', ['status' => 'aktif', 'classroom_ids' => [1]], ['status' => 'aktif', 'classroom_ids' => [2]]),
+            $this->kejadian(2, 9, 'lulus', ['status' => 'aktif', 'classroom_ids' => [2]], ['status' => 'alumni', 'classroom_ids' => [2]]),
+            $this->kejadian(3, 6, 'batal_promosi', ['status' => 'aktif', 'classroom_ids' => [2]], ['status' => 'aktif', 'classroom_ids' => [1]]),
+            $this->kejadian(4, 9, 'batal_promosi', ['status' => 'alumni', 'classroom_ids' => [2]], ['status' => 'aktif', 'classroom_ids' => [2]]),
+        ];
+        $this->pasangEdu();
+
+        app(PenyinkronEduweb::class)->kejadian();
+
+        $status = fn ($siswa, $kelas) => DB::table('keanggotaan_kelas')->where('siswa_id', $siswa)->where('kelas_id', $kelas)->value('status');
+        $this->assertSame('aktif', $status($ani, $kelasX));
+        $this->assertNull($status($ani, $kelasXII)); // kelas tujuan dihapus
+        $this->assertSame('aktif', $status($dodi, $kelasXII)); // lulus dibatalkan
+        $this->assertSame('aktif', Siswa::find($dodi)->status);
+    }
+
     public function test_kejadian_banyak_diambil_berhalaman(): void
     {
         $this->sinkron();

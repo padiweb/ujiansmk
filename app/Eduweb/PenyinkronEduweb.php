@@ -194,7 +194,8 @@ class PenyinkronEduweb
         $setelah = (array) ($payload['after'] ?? []);
         $sebelum = (array) ($payload['before'] ?? []);
 
-        $status = $this->statusSiswa($setelah['status'] ?? null, false) ?? $siswa->status;
+        // Kejadian hanya membawa status akhir; 'aktif' di sini berarti siswa aktif (bukan keluar).
+        $status = $this->statusSiswa($setelah['status'] ?? null, true) ?? $siswa->status;
         $siswa->update(['status' => $status]);
 
         $statusKeanggotaan = $status === 'lulus' ? 'lulus' : 'aktif';
@@ -217,7 +218,12 @@ class PenyinkronEduweb
         foreach ((array) ($sebelum['classroom_ids'] ?? []) as $idEdu) {
             $kelasId = $this->petaKelas((int) $idEdu);
             if ($kelasId && ! in_array($kelasId, $ada, true)) {
-                $this->setKeanggotaan($siswa->id, $kelasId, $statusLama, ganti: ['aktif']);
+                if ($aksi === 'batal_promosi') {
+                    // Promosi dibatalkan: kelas tujuan yang terbentuk karena promosi itu dihapus (hanya yang masih berstatus aktif).
+                    DB::table('keanggotaan_kelas')->where('siswa_id', $siswa->id)->where('kelas_id', $kelasId)->where('status', 'aktif')->delete();
+                } else {
+                    $this->setKeanggotaan($siswa->id, $kelasId, $statusLama, ganti: ['aktif']);
+                }
             }
         }
 
