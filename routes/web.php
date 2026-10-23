@@ -15,6 +15,7 @@ use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
 use App\Http\Controllers\Staf\NilaiRaporController;
+use App\Http\Controllers\Staf\WaliKelasController;
 use App\Http\Controllers\Staf\PengaturanRaporController;
 use App\Http\Controllers\Staf\PengaturanSekolahController;
 use App\Http\Controllers\Staf\PengawasController;
@@ -126,6 +127,18 @@ Route::prefix('staf')->group(function () {
             Route::get('/', [NilaiRaporController::class, 'show'])->name('tabel');
             Route::post('/', [NilaiRaporController::class, 'simpan'])->middleware('throttle:30,1')->name('simpan');
             Route::post('/ambil-ulang', [NilaiRaporController::class, 'ambilUlang'])->middleware('throttle:10,1')->name('ambil-ulang');
+        });
+    });
+
+    // Wali kelas: admin semua kelas, guru hanya kelas yang diwalikannya (dicek di layanan).
+    Route::middleware(['auth:web', 'peran:admin,guru'])->prefix('wali-kelas')->name('staf.wali.')->group(function () {
+        Route::get('/', [WaliKelasController::class, 'index'])->name('index');
+        Route::prefix('{kelas}')->whereNumber('kelas')->group(function () {
+            Route::get('/', [WaliKelasController::class, 'show'])->name('show');
+            Route::post('/', [WaliKelasController::class, 'simpan'])->middleware('throttle:30,1')->name('simpan');
+            Route::post('/absensi', [WaliKelasController::class, 'absensi'])->middleware('throttle:10,1')->name('absensi');
+            Route::post('/finalkan', [WaliKelasController::class, 'finalkan'])->middleware('throttle:10,1')->name('finalkan');
+            Route::post('/buka-final', [WaliKelasController::class, 'bukaFinal'])->middleware(['peran:admin', 'throttle:10,1'])->name('buka-final');
         });
     });
 
