@@ -10,8 +10,8 @@
     <div class="aksi-halaman">
         <a class="tombol kecil garis" href="{{ route('staf.wali.index', ['periode' => $periode->id]) }}"><x-ikon nama="panah-kiri" :ukuran="16" />Daftar</a>
         @unless ($final)
-            <form method="POST" action="{{ route('staf.wali.absensi', [$kelas, 'periode' => $periode->id]) }}" onsubmit="return confirm('Ambil absensi semua siswa dari EduWeb? Isian sakit, izin, dan alpa yang sudah Anda ubah akan tertimpa.')">
-                @csrf <button class="tombol kecil garis" type="submit">Ambil absensi dari EduWeb</button>
+            <form method="POST" action="{{ route('staf.wali.absensi', [$kelas, 'periode' => $periode->id]) }}" onsubmit="return confirm('Ambil absensi dan nilai ekskul semua siswa dari EduWeb? Isian sakit, izin, dan alpa yang sudah Anda ubah akan tertimpa.')">
+                @csrf <button class="tombol kecil garis" type="submit">Ambil absensi &amp; ekskul dari EduWeb</button>
             </form>
         @endunless
     </div>
@@ -93,6 +93,27 @@
         <button class="tombol kecil" type="submit" @disabled(count($baris) === 0 || $final)>Simpan</button>
     </div>
 </form>
+
+@if (count($siswaFinal) > 0)
+    <div class="kartu" style="margin-top:20px">
+        <h2 class="judul-kartu">Cetak rapor</h2>
+        <p class="sub">Hanya siswa yang rapornya sudah final. Tanggal tanda tangan boleh diubah sesuai tanggal penyerahan rapor.</p>
+        <form method="GET" action="{{ route('staf.wali.cetak', $kelas) }}" target="_blank" class="aksi-form" style="flex-wrap:wrap;align-items:flex-end;gap:10px">
+            <input type="hidden" name="periode" value="{{ $periode->id }}">
+            <label>Siswa
+                <select name="siswa">
+                    <option value="">Semua siswa ({{ count($siswaFinal) }})</option>
+                    @foreach ($siswaFinal as $id => $nama) <option value="{{ $id }}">{{ $nama }}</option> @endforeach
+                </select>
+            </label>
+            <label>Tanggal tanda tangan
+                <input type="date" name="tgl" value="{{ now()->format('Y-m-d') }}" required>
+            </label>
+            <button class="tombol kecil" type="submit" name="format" value="cetak">Cetak</button>
+            <button class="tombol kecil garis" type="submit" name="format" value="word">Unduh Word</button>
+        </form>
+    </div>
+@endif
 
 <div class="kartu" style="margin-top:20px">
     <h2 class="judul-kartu">Finalisasi rapor</h2>

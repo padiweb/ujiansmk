@@ -11,12 +11,12 @@ class RaporSiswa extends Model
 
     protected $fillable = [
         'siswa_id', 'periode_id', 'kelas_id', 'kelas_nama', 'sakit', 'izin', 'alpa', 'sumber_absensi',
-        'catatan_wali', 'keputusan', 'status', 'difinalkan_oleh', 'difinalkan_pada',
+        'catatan_wali', 'ekskul', 'keputusan', 'status', 'difinalkan_oleh', 'difinalkan_pada',
     ];
 
     protected function casts(): array
     {
-        return ['difinalkan_pada' => 'datetime'];
+        return ['difinalkan_pada' => 'datetime', 'ekskul' => 'array'];
     }
 
     public function siswa(): BelongsTo

@@ -130,7 +130,7 @@ class WaliKelasTest extends TestCase
 
         Http::assertSent(fn ($r) => str_contains($r->url(), 'attendance-summary') && $r['classroom_id'] == 77 && $r['from'] === '2025-07-14' && $r['to'] === '2025-12-20');
         $this->assertSame([3, 1, 2, 'eduweb'], [$this->rapor(0)->sakit, $this->rapor(0)->izin, $this->rapor(0)->alpa, $this->rapor(0)->sumber_absensi]);
-        $this->assertNull($this->rapor(1));
+        $this->assertNull($this->rapor(1)?->sumber_absensi); // siswa lain tidak ikut terisi absensinya
         $this->get($this->url())->assertSee('dari EduWeb');
 
         // Kirim ulang tanpa mengubah angka mempertahankan sumber; mengubahnya menjadi manual.

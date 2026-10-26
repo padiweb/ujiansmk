@@ -226,6 +226,61 @@ class LayananWaliKelas
         return $n;
     }
 
+    /**
+     * Isi nama dan nilai ekskul dari EduWeb untuk semester ini (menimpa isian yang belum final).
+     *
+     * @return int jumlah siswa yang punya nilai ekskul
+     *
+     * @throws KesalahanEduweb
+     * @throws DomainException
+     */
+    public function ambilEkskul(User $pelaku, Kelas $kelas, Periode $periode): int
+    {
+        if (! $kelas->eduweb_id) {
+            throw new DomainException('Kelas ini belum terhubung ke EduWeb.');
+        }
+
+        $jawab = $this->eduweb->get('extracurricular-grades', [
+            'classroom_id' => $kelas->eduweb_id,
+            'year_name' => $periode->tahunAjaran->nama,
+            'semester' => $periode->semester === 'genap' ? 2 : 1,
+        ]);
+
+        $peta = Siswa::whereIn('id', $this->nilai->siswa($kelas)->pluck('id'))->whereNotNull('eduweb_id')->pluck('id', 'eduweb_id');
+        $perSiswa = [];
+        foreach ($jawab['data'] ?? [] as $baris) {
+            $id = $peta[(int) ($baris['student_id'] ?? 0)] ?? null;
+            if ($id === null || trim((string) ($baris['extracurricular'] ?? '')) === '') {
+                continue;
+            }
+            $perSiswa[$id][] = [
+                'nama' => mb_substr(trim((string) ($baris['extracurricular'] ?? '')), 0, 100),
+                'nilai' => is_numeric($baris['score'] ?? null) ? (int) $baris['score'] : null,
+                'predikat' => mb_substr(trim((string) ($baris['predicate'] ?? '')), 0, 10),
+            ];
+        }
+
+        DB::transaction(function () use ($peta, $perSiswa, $kelas, $periode) {
+            $ada = RaporSiswa::where('kelas_id', $kelas->id)->where('periode_id', $periode->id)->lockForUpdate()->get()->keyBy('siswa_id');
+
+            foreach ($peta as $id) {
+                if (($ada[$id] ?? null)?->status === 'final') {
+                    continue;
+                }
+                $data = ['ekskul' => $perSiswa[$id] ?? []];
+                if ($r = $ada[$id] ?? null) {
+                    $r->update($data);
+                } else {
+                    RaporSiswa::create($data + ['siswa_id' => $id, 'periode_id' => $periode->id, 'kelas_id' => $kelas->id, 'kelas_nama' => $kelas->nama, 'status' => 'draf']);
+                }
+            }
+        });
+
+        AuditLog::catat('wali_kelas.ekskul_eduweb', "kelas {$kelas->id} periode {$periode->id}: ".count($perSiswa).' siswa', $pelaku);
+
+        return count($perSiswa);
+    }
+
     // ── Finalisasi ──────────────────────────────────────────────────────────
 
     /** @return list<string> alasan rapor kelas ini belum bisa difinalkan (kosong = siap) */

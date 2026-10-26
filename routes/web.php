@@ -15,6 +15,7 @@ use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
 use App\Http\Controllers\Staf\NilaiRaporController;
+use App\Http\Controllers\Staf\CetakRaporController;
 use App\Http\Controllers\Staf\WaliKelasController;
 use App\Http\Controllers\Staf\PengaturanRaporController;
 use App\Http\Controllers\Staf\PengaturanSekolahController;
@@ -137,6 +138,7 @@ Route::prefix('staf')->group(function () {
             Route::get('/', [WaliKelasController::class, 'show'])->name('show');
             Route::post('/', [WaliKelasController::class, 'simpan'])->middleware('throttle:30,1')->name('simpan');
             Route::post('/absensi', [WaliKelasController::class, 'absensi'])->middleware('throttle:10,1')->name('absensi');
+            Route::get('/cetak', CetakRaporController::class)->middleware('throttle:30,1')->name('cetak');
             Route::post('/finalkan', [WaliKelasController::class, 'finalkan'])->middleware('throttle:10,1')->name('finalkan');
             Route::post('/buka-final', [WaliKelasController::class, 'bukaFinal'])->middleware(['peran:admin', 'throttle:10,1'])->name('buka-final');
         });

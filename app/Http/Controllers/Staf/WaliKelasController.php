@@ -6,6 +6,7 @@ use App\Eduweb\KesalahanEduweb;
 use App\Http\Controllers\Controller;
 use App\Models\Kelas;
 use App\Models\Periode;
+use App\Services\LayananCetakRapor;
 use App\Services\LayananWaliKelas;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
@@ -15,7 +16,7 @@ use Illuminate\View\View;
 /** Menu Wali Kelas: absensi, catatan, keputusan, dan finalisasi rapor kelas yang diwalikan. */
 class WaliKelasController extends Controller
 {
-    public function __construct(private LayananWaliKelas $wali) {}
+    public function __construct(private LayananWaliKelas $wali, private LayananCetakRapor $cetak) {}
 
     public function index(Request $request): View
     {
@@ -46,6 +47,7 @@ class WaliKelasController extends Controller
             'mapel' => $this->wali->kelengkapan($kelas, $periode),
             'baris' => $this->wali->baris($kelas, $periode),
             'final' => $this->wali->final($kelas, $periode),
+            'siswaFinal' => $this->cetak->siswaFinal($kelas, $periode),
             'sudahPindah' => $this->wali->sudahPindah($kelas, $periode),
             'hambatan' => $this->wali->hambatanFinal($kelas, $periode),
             'admin' => $request->user('web')->role === 'admin',
@@ -76,7 +78,17 @@ class WaliKelasController extends Controller
             return back()->with('gagal', $e->getMessage());
         }
 
-        return back()->with($n > 0 ? 'berhasil' : 'catatan', $n > 0 ? "Absensi {$n} siswa diambil dari EduWeb." : 'EduWeb belum memiliki data absensi kelas ini pada rentang semester.');
+        $pesan = $n > 0 ? "Absensi {$n} siswa diambil dari EduWeb." : 'EduWeb belum memiliki data absensi kelas ini pada rentang semester.';
+
+        // Ekskul diambil sekalian; kegagalannya (mis. kunci belum punya lingkup nilai) tidak membatalkan absensi.
+        try {
+            $e = $this->wali->ambilEkskul($request->user('web'), $kelas, $periode);
+            $pesan .= $e > 0 ? " Ekskul {$e} siswa diambil." : ' EduWeb belum memiliki nilai ekskul semester ini.';
+        } catch (DomainException|KesalahanEduweb $ex) {
+            return back()->with('catatan', $pesan.' Ekskul belum bisa diambil: '.$ex->getMessage());
+        }
+
+        return back()->with($n > 0 ? 'berhasil' : 'catatan', $pesan);
     }
 
     public function finalkan(Request $request, Kelas $kelas): RedirectResponse
