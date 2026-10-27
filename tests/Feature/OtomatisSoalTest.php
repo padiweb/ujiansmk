@@ -117,7 +117,7 @@ class OtomatisSoalTest extends TestCase
 
         $html = $this->actingAs($admin, 'web')->get('/staf')->assertOk()->getContent();
         $this->assertStringNotContainsString('Penyedia', $html);
-        $this->assertStringNotContainsString('Sinkron EduWeb', $html);
+        $this->assertStringContainsString('Sinkron EduWeb', $html); // menu admin biasa; halaman teknis tetap tersembunyi (di bawah)
         $this->assertStringNotContainsString('Diagnosis', $html);
         $this->assertStringNotContainsString(self::KUNCI, $html);
 

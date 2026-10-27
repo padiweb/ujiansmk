@@ -105,6 +105,10 @@
                         <x-ikon nama="unduh" /><span class="sisi-lbl">Diagnosis Sistem</span>
                     </a>
                 @endif
+                <a href="{{ route('staf.eduweb') }}" data-tip="Sinkron EduWeb"
+                   class="sisi-a {{ request()->routeIs('staf.eduweb*') ? 'aktif' : '' }}">
+                    <x-ikon nama="unduh" /><span class="sisi-lbl">Sinkron EduWeb</span>
+                </a>
                 <a href="{{ route('staf.rapor.pengaturan') }}" data-tip="Pengaturan Rapor"
                    class="sisi-a {{ request()->routeIs('staf.rapor.*') ? 'aktif' : '' }}">
                     <x-ikon nama="pengaturan" /><span class="sisi-lbl">Pengaturan Rapor</span>

@@ -49,6 +49,31 @@ class SinkronEduwebController extends Controller
         ]);
     }
 
+    /** Halaman ringkas untuk admin (tanpa mode pengembang): status sinkron dan tombol "Sinkron sekarang". */
+    public function halaman(): View
+    {
+        return view('staf.eduweb', [
+            'p' => PengaturanSekolah::ambil(),
+            'terkonfigurasi' => $this->klien->terkonfigurasi(),
+            'ujianBerlangsung' => $this->otomatis->ujianBerlangsung(),
+            'log' => DB::table('sinkron_log')->orderByDesc('id')->limit(8)->get()->map(function ($l) {
+                $l->created_at = \Illuminate\Support\Carbon::parse($l->created_at);
+
+                return $l;
+            }),
+        ]);
+    }
+
+    /** Sinkron penuh oleh admin. Ditolak selama ada ujian berlangsung agar data peserta tidak berubah di tengah ujian. */
+    public function sekarang(Request $request): RedirectResponse
+    {
+        if ($this->otomatis->ujianBerlangsung()) {
+            return back()->with('gagal', 'Ada ujian yang sedang atau akan segera berlangsung. Sinkron ditunda sampai ujian selesai.');
+        }
+
+        return $this->jalankan($request, fn () => $this->penyinkron->penuh($request->user('web')), 'Sinkron dengan EduWeb selesai.');
+    }
+
     public function uji(): RedirectResponse
     {
         try {

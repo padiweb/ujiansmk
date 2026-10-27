@@ -161,6 +161,9 @@ Route::prefix('staf')->group(function () {
 
     // Hanya admin: master data, impor, pengaturan.
     Route::middleware(['auth:web', 'peran:admin'])->group(function () {
+        Route::get('/sinkron-eduweb', [SinkronEduwebController::class, 'halaman'])->name('staf.eduweb');
+        Route::post('/sinkron-eduweb', [SinkronEduwebController::class, 'sekarang'])->middleware('throttle:5,1')->name('staf.eduweb.sekarang');
+        Route::get('/sinkron-eduweb/sandi/{token}', [SinkronEduwebController::class, 'unduhSandi'])->name('staf.eduweb.sandi');
         Route::get('/pengaturan', [PengaturanSekolahController::class, 'edit'])->name('staf.pengaturan');
         Route::put('/pengaturan', [PengaturanSekolahController::class, 'update'])->name('staf.pengaturan.simpan');
 

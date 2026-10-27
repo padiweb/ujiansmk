@@ -512,6 +512,31 @@ class SinkronEduwebTest extends TestCase
         $this->assertSame(0, Siswa::count());
     }
 
+    public function test_admin_sinkron_dari_halaman_biasa_tanpa_mode_pengembang(): void
+    {
+        config(['ujian.mode_pengembang' => false]);
+        $guru = User::factory()->create();
+
+        $this->actingAs($guru, 'web')->get(route('staf.eduweb'))->assertForbidden();
+        $this->post(route('staf.eduweb.sekarang'))->assertForbidden();
+
+        $this->actingAs($this->admin(), 'web')->get(route('staf.eduweb'))->assertOk()->assertSee('Sinkron sekarang')->assertSee('Belum pernah');
+        $this->post(route('staf.eduweb.sekarang'))->assertRedirect()->assertSessionHas('berhasil')->assertSessionHas('sandi_token');
+        $token = session('sandi_token');
+        $this->assertSame(4, Siswa::count());
+        $this->assertSame('2025-07-14', Periode::where('semester', 'ganjil')->first()->mulai->toDateString());
+        $this->get(route('staf.eduweb'))->assertOk()->assertSee('Berhasil');
+        $this->get(route('staf.eduweb.sandi', $token))->assertOk();
+    }
+
+    public function test_sinkron_dari_halaman_ditunda_selama_ujian_berlangsung(): void
+    {
+        $this->mock(\App\Eduweb\SinkronOtomatis::class, fn ($m) => $m->shouldReceive('ujianBerlangsung')->andReturn(true));
+
+        $this->actingAs($this->admin(), 'web')->post(route('staf.eduweb.sekarang'))->assertSessionHas('gagal', fn ($m) => str_contains($m, 'ditunda'));
+        $this->assertSame(0, Siswa::count());
+    }
+
     public function test_halaman_diagnosis_404_bila_bukan_mode_pengembang(): void
     {
         config(['ujian.mode_pengembang' => false]);
