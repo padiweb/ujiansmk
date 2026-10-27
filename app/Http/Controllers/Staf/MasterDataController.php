@@ -39,7 +39,7 @@ class MasterDataController extends Controller
 
         return view('staf.master.index', [
             'def' => $def,
-            'baris' => $kueri->paginate(20)->withQueryString(),
+            'baris' => $kueri->paginate($def->perHalaman())->withQueryString(),
             'terkunci' => $def->dikunciSinkron() && PengaturanSekolah::sinkronAktif(),
             'pengimpor' => \App\Impor\Pengimpor::temukan($entitas) !== null,
         ]);

@@ -44,6 +44,17 @@ abstract class DefinisiMaster
         return 'id';
     }
 
+    public function perHalaman(): int
+    {
+        return 20;
+    }
+
+    /** Nama tampilan Blade untuk tabel khusus entitas ini; null memakai tabel umum dari kolom(). */
+    public function tabelSendiri(): ?string
+    {
+        return null;
+    }
+
     /** Data master dari EduWeb dikunci saat mode sinkron aktif. */
     public function dikunciSinkron(): bool
     {

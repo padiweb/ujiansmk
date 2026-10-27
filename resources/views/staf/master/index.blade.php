@@ -5,7 +5,7 @@
 <div class="kepala-halaman">
     <div>
         <h1 class="judul-halaman">{{ $def->judul() }}</h1>
-        <p class="sub">{{ number_format($baris->total(), 0, ',', '.') }} data</p>
+        <p class="sub">{{ $def->tabelSendiri() ? 'Manajemen data '.\Illuminate\Support\Str::lower($def->judul()).'.' : number_format($baris->total(), 0, ',', '.').' data' }}</p>
     </div>
 
     @unless ($terkunci)
@@ -22,21 +22,36 @@
     <div class="pesan-salah">Data ini dikelola dari EduWeb dan hanya bisa dibaca di sini. Ubah di EduWeb, lalu sinkronkan.</div>
 @endif
 
-<form class="saring" method="GET" action="{{ route('staf.master.index', $def->slug()) }}">
-    @if ($def->cari())
-        <input type="search" name="q" value="{{ request('q') }}" placeholder="Cari…" aria-label="Cari">
-    @endif
+<form class="bar-saring" method="GET" action="{{ route('staf.master.index', $def->slug()) }}">
     @foreach ($def->filter() as $f)
-        <select name="{{ $f['name'] }}" aria-label="{{ $f['label'] }}">
-            <option value="">{{ $f['label'] }}</option>
-            @foreach ($f['options'] as $nilai => $label)
-                <option value="{{ $nilai }}" @selected((string) request($f['name']) === (string) $nilai)>{{ $label }}</option>
-            @endforeach
-        </select>
+        <div class="bar-isi">
+            <label for="f-{{ $f['name'] }}">{{ \Illuminate\Support\Str::ucfirst(\Illuminate\Support\Str::after($f['label'], 'Semua ')) }}</label>
+            <select id="f-{{ $f['name'] }}" name="{{ $f['name'] }}" onchange="this.form.submit()">
+                <option value="">{{ $f['label'] }}</option>
+                @foreach ($f['options'] as $nilai => $label)
+                    <option value="{{ $nilai }}" @selected((string) request($f['name']) === (string) $nilai)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
     @endforeach
-    <button class="tombol kecil garis" type="submit">Terapkan</button>
+    @if ($def->cari())
+        <div class="bar-isi bar-cari">
+            <label for="f-q">Cari</label>
+            <input id="f-q" type="search" name="q" value="{{ request('q') }}" placeholder="Ketik {{ implode(', ', $def->cari()) }}…" autocomplete="off">
+        </div>
+    @endif
+    <button class="tombol kecil" type="submit">Cari</button>
+    @if (collect(request()->query())->except('page')->filter()->isNotEmpty())
+        <a class="tautan" href="{{ route('staf.master.index', $def->slug()) }}">Atur ulang</a>
+    @endif
+    <span class="bar-total">Total: <b>{{ number_format($baris->total(), 0, ',', '.') }}</b> {{ \Illuminate\Support\Str::lower($def->judul()) }}</span>
 </form>
 
+@if ($def->tabelSendiri())
+    <div class="kartu tanpa-padding">
+        <div class="gulir">@include($def->tabelSendiri())</div>
+    </div>
+@else
 <div class="kartu tanpa-padding">
     <div class="gulir">
         <table class="tabel">
@@ -75,6 +90,7 @@
         </table>
     </div>
 </div>
+@endif
 
 {{ $baris->links('pagination.ringkas') }}
 @endsection

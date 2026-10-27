@@ -24,6 +24,8 @@ class SiswaMaster extends DefinisiMaster
     /** @var array<int,string>|null siswa_id => "Nama ruang · meja N" (penempatan tetap dari menu Ruang Ujian) */
     private ?array $petaRuang = null;
 
+    private ?array $petaPenempatan = null;
+
     public function slug(): string
     {
         return 'siswa';
@@ -42,6 +44,29 @@ class SiswaMaster extends DefinisiMaster
     public function urut(): string
     {
         return 'nama';
+    }
+
+    public function perHalaman(): int
+    {
+        return 50;
+    }
+
+    public function tabelSendiri(): ?string
+    {
+        return 'staf.master.tabel-siswa';
+    }
+
+    public function kelasDari(Siswa $s): ?string
+    {
+        return $s->kelas->firstWhere('tahun_ajaran_id', $this->tahunAktif())?->nama;
+    }
+
+    /** @return array{0:string,1:string}|null [nama ruang, nomor meja] */
+    public function ruangDari(Siswa $s): ?array
+    {
+        $p = $this->kueriPenempatanSiswa()[$s->id] ?? null;
+
+        return $p ? [$p->ruang->nama, (string) $p->meja] : null;
     }
 
     public function cari(): array
@@ -154,6 +179,12 @@ class SiswaMaster extends DefinisiMaster
         $denah = Denah::where('utama', true)->value('id');
 
         return DenahPenempatan::query()->where('denah_id', $denah ?? 0);
+    }
+
+    /** @return array<int,DenahPenempatan> */
+    private function kueriPenempatanSiswa(): array
+    {
+        return $this->petaPenempatan ??= $this->kueriPenempatan()->with('ruang:id,nama')->get()->keyBy('siswa_id')->all();
     }
 
     /** @return array<int,string> */

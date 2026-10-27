@@ -555,3 +555,23 @@ h1, h2, h3 { color: var(--teks); }
 
 @media (max-width: 1000px) { .db-grid { grid-template-columns: 1fr; } .db-angka { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 560px) { .db-angka { grid-template-columns: repeat(2, 1fr); } .db-tiga { grid-template-columns: 1fr; } .db-atas { padding: 16px; } }
+
+/* ── Halaman daftar data induk (bar saring + tabel), meniru halaman Siswa lama ── */
+.bar-saring { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; padding: 14px 18px; margin-bottom: 16px; background: var(--putih); border: 1px solid var(--garis); border-radius: var(--radius); box-shadow: var(--bayangan); }
+.bar-isi { display: flex; flex-direction: column; gap: 5px; min-width: 150px; }
+.bar-isi label { font-size: .7rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--teks-3); }
+.bar-isi select, .bar-isi input { width: 100%; padding: 9px 12px; font: inherit; font-size: .88rem; color: var(--teks); background: var(--putih); border: 1px solid #D1D5DB; border-radius: var(--radius-kecil); outline: none; }
+.bar-isi select:focus, .bar-isi input:focus { border-color: var(--biru); box-shadow: 0 0 0 4px rgba(57, 96, 251, .12); }
+.bar-cari { flex: 1; min-width: 200px; }
+.bar-saring .tombol.kecil { padding: 9px 16px; }
+.bar-saring .tautan { align-self: center; font-size: .85rem; }
+.bar-total { margin-left: auto; align-self: center; padding: 6px 12px; font-size: .8rem; font-weight: 600; color: var(--teks-3); background: #F9FAFB; border: 1px solid var(--garis); border-radius: 8px; white-space: nowrap; }
+.bar-total b { color: var(--teks); }
+
+.tabel .no { width: 44px; text-align: center; color: var(--teks-3); font-size: .78rem; font-weight: 600; }
+.tabel-siswa td strong { display: block; font-size: .9rem; line-height: 1.35; }
+.sub-baris { display: block; margin-top: 1px; font-size: .74rem; color: var(--teks-3); font-weight: 400; }
+.kode { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: .8rem; color: var(--biru-tua); background: var(--biru-muda); padding: 2px 7px; border-radius: 5px; }
+.redup { color: #9CA3AF; font-size: .8rem; }
+
+@media (max-width: 560px) { .bar-saring { flex-direction: column; align-items: stretch; } .bar-total { margin-left: 0; text-align: center; } }
