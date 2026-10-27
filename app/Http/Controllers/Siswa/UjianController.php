@@ -43,6 +43,8 @@ class UjianController extends Controller
             'tersedia' => $tersedia->reject(fn ($j) => ($sesi[$j->id]->status ?? null) === SesiUjian::SELESAI)->values(),
             'sesi' => $sesi,
             'riwayat' => $riwayat,
+            'rapor' => \App\Models\RaporSiswa::with('periode.tahunAjaran')->where('siswa_id', $siswa->id)->where('status', 'final')->get()
+                ->sortByDesc('periode_id')->values(),
         ]);
     }
 

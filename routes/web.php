@@ -22,6 +22,7 @@ use App\Http\Controllers\Staf\PengaturanSekolahController;
 use App\Http\Controllers\Staf\PengawasController;
 use App\Http\Controllers\Staf\SinkronEduwebController;
 use App\Http\Controllers\Staf\RekapController;
+use App\Http\Controllers\Siswa\RaporController as RaporSiswaController;
 use App\Http\Controllers\Siswa\UjianController;
 use App\Http\Controllers\Staf\SoalController;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +44,7 @@ Route::middleware('auth:siswa')->group(function () {
         Route::get('/kerjakan', [UjianController::class, 'kerjakan'])->name('kerjakan');
         Route::get('/hasil', [UjianController::class, 'hasil'])->name('hasil');
     });
+    Route::get('/rapor/{periode}', [RaporSiswaController::class, 'show'])->whereNumber('periode')->name('siswa.rapor');
     Route::post('/keluar', [MasukSiswaController::class, 'keluar'])->name('siswa.keluar');
 });
 

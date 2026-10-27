@@ -24,6 +24,24 @@
         <p class="sub" style="color:var(--teks-3)">NISN {{ $siswa->nisn }}</p>
     </div>
 
+    @if ($rapor->isNotEmpty())
+        <h2 class="judul-bagian">Rapor</h2>
+        <div class="kartu tanpa-padding" style="margin-top:0">
+            <div class="gulir">
+                <table class="tabel">
+                    <tbody>
+                        @foreach ($rapor as $r)
+                            <tr>
+                                <td><strong>{{ $r->periode->label() }}</strong><br><small class="bantuan" style="margin:0">{{ $r->kelas_nama }}</small></td>
+                                <td class="kanan"><a class="tombol kecil garis" href="{{ route('siswa.rapor', $r->periode_id) }}">Lihat rapor</a></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
     <h2 class="judul-bagian">Ujian untuk Anda</h2>
     @forelse ($tersedia as $j)
         @php
