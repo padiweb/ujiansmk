@@ -2,18 +2,21 @@
 @section('judul', 'Wali Kelas '.$kelas->nama)
 
 @section('konten')
-<div class="kepala-halaman">
-    <div>
-        <h1 class="judul-halaman">{{ $kelas->nama }}</h1>
-        <p class="sub">{{ $periode->label() }} · Wali kelas: {{ $kelas->waliKelas?->nama ?? '—' }} · {{ count($baris) }} siswa @if ($final)· <span class="lencana pucat">Final</span>@endif</p>
-    </div>
-    <div class="aksi-halaman">
-        <a class="tombol kecil garis" href="{{ route('staf.wali.index', ['periode' => $periode->id]) }}"><x-ikon nama="panah-kiri" :ukuran="16" />Daftar</a>
+<div class="pita-info">
+    <div class="pita-atas">
+        <a class="tombol-pita" href="{{ route('staf.wali.index', ['periode' => $periode->id]) }}"><x-ikon nama="panah-kiri" :ukuran="16" />Kembali</a>
         @unless ($final)
             <form method="POST" action="{{ route('staf.wali.absensi', [$kelas, 'periode' => $periode->id]) }}" onsubmit="return confirm('Ambil absensi dan nilai ekskul semua siswa dari EduWeb? Isian sakit, izin, dan alpa yang sudah Anda ubah akan tertimpa.')">
-                @csrf <button class="tombol kecil garis" type="submit">Ambil absensi &amp; ekskul dari EduWeb</button>
+                @csrf <button class="tombol-pita" type="submit">Ambil absensi &amp; ekskul dari EduWeb</button>
             </form>
         @endunless
+    </div>
+    <div class="pita-isi">
+        <div><small>Kelas</small><b>{{ $kelas->nama }}</b></div>
+        <div><small>Semester</small><b>{{ $periode->label() }}</b></div>
+        <div><small>Wali Kelas</small><b>{{ $kelas->waliKelas?->nama ?? '–' }}</b></div>
+        <div><small>Siswa</small><b>{{ count($baris) }}</b></div>
+        <div><small>Status Rapor</small><b>{{ $final ? 'Final' : 'Belum final' }}</b></div>
     </div>
 </div>
 
@@ -21,10 +24,11 @@
     <div class="pesan-salah catatan" role="status"><x-ikon nama="info" :ukuran="18" /><span>{{ $sudahPindah }} siswa sudah dinaikkan, ditinggalkan, atau diluluskan dari kelas ini di EduWeb. Rapor kelas ini belum final; selesaikan dan finalkan segera.</span></div>
 @endif
 
-<div class="kartu tanpa-padding" style="margin-bottom:16px">
+<div class="db-panel" style="margin-bottom:16px">
+    <header><h3>Kelengkapan Nilai Mata Pelajaran</h3><small>{{ count($mapel) }} mapel</small></header>
     <div class="gulir">
         <table class="tabel">
-            <thead><tr><th>Mata pelajaran</th><th>Guru</th><th>Nilai lengkap</th><th>Status</th></tr></thead>
+            <thead><tr><th>Mata Pelajaran</th><th>Guru</th><th>Nilai Lengkap</th><th>Status</th></tr></thead>
             <tbody>
                 @forelse ($mapel as $m)
                     <tr>
@@ -52,27 +56,28 @@
             <table class="tabel tabel-nilai">
                 <thead>
                     <tr>
-                        <th>No</th><th>Nama</th><th class="tengah">Mapel lengkap</th><th class="tengah">Rata-rata</th>
-                        <th class="tengah">Sakit</th><th class="tengah">Izin</th><th class="tengah">Alpa</th><th>Catatan wali kelas</th><th>Keputusan</th>
+                        <th rowspan="2" class="lekat no">No</th><th rowspan="2" class="lekat nama">Nama Siswa</th>
+                        <th rowspan="2" class="tengah">Mapel<br>Lengkap</th><th rowspan="2" class="tengah">Rata-<br>rata</th>
+                        <th colspan="3" class="tengah grup-nk">Absensi (hari)</th>
+                        <th rowspan="2" class="kolom-catatan">Catatan Wali Kelas</th><th rowspan="2">Keputusan</th>
                     </tr>
+                    <tr><th class="tengah grup-nk">Sakit</th><th class="tengah grup-nk">Izin</th><th class="tengah grup-nk">Alpa</th></tr>
                 </thead>
                 <tbody>
                     @forelse ($baris as $i => $b)
                         @php $s = $b['siswa']; $r = $b['rapor']; $kunci = $b['final']; @endphp
                         <tr>
-                            <td>{{ $i + 1 }}</td>
-                            <td><strong>{{ $s->nama }}</strong><small class="bantuan" style="margin:0">{{ $s->nisn }}</small></td>
-                            <td class="tengah">{{ $b['mapel_lengkap'] }}/{{ $b['mapel_total'] }}</td>
-                            <td class="tengah">{{ $b['rata'] ?? '—' }}</td>
+                            <td class="lekat no">{{ $i + 1 }}</td>
+                            <td class="lekat nama"><div class="sel-siswa"><span class="avatar-siswa">{{ \Illuminate\Support\Str::of($s->nama)->explode(' ')->filter()->take(2)->map(fn ($w) => \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($w, 0, 1)))->implode('') }}</span><div><strong>{{ $s->nama }}</strong><small>{{ $s->nisn }}</small></div></div></td>
+                            <td class="sel-hasil">{{ $b['mapel_lengkap'] }}/{{ $b['mapel_total'] }}</td>
+                            <td class="sel-hasil rata">{{ $b['rata'] ?? '–' }}</td>
                             @foreach (['sakit', 'izin', 'alpa'] as $k)
-                                <td class="tengah">
-                                    <input type="number" min="0" max="999" name="rapor[{{ $s->id }}][{{ $k }}]" value="{{ $r?->{$k} ?? 0 }}" @disabled($kunci) aria-label="{{ ucfirst($k) }} {{ $s->nama }}">
-                                    @if ($k === 'sakit' && $r?->sumber_absensi)
-                                        <small class="bantuan" style="margin:2px 0 0">{{ $r->sumber_absensi === 'eduweb' ? 'dari EduWeb' : 'diubah' }}</small>
-                                    @endif
+                                <td class="sel-absen">
+                                    <input type="number" min="0" max="999" name="rapor[{{ $s->id }}][{{ $k }}]" value="{{ $r?->{$k} ?? 0 }}" @disabled($kunci) aria-label="{{ ucfirst($k) }} {{ $s->nama }}"
+                                           @if ($k === 'sakit' && $r?->sumber_absensi) title="{{ $r->sumber_absensi === 'eduweb' ? 'Absensi dari EduWeb' : 'Absensi diubah wali kelas' }}" @endif>
                                 </td>
                             @endforeach
-                            <td><input type="text" maxlength="500" name="rapor[{{ $s->id }}][catatan]" value="{{ $r?->catatan_wali }}" @disabled($kunci) aria-label="Catatan {{ $s->nama }}"></td>
+                            <td class="kolom-catatan"><input type="text" maxlength="500" name="rapor[{{ $s->id }}][catatan]" value="{{ $r?->catatan_wali }}" placeholder="Catatan..." @disabled($kunci) aria-label="Catatan {{ $s->nama }}"></td>
                             <td>
                                 <select name="rapor[{{ $s->id }}][keputusan]" @disabled($kunci) aria-label="Keputusan {{ $s->nama }}">
                                     <option value="">—</option>
@@ -89,9 +94,9 @@
             </table>
         </div>
     </div>
-    <div class="aksi-form" style="margin-top:14px">
-        <button class="tombol kecil" type="submit" @disabled(count($baris) === 0 || $final)>Simpan</button>
-    </div>
+    @unless ($final)
+        <button class="tombol-simpan" type="submit" @disabled(count($baris) === 0)><x-ikon nama="centang" :ukuran="18" />Simpan Data Kelas</button>
+    @endunless
 </form>
 
 @if (count($baris) > 0)

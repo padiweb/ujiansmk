@@ -42,6 +42,11 @@
         baris.querySelector('[data-hasil=nk]').textContent = nk;
         baris.querySelector('[data-hasil=na]').textContent = na;
         baris.querySelector('[data-hasil=predikat]').textContent = predikat(na);
+        var status = baris.querySelector('[data-hasil=status]');
+        if (status) {
+            status.textContent = na <= 0 ? '–' : (na < kkm ? 'Remidi' : 'Lulus');
+            status.className = 'lencana ' + (na <= 0 ? 'pucat' : (na < kkm ? 'kuning' : ''));
+        }
         baris.classList.toggle('mon-langgar', na > 0 && na < kkm);
     }
 
@@ -49,6 +54,11 @@
     barisSemua.forEach(function (b) {
         hitung(b);
         b.addEventListener('input', function (e) { if (e.target.hasAttribute('data-k')) hitung(b); });
+    });
+
+    form.addEventListener('focusin', function (e) {
+        var tr = e.target.closest && e.target.closest('tr[data-baris]');
+        barisSemua.forEach(function (x) { x.classList.toggle('baris-aktif', x === tr); });
     });
 
     // Pintas: nilai NP/NK diketik langsung, lalu semua komponen kelompoknya diisi sama (hasilnya NP/NK itu sendiri).
