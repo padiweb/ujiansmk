@@ -741,6 +741,22 @@ class SinkronEduwebTest extends TestCase
         $this->assertNull(Siswa::where('eduweb_id', 6)->value('eduweb_hash_sandi'));
     }
 
+    public function test_hash_eduweb_berbiaya_lebih_tinggi_dari_rounds_lokal_tetap_diterima(): void
+    {
+        config(['hashing.bcrypt.rounds' => 4]); // lokal 4 (uji); EduWeb memakai 12
+        $this->edu['credentials'] = [
+            ['id' => 6, 'role' => 'student', 'username' => null, 'password_hash' => password_hash('SandiAni-12', PASSWORD_BCRYPT, ['cost' => 12])],
+            ['id' => 2, 'role' => 'teacher', 'username' => 'siti.aminah', 'password_hash' => password_hash('SandiSiti-12', PASSWORD_BCRYPT, ['cost' => 12])],
+        ];
+        $this->pasangEdu();
+
+        $this->sinkron(); // sebelumnya gagal total: "Could not verify the hashed value's configuration"
+
+        $this->assertSame(4, Siswa::count());
+        $this->assertTrue(Hash::check('SandiAni-12', Siswa::where('eduweb_id', 6)->value('password')));
+        $this->assertTrue(Hash::check('SandiSiti-12', User::where('eduweb_id', 2)->value('password')));
+    }
+
     public function test_sandi_sementara_tidak_tertimpa_kecuali_sandi_eduweb_berubah(): void
     {
         $this->pasangKredensial();

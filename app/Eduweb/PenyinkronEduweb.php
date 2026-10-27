@@ -466,7 +466,7 @@ class PenyinkronEduweb
                 $hashEdu = $this->hashKredensial('teacher', (int) $r['id']);
                 $u = new User(['eduweb_id' => $r['id'], 'nama' => $nama, 'username' => $username, 'role' => User::GURU, 'aktif' => true]);
                 if ($hashEdu) {
-                    $u->forceFill(['password' => $hashEdu, 'eduweb_hash_sandi' => $hashEdu])->saveQuietly(); // hash EduWeb: login sama dengan EduWeb
+                    $this->pasangHash($u, $hashEdu, $hashEdu)->saveQuietly(); // hash EduWeb: login sama dengan EduWeb
                 } else {
                     $sandi = KataSandi::acak(12);
                     $u->password = $sandi; // dihash oleh cast
@@ -541,8 +541,8 @@ class PenyinkronEduweb
             } else {
                 $hashEdu = $this->hashKredensial('student', (int) $r['id']);
                 $s = new Siswa;
-                $s->forceFill($isi + ['eduweb_id' => $r['id'], 'nisn' => $ident, 'password' => $hashEdu ?: $sandiAcak, 'eduweb_hash_sandi' => $hashEdu]);
-                $s->saveQuietly(); // password sudah berupa hash; hindari hash ulang oleh cast
+                $s->forceFill($isi + ['eduweb_id' => $r['id'], 'nisn' => $ident]);
+                $this->pasangHash($s, $hashEdu ?: $sandiAcak, $hashEdu)->saveQuietly();
                 $h->baru('siswa');
             }
 
@@ -646,6 +646,17 @@ class PenyinkronEduweb
         $pengaturan->update(['eduweb_kredensial' => 'aktif']);
 
         return $hasil;
+    }
+
+    /**
+     * Pasang hash yang sudah jadi apa adanya. Cast 'hashed' menolak bcrypt berbiaya lebih tinggi dari BCRYPT_ROUNDS lokal
+     * (EduWeb memakai 12), padahal hash itu sah dan hanya dibandingkan saat login.
+     */
+    private function pasangHash(\Illuminate\Database\Eloquent\Model $m, string $password, ?string $hashEdu): \Illuminate\Database\Eloquent\Model
+    {
+        $m->setRawAttributes(array_merge($m->getAttributes(), ['password' => $password, 'eduweb_hash_sandi' => $hashEdu]));
+
+        return $m;
     }
 
     /** Hash bcrypt EduWeb yang sah untuk satu pengguna, atau null. */
