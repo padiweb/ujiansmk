@@ -37,10 +37,11 @@
 <div class="kartu tanpa-padding">
     <div class="gulir">
         <table class="tabel">
-            <thead><tr><th>Jadwal</th><th>Mapel</th><th>Waktu</th><th>Durasi</th><th>Kelas</th><th>Token</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
+            <thead><tr><th class="no">No</th><th>Jadwal</th><th>Mapel</th><th>Waktu</th><th>Durasi</th><th>Kelas</th><th>Token</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($jadwal as $j)
                     <tr>
+                        <td class="no">{{ $jadwal->firstItem() + $loop->index }}</td>
                         <td><a href="{{ route('staf.jadwal.show', $j) }}"><strong>{{ $j->nama }}</strong></a>
                             <small class="bantuan" style="margin:0">{{ $j->periode->label() }}@if ($j->kegiatan && ! $j->kegiatan->aktif) · kegiatan tidak aktif @endif</small></td>
                         <td>{{ $j->mapel->nama }}</td>
@@ -55,7 +56,7 @@
                         <td class="kanan aksi-baris"><a href="{{ route('staf.jadwal.show', $j) }}">Buka</a></td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="kosong">Belum ada jadwal. Klik "Buat jadwal" untuk memulai.</td></tr>
+                    <tr><td colspan="9" class="kosong">Belum ada jadwal. Klik "Buat jadwal" untuk memulai.</td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -32,10 +32,11 @@
 <div class="kartu tanpa-padding">
     <div class="gulir">
         <table class="tabel">
-            <thead><tr><th>Kegiatan</th><th>Semester</th><th>Jadwal</th><th>Rapor</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
+            <thead><tr><th class="no">No</th><th>Kegiatan</th><th>Semester</th><th>Jadwal</th><th>Rapor</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($kegiatan as $k)
                     <tr>
+                        <td class="no">{{ $loop->iteration }}</td>
                         <td>
                             <form method="POST" action="{{ route('staf.kegiatan.update', $k) }}" style="display:flex;gap:6px;align-items:center">
                                 @csrf @method('PUT')
@@ -68,7 +69,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="kosong">Belum ada kegiatan. Tambahkan di atas, misalnya "Asesmen Semester Gasal".</td></tr>
+                    <tr><td colspan="7" class="kosong">Belum ada kegiatan. Tambahkan di atas, misalnya "Asesmen Semester Gasal".</td></tr>
                 @endforelse
             </tbody>
         </table>

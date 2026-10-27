@@ -18,10 +18,11 @@
     <h2 class="judul-kartu" style="padding:16px 20px 0">Pengawas ({{ $pengawas->count() }})</h2>
     <div class="gulir">
         <table class="tabel">
-            <thead><tr><th>Nama</th><th>Nama pengguna</th><th>Sumber</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
+            <thead><tr><th class="no">No</th><th>Nama</th><th>Nama pengguna</th><th>Sumber</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($pengawas as $p)
                     <tr>
+                        <td class="no">{{ $loop->iteration }}</td>
                         <td><strong>{{ $p->nama }}</strong></td>
                         <td>{{ $p->username }}</td>
                         <td>{{ $p->role === 'guru' ? 'Guru (EduWeb)' : 'Akun pengawas lokal' }}</td>
@@ -42,7 +43,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="kosong">Belum ada pengawas. Pilih dari daftar guru di bawah, atau tambahkan akun pengawas baru.</td></tr>
+                    <tr><td colspan="6" class="kosong">Belum ada pengawas. Pilih dari daftar guru di bawah, atau tambahkan akun pengawas baru.</td></tr>
                 @endforelse
             </tbody>
         </table>

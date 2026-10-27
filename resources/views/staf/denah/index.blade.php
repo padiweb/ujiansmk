@@ -19,10 +19,11 @@
 <div class="kartu tanpa-padding">
     <div class="gulir">
         <table class="tabel">
-            <thead><tr><th>Ruang</th><th>Kapasitas</th><th>Jenis</th><th>Siswa</th><th class="kanan">Aksi</th></tr></thead>
+            <thead><tr><th class="no">No</th><th>Ruang</th><th>Kapasitas</th><th>Jenis</th><th>Siswa</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($ruang as $r)
                     <tr>
+                        <td class="no">{{ $loop->iteration }}</td>
                         <td><a href="{{ route('staf.ruang.show', $r) }}"><strong>{{ $r->nama }}</strong></a></td>
                         <td>{{ $r->kapasitas }}</td>
                         <td>{{ $r->campur ? 'Campur tingkat' : 'Biasa' }}</td>
@@ -45,7 +46,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="kosong">Belum ada ruang.</td></tr>
+                    <tr><td colspan="6" class="kosong">Belum ada ruang.</td></tr>
                 @endforelse
             </tbody>
         </table>

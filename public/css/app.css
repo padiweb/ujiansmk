@@ -637,3 +637,10 @@ h1, h2, h3 { color: var(--teks); }
 .tabel-nilai .rata { font-weight: 700; color: var(--biru-tua); }
 
 @media (max-width: 640px) { .tombol-simpan { right: 16px; bottom: 16px; padding: 12px 20px; } }
+
+/* ── Baris saring dan kartu tabel dibuat seragam di semua halaman daftar ── */
+.saring { align-items: center; padding: 12px 16px; background: var(--putih); border: 1px solid var(--garis); border-radius: var(--radius); box-shadow: var(--bayangan); }
+.saring select, .saring input { padding: 9px 12px; font-size: .88rem; }
+.saring .tombol.kecil { padding: 9px 16px; }
+.kartu.tanpa-padding > .judul-kartu { padding: 12px 18px !important; margin: 0; font-size: .88rem; font-weight: 800; background: #FAFAFA; border-bottom: 1px solid var(--garis-lembut); }
+.kartu.tanpa-padding .tabel td strong { font-weight: 600; }
