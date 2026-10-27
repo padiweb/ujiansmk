@@ -57,6 +57,7 @@ Route::prefix('staf')->group(function () {
 
     Route::middleware(['auth:web', 'peran:admin,guru,pengawas'])->group(function () {
         Route::get('/', [BerandaController::class, 'staf'])->name('staf.beranda');
+        Route::get('/beranda/data', [BerandaController::class, 'data'])->middleware('throttle:60,1')->name('staf.beranda.data');
         Route::post('/keluar', [MasukStafController::class, 'keluar'])->name('staf.keluar');
 
         // Daftar hadir: admin, atau pengawas yang ditugaskan (dicek di pengendali).

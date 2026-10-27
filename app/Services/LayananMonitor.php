@@ -100,6 +100,42 @@ class LayananMonitor
         ];
     }
 
+    /**
+     * Angka langsung untuk beranda: gabungan semua jadwal aktif yang boleh dilihat pengguna (opsional satu ruang),
+     * beserta siswa yang melanggar atau terblokir. Memakai cache per jadwal yang sama dengan halaman monitor.
+     *
+     * @return array<string,mixed>
+     */
+    public function ringkasanBeranda(User $user, ?int $ruangId = null): array
+    {
+        $this->sesi->sapuKedaluwarsa();
+
+        $jadwal = $this->jadwalUntuk($user)->with('mapel')->orderBy('mulai_pada')->get();
+        $peserta = [];
+        foreach ($jadwal as $j) {
+            $d = Cache::remember($this->kunci($j), self::TTL_DATA, fn () => $this->susun($j));
+            foreach ($d['peserta'] as $b) {
+                if ($ruangId === null || $b['ruang_id'] === $ruangId) {
+                    $peserta[] = $b + ['jadwal_id' => $j->id, 'ujian' => $j->mapel->nama, 'bisa_aktifkan' => in_array('aktifkan', $this->aksiBoleh($user, $j), true)];
+                }
+            }
+        }
+
+        $masalah = array_values(array_filter($peserta, fn ($b) => $b['status'] === SesiUjian::DIBLOKIR || ($b['pelanggaran'] > 0 && $b['status'] !== SesiUjian::SELESAI)));
+        usort($masalah, fn ($a, $b) => [$b['status'] === SesiUjian::DIBLOKIR, (string) $b['p_waktu']] <=> [$a['status'] === SesiUjian::DIBLOKIR, (string) $a['p_waktu']]);
+
+        return [
+            'waktu' => now()->format('H:i:s'),
+            'aktif' => $jadwal->isNotEmpty(),
+            'ringkasan' => $this->ringkas($peserta),
+            'masalah' => array_map(fn ($b) => [
+                'sesi_id' => $b['id'], 'jadwal_id' => $b['jadwal_id'], 'nama' => $b['nama'], 'kelas' => $b['kelas'], 'ruang' => $b['ruang'],
+                'ujian' => $b['ujian'], 'terblokir' => $b['status'] === SesiUjian::DIBLOKIR, 'jenis' => $b['p_jenis'], 'waktu' => $b['p_waktu'],
+                'pelanggaran' => $b['pelanggaran'], 'bisa_aktifkan' => $b['bisa_aktifkan'],
+            ], array_slice($masalah, 0, 30)),
+        ];
+    }
+
     /** Jadwal aktif yang punya peserta di ruang ini (tiap ujian membawa tokennya sendiri). @return \Illuminate\Support\Collection<int,JadwalUjian> */
     public function jadwalRuang(Ruang $ruang)
     {

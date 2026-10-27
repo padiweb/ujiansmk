@@ -5,12 +5,20 @@ namespace App\Http\Controllers;
 use App\Eduweb\KlienEduweb;
 use App\Master\DefinisiMaster;
 use App\Models\PengaturanSekolah;
+use App\Models\Ruang;
+use App\Models\Siswa;
+use App\Models\Soal;
+use App\Models\User;
+use App\Services\LayananMonitor;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class BerandaController extends Controller
 {
+    public function __construct(private LayananMonitor $monitor) {}
+
     public function staf(Request $request): View
     {
         $user = $request->user('web');
@@ -29,7 +37,29 @@ class BerandaController extends Controller
             }
         }
 
-        return view('staf.beranda', ['user' => $user, 'langkah' => $langkah, 'dataEduweb' => $user->role === 'admin' ? $this->statusDataEduweb() : null]);
+        $pengawas = $user->role === 'admin' || $user->mengawasi();
+
+        return view('staf.beranda', [
+            'user' => $user, 'langkah' => $langkah, 'dataEduweb' => $user->role === 'admin' ? $this->statusDataEduweb() : null,
+            'jadwal' => $this->monitor->jadwalUntuk($user)->with('mapel')->orderBy('mulai_pada')->get(),
+            'ruang' => $pengawas ? Ruang::orderBy('nama')->get(['id', 'nama']) : collect(),
+            'jumlah' => $user->role === 'admin' ? [
+                'siswa' => Siswa::where('status', 'aktif')->count(),
+                'guru' => User::where('role', 'guru')->count(),
+                'soal' => Soal::count(),
+            ] : null,
+            'sapaan' => match (true) {
+                now()->hour < 11 => 'Selamat pagi', now()->hour < 15 => 'Selamat siang', now()->hour < 18 => 'Selamat sore', default => 'Selamat malam',
+            },
+        ]);
+    }
+
+    /** Angka langsung beranda (diambil berkala oleh halaman). */
+    public function data(Request $request): JsonResponse
+    {
+        $ruang = $request->integer('ruang') ?: null;
+
+        return response()->json($this->monitor->ringkasanBeranda($request->user('web'), $ruang))->header('Cache-Control', 'no-store');
     }
 
     /** Satu baris status untuk admin; null bila penghubung tidak dipakai. Rincian teknis ada di halaman diagnosis. */
