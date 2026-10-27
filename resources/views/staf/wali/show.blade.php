@@ -98,7 +98,7 @@
     <div class="kartu" style="margin-top:20px">
         <h2 class="judul-kartu">Cetak rapor</h2>
         <p class="sub">Pratinjau bisa dilihat kapan saja untuk mengecek isi rapor; nilai yang belum diisi guru tertulis 0. Cetak dan Word hanya untuk siswa yang rapornya sudah final. Tanggal tanda tangan boleh diubah sesuai tanggal penyerahan rapor.</p>
-        <form method="GET" action="{{ route('staf.wali.cetak', $kelas) }}" target="_blank" class="aksi-form" style="flex-wrap:wrap;align-items:flex-end;gap:10px">
+        <form id="formCetakRapor" method="GET" action="{{ route('staf.wali.cetak', $kelas) }}" target="_blank" class="aksi-form" style="flex-wrap:wrap;align-items:flex-end;gap:10px">
             <input type="hidden" name="periode" value="{{ $periode->id }}">
             <label>Siswa
                 <select name="siswa">
@@ -115,7 +115,11 @@
                 <button class="tombol kecil garis" type="submit" name="format" value="word">Unduh Word</button>
             @endif
         </form>
+        <div class="pesan-salah" id="pesanCetakRapor" role="alert" hidden style="margin-top:10px"></div>
     </div>
+    @push('skrip')
+        <script src="{{ asset('js/cetak-rapor.js') }}?v={{ filemtime(public_path('js/cetak-rapor.js')) }}" defer></script>
+    @endpush
 @endif
 
 <div class="kartu" style="margin-top:20px">

@@ -211,6 +211,16 @@ class CetakRaporTest extends TestCase
         $this->actingAs($this->admin, 'web')->get($this->url('/cetak?format=pratinjau&periode='.$this->periode->id.'&siswa='.$this->siswa[1]->id))->assertOk();
     }
 
+    public function test_cetak_lewat_bingkai_langsung_ke_dialog_cetak_tanpa_tab_baru(): void
+    {
+        $this->actingAs($this->wali, 'web')->get($this->url())->assertSee('id="formCetakRapor"', false)->assertSee('js/cetak-rapor.js', false);
+
+        // Halaman rapor menandai dirinya agar skrip tahu aman dicetak; kosong dijawab pesan kecil, bukan pengalihan.
+        $this->get($this->url('/cetak?format=pratinjau&bingkai=1&periode='.$this->periode->id))->assertOk()->assertSee('data-rapor="1"', false);
+        $this->get($this->url('/cetak?format=cetak&bingkai=1&periode='.$this->periode->id))->assertOk()
+            ->assertSee('data-galat="Belum ada rapor final', false)->assertDontSee('data-rapor', false);
+    }
+
     public function test_kartu_cetak_muncul_di_halaman_wali_hanya_setelah_ada_yang_final(): void
     {
         $this->actingAs($this->wali, 'web')->get($this->url())->assertDontSee('Unduh Word');

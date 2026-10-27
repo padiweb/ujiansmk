@@ -29,6 +29,7 @@ class CetakRaporController extends Controller
             'siswa' => ['nullable', 'integer'],
             'tgl' => ['nullable', 'date'],
             'format' => ['nullable', 'in:cetak,word,pratinjau'],
+            'bingkai' => ['nullable', 'boolean'],
         ], [], ['tgl' => 'Tanggal']);
 
         $periode = Periode::find($input['periode']);
@@ -37,7 +38,12 @@ class CetakRaporController extends Controller
         $pratinjau = ($input['format'] ?? 'cetak') === 'pratinjau';
         $data = $this->cetak->data($kelas, $periode, $input['siswa'] ?? null, $pratinjau);
         if ($data === []) {
-            return back()->with('gagal', $pratinjau ? 'Belum ada siswa aktif di kelas ini.' : 'Belum ada rapor final yang bisa dicetak. Finalkan rapor kelas ini lebih dulu.');
+            $galat = $pratinjau ? 'Belum ada siswa aktif di kelas ini.' : 'Belum ada rapor final yang bisa dicetak. Finalkan rapor kelas ini lebih dulu.';
+
+            // Dimuat di bingkai tersembunyi untuk dicetak: pesan dikembalikan sebagai halaman kecil yang dibaca halaman induk.
+            return $request->boolean('bingkai')
+                ? response('<!DOCTYPE html><html lang="id"><meta charset="UTF-8"><body data-galat="'.e($galat).'"></body></html>')
+                : back()->with('gagal', $galat);
         }
 
         $sekolah = PengaturanSekolah::ambil();

@@ -29,7 +29,7 @@ tr { page-break-inside: avoid; }
 .alat button.garis { background: #fff; color: #333; border: 1px solid #ccc; }
 </style>
 </head>
-<body>
+<body data-rapor="1">
 @unless ($word)
     <div class="alat tanpa-cetak">
         <button type="button" onclick="window.print()">Cetak</button>
