@@ -79,11 +79,11 @@
     @csrf
     @method('PUT')
     <h2 class="judul-kartu">Semester</h2>
-    <small class="bantuan">Rentang tanggal dipakai untuk menarik absensi dan nilai tugas dari EduWeb.@if ($sinkron) Tanggal semester reguler mengikuti EduWeb (diperbarui saat sinkron); atur di EduWeb, bukan di sini.@endif Hilangkan centang "Rapor di sini" bila rapor semester itu tidak diisi di aplikasi ini (mis. ujian kembali ke kertas).</small>
+    <small class="bantuan">Rentang tanggal dipakai untuk menarik absensi dan nilai tugas dari EduWeb.@if ($sinkron) Tanggal semester reguler mengikuti EduWeb (diperbarui saat sinkron); atur di EduWeb, bukan di sini.@endif "Tampilkan ke siswa" membuka rapor final di beranda siswa; nyalakan pada hari penyerahan rapor. Hilangkan centang "Rapor di sini" bila rapor semester itu tidak diisi di aplikasi ini (mis. ujian kembali ke kertas).</small>
     @error('periode') <div class="pesan-salah" role="alert">{{ $message }}</div> @enderror
     @foreach ($errors->get('periode.*') as $m) @foreach ($m as $x) <div class="pesan-salah" role="alert">{{ $x }}</div> @endforeach @endforeach
     <table class="tabel" style="margin-top:8px">
-        <thead><tr><th>Semester</th><th>Mulai</th><th>Selesai</th><th>Rapor di sini</th></tr></thead>
+        <thead><tr><th>Semester</th><th>Mulai</th><th>Selesai</th><th>Rapor di sini</th><th>Tampilkan ke siswa</th></tr></thead>
         <tbody>
             @forelse ($periode as $p)
                 <tr>
@@ -92,9 +92,10 @@
                     <td><input type="date" name="periode[{{ $p->id }}][mulai]" value="{{ old("periode.{$p->id}.mulai", $p->mulai?->format('Y-m-d')) }}" aria-label="Mulai {{ $p->label() }}" @readonly($dariEduweb)></td>
                     <td><input type="date" name="periode[{{ $p->id }}][selesai]" value="{{ old("periode.{$p->id}.selesai", $p->selesai?->format('Y-m-d')) }}" aria-label="Selesai {{ $p->label() }}" @readonly($dariEduweb)></td>
                     <td class="tengah"><input type="hidden" name="periode[{{ $p->id }}][rapor_di_sini]" value="0"><input type="checkbox" name="periode[{{ $p->id }}][rapor_di_sini]" value="1" @checked(old("periode.{$p->id}.rapor_di_sini", $p->rapor_di_sini)) aria-label="Rapor {{ $p->label() }} diisi di aplikasi ini"></td>
+                    <td class="tengah"><input type="hidden" name="periode[{{ $p->id }}][tampil_siswa]" value="0"><input type="checkbox" name="periode[{{ $p->id }}][tampil_siswa]" value="1" @checked(old("periode.{$p->id}.tampil_siswa", $p->tampil_siswa)) aria-label="Rapor {{ $p->label() }} terlihat oleh siswa"></td>
                 </tr>
             @empty
-                <tr><td colspan="4" class="kosong">Belum ada semester.</td></tr>
+                <tr><td colspan="5" class="kosong">Belum ada semester.</td></tr>
             @endforelse
         </tbody>
     </table>

@@ -12,11 +12,11 @@ class Periode extends Model
     public const SEMESTER = ['ganjil', 'genap'];
     public const TIPE = ['reguler', 'ujian_sekolah'];
 
-    protected $fillable = ['tahun_ajaran_id', 'semester', 'tipe', 'aktif', 'mulai', 'selesai', 'rapor_di_sini'];
+    protected $fillable = ['tahun_ajaran_id', 'semester', 'tipe', 'aktif', 'mulai', 'selesai', 'rapor_di_sini', 'tampil_siswa'];
 
     protected function casts(): array
     {
-        return ['aktif' => 'boolean', 'mulai' => 'date', 'selesai' => 'date', 'rapor_di_sini' => 'boolean'];
+        return ['aktif' => 'boolean', 'mulai' => 'date', 'selesai' => 'date', 'rapor_di_sini' => 'boolean', 'tampil_siswa' => 'boolean'];
     }
 
     public function tahunAjaran(): BelongsTo

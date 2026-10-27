@@ -119,6 +119,7 @@ class PengaturanRaporController extends Controller
             'periode.*.mulai' => ['nullable', 'date'],
             'periode.*.selesai' => ['nullable', 'date'],
             'periode.*.rapor_di_sini' => ['nullable', 'boolean'],
+            'periode.*.tampil_siswa' => ['nullable', 'boolean'],
         ], [], ['periode.*.mulai' => 'Tanggal mulai', 'periode.*.selesai' => 'Tanggal selesai']);
 
         // Dengan sinkron EduWeb menyala, tanggal semester reguler mengikuti EduWeb dan tidak diubah di sini.
@@ -135,7 +136,10 @@ class PengaturanRaporController extends Controller
         foreach ($data['periode'] ?? [] as $id => $t) {
             if (in_array((int) $id, $ada, true)) {
                 $simpan = array_key_exists('rapor_di_sini', $t) ? ['rapor_di_sini' => (bool) $t['rapor_di_sini']] : [];
-                if (! in_array((int) $id, $dariEduweb, true)) {
+                if (array_key_exists('tampil_siswa', $t)) {
+                    $simpan['tampil_siswa'] = (bool) $t['tampil_siswa'];
+                }
+                if (! in_array((int) $id, $dariEduweb, true) && array_key_exists('mulai', $t) && array_key_exists('selesai', $t)) {
                     $simpan += ['mulai' => $t['mulai'] ?: null, 'selesai' => $t['selesai'] ?: null];
                 }
                 if ($simpan) {

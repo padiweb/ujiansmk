@@ -63,6 +63,7 @@ class RaporSiswaTampilTest extends TestCase
 
     public function test_siswa_melihat_rapornya_sendiri_setelah_final(): void
     {
+        $this->periode->update(['tampil_siswa' => true]);
         $this->actingAs($this->siswa[0], 'siswa')->get('/beranda')->assertOk()->assertDontSee('Lihat rapor');
         $this->actingAs($this->siswa[0], 'siswa')->get('/rapor/'.$this->periode->id)->assertNotFound(); // belum final
 
@@ -74,8 +75,25 @@ class RaporSiswaTampilTest extends TestCase
             ->assertSee($this->siswa[0]->nama)->assertSee('Matematika')->assertSee('Pramuka')->assertSee('Anak yang rajin')->assertSee('2 hari');
     }
 
+    public function test_rapor_final_tersembunyi_dari_siswa_sampai_semester_dinyalakan_admin(): void
+    {
+        $this->actingAs($this->wali, 'web');
+        $this->finalkan();
+
+        $this->actingAs($this->siswa[0], 'siswa')->get('/beranda')->assertOk()->assertDontSee('Lihat rapor');
+        $this->get('/rapor/'.$this->periode->id)->assertNotFound();
+
+        $this->actingAs($this->admin, 'web')->put('/staf/pengaturan-rapor/periode', ['periode' => [$this->periode->id => ['tampil_siswa' => '1']]])->assertSessionHas('berhasil');
+        $this->actingAs($this->siswa[0], 'siswa')->get('/beranda')->assertSee('Lihat rapor');
+        $this->get('/rapor/'.$this->periode->id)->assertOk();
+
+        $this->actingAs($this->admin, 'web')->put('/staf/pengaturan-rapor/periode', ['periode' => [$this->periode->id => ['tampil_siswa' => '0']]]);
+        $this->actingAs($this->siswa[0], 'siswa')->get('/rapor/'.$this->periode->id)->assertNotFound();
+    }
+
     public function test_siswa_tidak_melihat_rapor_siswa_lain_atau_semester_tanpa_rapor(): void
     {
+        $this->periode->update(['tampil_siswa' => true]);
         $this->actingAs($this->wali, 'web');
         $this->finalkan();
 
@@ -91,6 +109,7 @@ class RaporSiswaTampilTest extends TestCase
 
     public function test_rapor_yang_dibuka_finalnya_tidak_tampil_ke_siswa(): void
     {
+        $this->periode->update(['tampil_siswa' => true]);
         $this->actingAs($this->wali, 'web');
         $this->finalkan();
         $this->actingAs($this->admin, 'web')->post($this->url('/buka-final'), ['alasan' => 'koreksi nilai']);

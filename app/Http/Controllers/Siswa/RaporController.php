@@ -19,6 +19,7 @@ class RaporController extends Controller
         $siswa = $request->user('siswa');
 
         $rapor = RaporSiswa::with('kelas')->where('siswa_id', $siswa->id)->where('periode_id', $periode->id)->where('status', 'final')->firstOrFail();
+        abort_unless($periode->tampil_siswa, 404);
         $l = $this->cetak->data($rapor->kelas, $periode, $siswa->id)[0] ?? abort(404);
 
         return view('siswa.rapor', ['siswa' => $siswa, 'periode' => $periode->load('tahunAjaran'), 'l' => $l]);
