@@ -104,4 +104,63 @@ class RaporApiTest extends TestCase
 
         $this->actingAs(\App\Models\User::factory()->create(), 'web')->post('/staf/pengaturan-rapor/klien-api', ['nama' => 'X'])->assertForbidden();
     }
+
+    private function isiFinal(int $i, string $keputusan = 'naik'): void
+    {
+        \App\Models\NilaiRapor::create([
+            'siswa_id' => $this->siswa[$i]->id, 'mapel_id' => $this->mtk->id, 'periode_id' => $this->jadwal->periode_id, 'kelas_id' => $this->kelas->id,
+            'np' => 80, 'nk' => 78, 'na' => 79, 'predikat' => 'B', 'status' => 'final',
+        ]);
+        RaporSiswa::create([
+            'siswa_id' => $this->siswa[$i]->id, 'periode_id' => $this->jadwal->periode_id, 'kelas_id' => $this->kelas->id, 'status' => 'final', 'keputusan' => $keputusan,
+            'sakit' => 2, 'izin' => 1, 'alpa' => 0, 'catatan_wali' => 'Rajin', 'ekskul' => [['nama' => 'Pramuka', 'nilai' => 88, 'predikat' => 'B']],
+        ]);
+    }
+
+    public function test_rapor_hanya_memberi_siswa_final_beserta_isinya(): void
+    {
+        $this->isiFinal(0);
+        $this->final(1, 'naik', 'draf'); // draf: tidak boleh bocor
+
+        $res = $this->api('rapor?classroom_id=77')->assertOk();
+        $this->assertSame('ok', $res->json('status'));
+        $this->assertCount(1, $res->json('students'));
+        $s = $res->json('students.0');
+        $this->assertSame(9000, $s['student_id']);
+        $this->assertSame('Matematika', $s['mapel'][0]['nama']);
+        $this->assertSame(['umum', 79, 'B'], [$s['mapel'][0]['kelompok'], $s['mapel'][0]['na'], $s['mapel'][0]['predikat']]);
+        $this->assertSame([['nama' => 'Pramuka', 'nilai' => 88, 'predikat' => 'B']], $s['ekskul']);
+        $this->assertSame(['sakit' => 2, 'izin' => 1, 'alpa' => 0], $s['absensi']);
+        $this->assertSame('Rajin', $s['catatan']);
+        $this->assertNull($s['keputusan']); // semester ganjil: tidak ada keputusan
+        $this->assertDatabaseHas('audit_log', ['aksi' => 'rapor.api']);
+    }
+
+    public function test_rapor_satu_siswa_semester_genap_dan_keputusan(): void
+    {
+        $this->isiFinal(0);
+        $this->isiFinal(2, 'tinggal');
+        $this->jadwal->periode->update(['semester' => 'genap']);
+
+        $res = $this->api('rapor?classroom_id=77&student_id=9002')->assertOk();
+        $this->assertCount(1, $res->json('students'));
+        $this->assertSame('tinggal', $res->json('students.0.keputusan'));
+
+        $this->assertSame([], $this->api('rapor?classroom_id=77&student_id=9001')->json('students')); // belum final
+        $this->assertSame([], $this->api('rapor?classroom_id=77&student_id=424242')->json('students'));
+    }
+
+    public function test_rapor_semester_tak_dipakai_kelas_tak_dikenal_dan_kunci_wajib(): void
+    {
+        $this->isiFinal(0);
+        $this->assertSame('tidak_dikenal', $this->api('rapor?classroom_id=999')->json('status'));
+        $this->api('rapor')->assertStatus(422);
+        $this->flushHeaders()->getJson('/api/rapor/v1/rapor?classroom_id=77')->assertStatus(401);
+        $this->api('rapor?classroom_id=77&periode=999999')->assertJsonPath('status', 'tidak_dikenal');
+
+        $this->jadwal->periode->update(['rapor_di_sini' => false]);
+        $res = $this->api('rapor?classroom_id=77');
+        $this->assertSame('tidak_dipakai', $res->json('status'));
+        $this->assertSame([], $res->json('students'));
+    }
 }

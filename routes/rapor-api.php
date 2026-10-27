@@ -10,4 +10,5 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['throttle:120,1', 'api.rapor'])->group(function () {
     Route::get('/ping', [RaporApiController::class, 'ping']);
     Route::get('/status-kelas', [RaporApiController::class, 'statusKelas'])->middleware('throttle:60,1');
+    Route::get('/rapor', [RaporApiController::class, 'rapor'])->middleware('throttle:30,1');
 });
