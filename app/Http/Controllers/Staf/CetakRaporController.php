@@ -15,7 +15,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
-/** Cetak rapor (halaman cetak peramban atau berkas Word) untuk siswa yang rapornya sudah final. */
+/** Cetak rapor (halaman cetak peramban atau berkas Word) untuk siswa yang rapornya sudah final, dan pratinjau untuk semua siswa kelas. */
 class CetakRaporController extends Controller
 {
     public function __construct(private LayananWaliKelas $wali, private LayananCetakRapor $cetak) {}
@@ -28,22 +28,23 @@ class CetakRaporController extends Controller
             'periode' => ['required', 'integer'],
             'siswa' => ['nullable', 'integer'],
             'tgl' => ['nullable', 'date'],
-            'format' => ['nullable', 'in:cetak,word'],
+            'format' => ['nullable', 'in:cetak,word,pratinjau'],
         ], [], ['tgl' => 'Tanggal']);
 
         $periode = Periode::find($input['periode']);
         abort_if(! $periode || ! $periode->rapor_di_sini || $periode->tahun_ajaran_id !== $kelas->tahun_ajaran_id, 404);
 
-        $data = $this->cetak->data($kelas, $periode, $input['siswa'] ?? null);
+        $pratinjau = ($input['format'] ?? 'cetak') === 'pratinjau';
+        $data = $this->cetak->data($kelas, $periode, $input['siswa'] ?? null, $pratinjau);
         if ($data === []) {
-            return back()->with('gagal', 'Belum ada rapor final yang bisa dicetak. Finalkan rapor kelas ini lebih dulu.');
+            return back()->with('gagal', $pratinjau ? 'Belum ada siswa aktif di kelas ini.' : 'Belum ada rapor final yang bisa dicetak. Finalkan rapor kelas ini lebih dulu.');
         }
 
         $sekolah = PengaturanSekolah::ambil();
         $tgl = Carbon::parse($input['tgl'] ?? now())->locale('id')->translatedFormat('j F Y');
         $word = ($input['format'] ?? 'cetak') === 'word';
 
-        AuditLog::catat('rapor.cetak', "kelas {$kelas->id} periode {$periode->id}: ".count($data).' lembar'.($word ? ' (Word)' : ''), $request->user('web'));
+        AuditLog::catat($pratinjau ? 'rapor.pratinjau' : 'rapor.cetak', "kelas {$kelas->id} periode {$periode->id}: ".count($data).' lembar'.($word ? ' (Word)' : ''), $request->user('web'));
 
         $isi = view('staf.wali.rapor', [
             'lembar' => $data, 'sekolah' => $sekolah, 'word' => $word,

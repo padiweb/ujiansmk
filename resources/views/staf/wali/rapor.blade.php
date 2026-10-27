@@ -22,6 +22,8 @@ tr { page-break-inside: avoid; }
 .judul td { text-align: center; font-weight: bold; font-size: 13pt; padding: 18px 0 10px; border: none; }
 .bagian td { border: none; padding-top: 12px; padding-bottom: 4px; font-weight: bold; font-size: 12pt; }
 .ttd td { border: none; text-align: center; vertical-align: top; }
+.air { position: fixed; top: 38%; left: 0; right: 0; text-align: center; font-size: 80pt; font-weight: bold; color: #e2e2e2; transform: rotate(-28deg); z-index: -1; }
+.pratinjau { border: 2px solid #000; text-align: center; font-weight: bold; padding: 6px; margin-bottom: 8px; font-size: 11pt; }
 .alat { position: fixed; top: 10px; right: 10px; display: flex; gap: 8px; z-index: 9; }
 .alat button { padding: 8px 18px; background: #3960FB; color: #fff; border: 0; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; }
 .alat button.garis { background: #fff; color: #333; border: 1px solid #ccc; }
@@ -35,9 +37,12 @@ tr { page-break-inside: avoid; }
     </div>
 @endunless
 
+@if (! $word && collect($lembar)->contains('pratinjau', true))<div class="air">PRATINJAU</div>@endif
+
 @foreach ($lembar as $l)
     @if (! $loop->first)<div class="halaman-baru"></div>@endif
     @php $s = $l['siswa']; @endphp
+    @if ($l['pratinjau'])<div class="pratinjau">PRATINJAU — RAPOR BELUM FINAL. Nilai yang belum diisi guru tertulis 0.</div>@endif
     <table border="0" cellspacing="0" cellpadding="0">
         <thead class="ulang">
             <tr><td colspan="6">

@@ -178,6 +178,39 @@ class CetakRaporTest extends TestCase
         $this->get($this->url('/cetak'))->assertSessionHasErrors('periode');
     }
 
+    public function test_pratinjau_sebelum_final_menampilkan_semua_siswa_dan_nilai_kosong_menjadi_nol(): void
+    {
+        $kimia = \App\Models\Mapel::create(['kode' => 'KIM', 'nama' => 'Kimia', 'kelompok' => 'C1', 'kkm' => 75]);
+        Pengampu::create(['guru_id' => User::factory()->create()->id, 'mapel_id' => $kimia->id, 'kelas_id' => $this->kelas->id]);
+        NilaiRapor::create([ // Matematika sudah diisi untuk siswa pertama saja
+            'siswa_id' => $this->siswa[0]->id, 'mapel_id' => $this->mtk->id, 'periode_id' => $this->periode->id, 'kelas_id' => $this->kelas->id,
+            'ujian' => 80, 'harian' => 80, 'tugas_akhir' => 80, 'praktik' => 70, 'adab' => 90, 'np' => 80, 'nk' => 76, 'na' => 78, 'predikat' => 'B', 'status' => 'draf',
+        ]);
+
+        $html = $this->actingAs($this->wali, 'web')->get($this->url('/cetak?format=pratinjau&periode='.$this->periode->id))->assertOk()->getContent();
+
+        $this->assertStringContainsString('PRATINJAU', $html);
+        $this->assertStringContainsString($this->siswa[0]->nama, $html);
+        $this->assertStringContainsString($this->siswa[1]->nama, $html); // belum punya rapor sama sekali: tetap tampil
+        $this->assertStringContainsString('Matematika', $html);
+        $this->assertStringContainsString('Kimia', $html);               // mapel diampu tanpa nilai tetap tampil
+        $this->assertStringContainsString('<td class="cb" align="center" style="font-weight:bold">0</td>', $html); // nilai akhir kosong = 0
+        $this->assertStringContainsString('<td class="cb" align="center" style="font-weight:bold">78</td>', $html);
+        $this->assertSame(0, RaporSiswa::count());                       // pratinjau tidak menyimpan apa pun
+        $this->assertSame(1, AuditLog::where('aksi', 'rapor.pratinjau')->count());
+
+        // Cetak biasa tetap ditolak selama belum final.
+        $this->get($this->url('/cetak?periode='.$this->periode->id))->assertSessionHas('gagal');
+    }
+
+    public function test_pratinjau_hanya_wali_atau_admin_dan_kartu_selalu_ada(): void
+    {
+        $this->actingAs($this->wali, 'web')->get($this->url())->assertOk()->assertSee('Pratinjau')->assertDontSee('Unduh Word');
+
+        $this->actingAs(User::factory()->create(), 'web')->get($this->url('/cetak?format=pratinjau&periode='.$this->periode->id))->assertNotFound();
+        $this->actingAs($this->admin, 'web')->get($this->url('/cetak?format=pratinjau&periode='.$this->periode->id.'&siswa='.$this->siswa[1]->id))->assertOk();
+    }
+
     public function test_kartu_cetak_muncul_di_halaman_wali_hanya_setelah_ada_yang_final(): void
     {
         $this->actingAs($this->wali, 'web')->get($this->url())->assertDontSee('Unduh Word');

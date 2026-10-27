@@ -94,23 +94,26 @@
     </div>
 </form>
 
-@if (count($siswaFinal) > 0)
+@if (count($baris) > 0)
     <div class="kartu" style="margin-top:20px">
         <h2 class="judul-kartu">Cetak rapor</h2>
-        <p class="sub">Hanya siswa yang rapornya sudah final. Tanggal tanda tangan boleh diubah sesuai tanggal penyerahan rapor.</p>
+        <p class="sub">Pratinjau bisa dilihat kapan saja untuk mengecek isi rapor; nilai yang belum diisi guru tertulis 0. Cetak dan Word hanya untuk siswa yang rapornya sudah final. Tanggal tanda tangan boleh diubah sesuai tanggal penyerahan rapor.</p>
         <form method="GET" action="{{ route('staf.wali.cetak', $kelas) }}" target="_blank" class="aksi-form" style="flex-wrap:wrap;align-items:flex-end;gap:10px">
             <input type="hidden" name="periode" value="{{ $periode->id }}">
             <label>Siswa
                 <select name="siswa">
-                    <option value="">Semua siswa ({{ count($siswaFinal) }})</option>
-                    @foreach ($siswaFinal as $id => $nama) <option value="{{ $id }}">{{ $nama }}</option> @endforeach
+                    <option value="">Semua siswa</option>
+                    @foreach ($baris as $b) <option value="{{ $b['siswa']->id }}">{{ $b['siswa']->nama }}@unless ($b['final']) (belum final)@endunless</option> @endforeach
                 </select>
             </label>
             <label>Tanggal tanda tangan
                 <input type="date" name="tgl" value="{{ now()->format('Y-m-d') }}" required>
             </label>
-            <button class="tombol kecil" type="submit" name="format" value="cetak">Cetak</button>
-            <button class="tombol kecil garis" type="submit" name="format" value="word">Unduh Word</button>
+            <button class="tombol kecil garis" type="submit" name="format" value="pratinjau">Pratinjau</button>
+            @if (count($siswaFinal) > 0)
+                <button class="tombol kecil" type="submit" name="format" value="cetak">Cetak</button>
+                <button class="tombol kecil garis" type="submit" name="format" value="word">Unduh Word</button>
+            @endif
         </form>
     </div>
 @endif

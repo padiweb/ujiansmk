@@ -5,11 +5,15 @@ namespace App\Services;
 use App\Models\Kelas;
 use App\Models\NilaiRapor;
 use App\Models\Periode;
+use App\Models\Pengampu;
 use App\Models\RaporSiswa;
+use App\Models\Siswa;
 
 /** Menyusun data satu lembar rapor per siswa dari data yang sudah final (snapshot), siap dicetak. */
 class LayananCetakRapor
 {
+    public function __construct(private LayananNilaiRapor $nilaiRapor) {}
+
     private const URUT_KELOMPOK = ['A' => 1, 'B' => 2, 'ML' => 3, 'C1' => 4, 'C2' => 5, 'C3' => 6];
 
     /** Urutan mapel dalam satu kelompok (kata kunci nama mapel; yang tidak cocok di akhir). */
@@ -29,19 +33,25 @@ class LayananCetakRapor
     }
 
     /**
-     * @return list<array<string,mixed>> satu elemen per siswa final (diurutkan menurut nama)
+     * @param  bool  $pratinjau  true: semua siswa kelas ikut (yang belum final memakai data sementara), semua mapel yang diampu
+     *                           tampil, dan nilai yang belum ada tertulis 0
+     * @return list<array<string,mixed>> satu elemen per siswa (diurutkan menurut nama)
      */
-    public function data(Kelas $kelas, Periode $periode, ?int $siswaId = null): array
+    public function data(Kelas $kelas, Periode $periode, ?int $siswaId = null, bool $pratinjau = false): array
     {
         $kelas->loadMissing('waliKelas:id,nama', 'jurusan:id,nama,program_keahlian');
         $periode->loadMissing('tahunAjaran');
         $sekolah = \App\Models\PengaturanSekolah::ambil();
 
-        $rapor = RaporSiswa::with('siswa')->where('kelas_id', $kelas->id)->where('periode_id', $periode->id)->where('status', 'final')
-            ->when($siswaId, fn ($q) => $q->where('siswa_id', $siswaId))->get()->sortBy(fn ($r) => mb_strtolower($r->siswa->nama))->values();
+        if ($pratinjau) {
+            [$rapor, $nilai] = $this->bahanPratinjau($kelas, $periode, $siswaId);
+        } else {
+            $rapor = RaporSiswa::with('siswa')->where('kelas_id', $kelas->id)->where('periode_id', $periode->id)->where('status', 'final')
+                ->when($siswaId, fn ($q) => $q->where('siswa_id', $siswaId))->get()->sortBy(fn ($r) => mb_strtolower($r->siswa->nama))->values();
 
-        $nilai = NilaiRapor::with('mapel:id,nama,kelompok')->where('kelas_id', $kelas->id)->where('periode_id', $periode->id)->where('status', 'final')
-            ->whereIn('siswa_id', $rapor->pluck('siswa_id'))->get()->groupBy('siswa_id');
+            $nilai = NilaiRapor::with('mapel:id,nama,kelompok')->where('kelas_id', $kelas->id)->where('periode_id', $periode->id)->where('status', 'final')
+                ->whereIn('siswa_id', $rapor->pluck('siswa_id'))->get()->groupBy('siswa_id');
+        }
 
         $genap = $periode->semester === 'genap';
         $xii = $kelas->tingkat === 'XII';
@@ -64,8 +74,44 @@ class LayananCetakRapor
                 'bagian_keputusan' => $genap,
                 'xii' => $xii, 'keputusan' => $r->keputusan, 'kelas_tujuan' => $tujuan,
                 'wali_kelas' => $kelas->waliKelas?->nama,
+                'pratinjau' => $r->status !== 'final',
             ];
         })->all();
+    }
+
+    /**
+     * Bahan pratinjau: rapor tiap siswa kelas (yang belum ada dibuat sementara, tidak disimpan) dan nilai tiap mapel yang diampu;
+     * mapel tanpa nilai diisi 0 sampai guru mengisinya.
+     *
+     * @return array{0:\Illuminate\Support\Collection<int,RaporSiswa>,1:\Illuminate\Support\Collection}
+     */
+    private function bahanPratinjau(Kelas $kelas, Periode $periode, ?int $siswaId): array
+    {
+        $siswa = Siswa::whereIn('id', $this->nilaiRapor->siswa($kelas)->pluck('id'))->when($siswaId, fn ($q) => $q->where('id', $siswaId))->orderBy('nama')->get();
+        $ada = RaporSiswa::where('kelas_id', $kelas->id)->where('periode_id', $periode->id)->get()->keyBy('siswa_id');
+        $mapel = Pengampu::with('mapel:id,nama,kelompok')->where('kelas_id', $kelas->id)->get()->unique('mapel_id')->pluck('mapel')->filter();
+        $tersimpan = NilaiRapor::with('mapel:id,nama,kelompok')->where('kelas_id', $kelas->id)->where('periode_id', $periode->id)
+            ->whereIn('siswa_id', $siswa->pluck('id'))->get()->groupBy('siswa_id');
+
+        $rapor = $siswa->map(function (Siswa $s) use ($ada) {
+            $r = $ada[$s->id] ?? new RaporSiswa(['siswa_id' => $s->id, 'sakit' => 0, 'izin' => 0, 'alpa' => 0, 'status' => 'draf', 'ekskul' => []]);
+            $r->setRelation('siswa', $s);
+
+            return $r;
+        })->values();
+
+        $nilai = $siswa->mapWithKeys(function (Siswa $s) use ($mapel, $tersimpan) {
+            $punya = ($tersimpan[$s->id] ?? collect())->keyBy('mapel_id');
+
+            return [$s->id => $mapel->map(function ($m) use ($punya) {
+                $n = $punya[$m->id] ?? new NilaiRapor(['np' => 0, 'nk' => 0, 'na' => 0, 'predikat' => '-']);
+                $n->setRelation('mapel', $m);
+
+                return $n;
+            })->values()];
+        });
+
+        return [$rapor, $nilai];
     }
 
     /** @return array{0:list<array<string,mixed>>,1:list<array<string,mixed>>} [umum, kejuruan] siap tampil, bernomor lanjut */
