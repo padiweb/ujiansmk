@@ -51,6 +51,19 @@
         b.addEventListener('input', function (e) { if (e.target.hasAttribute('data-k')) hitung(b); });
     });
 
+    // Pintas: nilai NP/NK diketik langsung, lalu semua komponen kelompoknya diisi sama (hasilnya NP/NK itu sendiri).
+    form.addEventListener('input', function (e) {
+        var pintas = e.target.getAttribute && e.target.getAttribute('data-pintas');
+        if (!pintas) return;
+        var baris = e.target.closest('tr');
+        var nilai = e.target.value.trim() === '' ? '' : String(angka(e.target.value));
+        (pintas === 'np' ? PENGETAHUAN : KETERAMPILAN).forEach(function (k) {
+            var i = baris.querySelector('input[data-k="' + k + '"]');
+            if (i && !i.disabled) i.value = nilai;
+        });
+        hitung(baris);
+    });
+
     // Tempel dari Excel: tab = kolom berikutnya, baris baru = siswa berikutnya.
     form.addEventListener('paste', function (e) {
         var sel = e.target;

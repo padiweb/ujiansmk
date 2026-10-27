@@ -39,8 +39,8 @@ class SinkronEduwebTest extends TestCase
 
         $this->edu = [
             'academic-years' => [
-                ['id' => 1, 'name' => '2025/2026', 'semester' => 1, 'is_active' => true],
-                ['id' => 5, 'name' => '2025/2026', 'semester' => 2, 'is_active' => false],
+                ['id' => 1, 'name' => '2025/2026', 'semester' => 1, 'start_date' => '2025-07-14', 'end_date' => '2025-12-20', 'is_active' => true],
+                ['id' => 5, 'name' => '2025/2026', 'semester' => 2, 'start_date' => '2026-01-05', 'end_date' => '2026-06-20', 'is_active' => false],
             ],
             'majors' => [['id' => 1, 'name' => 'Teknik Komputer dan Jaringan', 'code' => 'TKJ'], ['id' => 2, 'name' => 'Rekayasa Perangkat Lunak', 'code' => 'RPL']],
             'classrooms' => [
@@ -166,6 +166,21 @@ class SinkronEduwebTest extends TestCase
         $p = PengaturanSekolah::ambil();
         $this->assertTrue($p->mode_sinkron_eduweb);
         $this->assertNotNull($p->eduweb_sinkron_penuh_pada);
+    }
+
+    public function test_tanggal_semester_mengikuti_eduweb_dan_diperbarui_saat_berubah(): void
+    {
+        $this->sinkron();
+        $this->assertSame('2025-07-14', Periode::where('semester', 'ganjil')->first()->mulai->toDateString());
+        $this->assertSame('2026-06-20', Periode::where('semester', 'genap')->first()->selesai->toDateString());
+
+        $this->edu['academic-years'][0]['end_date'] = '2025-12-31';
+        $this->edu['academic-years'][1]['start_date'] = 'bukan-tanggal'; // tidak valid: dilewati, tanggal lama tetap
+        $this->pasangEdu();
+        $this->sinkron();
+
+        $this->assertSame('2025-12-31', Periode::where('semester', 'ganjil')->first()->selesai->toDateString());
+        $this->assertSame('2026-01-05', Periode::where('semester', 'genap')->first()->mulai->toDateString());
     }
 
     public function test_akun_guru_baru_memakai_sandi_acak_yang_di_hash_dan_tidak_masuk_log(): void

@@ -331,6 +331,12 @@ class PenyinkronEduweb
             if ($periode->aktif !== (bool) ($r['is_active'] ?? false)) {
                 $periode->update(['aktif' => (bool) ($r['is_active'] ?? false)]);
             }
+            // Rentang tanggal semester mengikuti EduWeb (dipakai menarik absensi dan nilai tugas).
+            $mulai = $this->tanggal($r['start_date'] ?? null);
+            $selesai = $this->tanggal($r['end_date'] ?? null);
+            if ($mulai && $selesai && $selesai >= $mulai && ($periode->mulai?->toDateString() !== $mulai || $periode->selesai?->toDateString() !== $selesai)) {
+                $periode->update(['mulai' => $mulai, 'selesai' => $selesai]);
+            }
             if ($periode->wasRecentlyCreated) {
                 $h->baru('periode');
             }
@@ -777,6 +783,14 @@ class PenyinkronEduweb
         }
 
         return $hasil;
+    }
+
+    /** Tanggal Y-m-d yang valid, atau null. */
+    private function tanggal(mixed $nilai): ?string
+    {
+        $t = is_string($nilai) ? substr(trim($nilai), 0, 10) : '';
+
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $t) && checkdate((int) substr($t, 5, 2), (int) substr($t, 8, 2), (int) substr($t, 0, 4)) ? $t : null;
     }
 
     private function statusSiswa(?string $status, bool $aktif): ?string

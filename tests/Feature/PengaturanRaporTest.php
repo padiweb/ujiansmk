@@ -167,6 +167,20 @@ class PengaturanRaporTest extends TestCase
         $this->assertSame('2025-07-14', $p->fresh()->mulai->format('Y-m-d'));
     }
 
+    public function test_tanggal_semester_reguler_tidak_diubah_di_sini_saat_sinkron_eduweb_menyala(): void
+    {
+        $this->actingAs(User::factory()->admin()->create(), 'web');
+        PengaturanSekolah::ambil()->update(['mode_sinkron_eduweb' => true]);
+        $tahun = TahunAjaran::create(['nama' => '2025/2026', 'aktif' => true]);
+        $p = Periode::create(['tahun_ajaran_id' => $tahun->id, 'semester' => 'ganjil', 'tipe' => 'reguler', 'aktif' => true, 'mulai' => '2025-07-14', 'selesai' => '2025-12-20']);
+
+        $this->put('/staf/pengaturan-rapor/periode', ['periode' => [$p->id => ['mulai' => '2025-08-01', 'selesai' => '2025-09-01', 'rapor_di_sini' => '0']]])->assertSessionHas('berhasil');
+
+        $this->assertSame('2025-07-14', $p->fresh()->mulai->format('Y-m-d')); // tanggal tetap dari EduWeb
+        $this->assertFalse((bool) $p->fresh()->rapor_di_sini);                  // penanda lokal tetap bisa diubah
+        $this->get('/staf/pengaturan-rapor')->assertSee('mengikuti EduWeb');
+    }
+
     public function test_pengaturan_baru_bernilai_bawaan(): void
     {
         $p = PengaturanSekolah::ambil()->fresh();

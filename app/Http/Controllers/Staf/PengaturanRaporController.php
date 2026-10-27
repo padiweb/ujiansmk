@@ -27,6 +27,7 @@ class PengaturanRaporController extends Controller
             'skala' => $this->rapor->skala(),
             'periode' => Periode::with('tahunAjaran')->orderByDesc('tahun_ajaran_id')->orderByDesc('semester')->get(),
             'klienApi' => KlienApi::orderByDesc('id')->get(),
+            'sinkron' => PengaturanSekolah::sinkronAktif(),
         ]);
     }
 
@@ -120,9 +121,11 @@ class PengaturanRaporController extends Controller
             'periode.*.rapor_di_sini' => ['nullable', 'boolean'],
         ], [], ['periode.*.mulai' => 'Tanggal mulai', 'periode.*.selesai' => 'Tanggal selesai']);
 
+        // Dengan sinkron EduWeb menyala, tanggal semester reguler mengikuti EduWeb dan tidak diubah di sini.
+        $dariEduweb = PengaturanSekolah::sinkronAktif() ? Periode::where('tipe', 'reguler')->pluck('id')->all() : [];
         $ada = Periode::pluck('id')->all();
         foreach ($data['periode'] ?? [] as $id => $t) {
-            if (! in_array((int) $id, $ada, true)) {
+            if (! in_array((int) $id, $ada, true) || in_array((int) $id, $dariEduweb, true)) {
                 continue;
             }
             if (filled($t['mulai'] ?? null) && filled($t['selesai'] ?? null) && $t['selesai'] < $t['mulai']) {
@@ -131,8 +134,13 @@ class PengaturanRaporController extends Controller
         }
         foreach ($data['periode'] ?? [] as $id => $t) {
             if (in_array((int) $id, $ada, true)) {
-                Periode::whereKey($id)->update(['mulai' => $t['mulai'] ?: null, 'selesai' => $t['selesai'] ?: null]
-                    + (array_key_exists('rapor_di_sini', $t) ? ['rapor_di_sini' => (bool) $t['rapor_di_sini']] : []));
+                $simpan = array_key_exists('rapor_di_sini', $t) ? ['rapor_di_sini' => (bool) $t['rapor_di_sini']] : [];
+                if (! in_array((int) $id, $dariEduweb, true)) {
+                    $simpan += ['mulai' => $t['mulai'] ?: null, 'selesai' => $t['selesai'] ?: null];
+                }
+                if ($simpan) {
+                    Periode::whereKey($id)->update($simpan);
+                }
             }
         }
         AuditLog::catat('rapor.periode', 'rentang semester', $request->user('web'));

@@ -25,7 +25,7 @@
             <table class="tabel tabel-nilai">
                 <thead>
                     <tr>
-                        <th>No</th><th>Nama</th>
+                        <th>No</th><th>Nama</th><th class="tengah" title="Pintas: isi NP langsung, komponen Pengetahuan terisi sama">Isi NP</th><th class="tengah" title="Pintas: isi NK langsung, komponen Keterampilan terisi sama">Isi NK</th>
                         @foreach ($aktif as $k) <th class="tengah">{{ $label[$k] }} <small>{{ $bobot[$k] }}%</small></th> @endforeach
                         <th class="tengah">NP</th><th class="tengah">NK</th><th class="tengah">NA</th><th class="tengah">Predikat</th><th>Catatan</th>
                     </tr>
@@ -36,6 +36,9 @@
                         <tr data-baris>
                             <td>{{ $i + 1 }}</td>
                             <td><strong>{{ $s->nama }}</strong><small class="bantuan" style="margin:0">{{ $s->nisn }}</small></td>
+                            @foreach (['np' => array_intersect(['ujian', 'harian', 'tugas_akhir'], $aktif), 'nk' => array_intersect(['praktik', 'adab'], $aktif)] as $pintas => $komponen)
+                                <td class="tengah"><input type="text" inputmode="decimal" data-pintas="{{ $pintas }}" autocomplete="off" placeholder="—" @disabled($kunci || count($komponen) === 0) aria-label="Isi {{ strtoupper($pintas) }} langsung {{ $s->nama }}"></td>
+                            @endforeach
                             @foreach ($aktif as $k)
                                 <td class="tengah">
                                     <input type="text" inputmode="decimal" name="nilai[{{ $s->id }}][{{ $k }}]" data-k="{{ $k }}" autocomplete="off"
@@ -55,7 +58,7 @@
                             <td><input type="text" maxlength="500" name="nilai[{{ $s->id }}][catatan]" value="{{ $b['catatan'] }}" @disabled($kunci) aria-label="Catatan {{ $s->nama }}"></td>
                         </tr>
                     @empty
-                        <tr><td colspan="{{ count($aktif) + 7 }}" class="kosong">Belum ada siswa aktif di kelas ini.</td></tr>
+                        <tr><td colspan="{{ count($aktif) + 9 }}" class="kosong">Belum ada siswa aktif di kelas ini.</td></tr>
                     @endforelse
                 </tbody>
             </table>

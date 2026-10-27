@@ -189,7 +189,7 @@ class LayananWaliKelas
             throw new DomainException('Kelas ini belum terhubung ke EduWeb.');
         }
         if (! $periode->mulai || ! $periode->selesai) {
-            throw new DomainException('Rentang tanggal semester belum diatur. Admin mengisinya di Pengaturan Rapor.');
+            throw new DomainException('Rentang tanggal semester belum ada. Jalankan Sinkron EduWeb agar tanggal semester terisi dari EduWeb.');
         }
 
         $jawab = $this->eduweb->get('attendance-summary', [

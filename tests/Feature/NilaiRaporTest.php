@@ -170,6 +170,17 @@ class NilaiRaporTest extends TestCase
         $this->assertSame('C', $this->nilai(0)->predikat);
     }
 
+    public function test_kolom_pintas_np_nk_tampil_dan_tidak_ikut_dikirim(): void
+    {
+        $html = $this->actingAs($this->guru, 'web')->get($this->url())->assertOk()->getContent();
+        $this->assertStringContainsString('data-pintas="np"', $html);
+        $this->assertStringContainsString('data-pintas="nk"', $html);
+        $this->assertStringNotContainsString('name="nilai['.$this->siswa[0]->id.'][np]"', $html); // pintas hanya di layar; server tetap menghitung
+
+        \App\Models\PengaturanSekolah::ambil()->update(['bobot_praktik' => 0, 'bobot_adab' => 0, 'bobot_np' => 100, 'bobot_nk' => 0]);
+        $this->get($this->url())->assertOk()->assertSee('data-pintas="nk"', false)->assertSee('disabled', false); // NK tanpa komponen: pintas nonaktif
+    }
+
     public function test_komponen_nonaktif_tidak_bisa_diisi_lewat_permintaan_langsung(): void
     {
         \App\Models\PengaturanSekolah::ambil()->update(['bobot_harian' => 80, 'bobot_tugas_akhir' => 0]);

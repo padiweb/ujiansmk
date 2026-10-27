@@ -79,7 +79,7 @@
     @csrf
     @method('PUT')
     <h2 class="judul-kartu">Semester</h2>
-    <small class="bantuan">Rentang tanggal dipakai untuk menarik absensi dan nilai tugas dari EduWeb. Hilangkan centang "Rapor di sini" bila rapor semester itu tidak diisi di aplikasi ini (mis. ujian kembali ke kertas).</small>
+    <small class="bantuan">Rentang tanggal dipakai untuk menarik absensi dan nilai tugas dari EduWeb.@if ($sinkron) Tanggal semester reguler mengikuti EduWeb (diperbarui saat sinkron); atur di EduWeb, bukan di sini.@endif Hilangkan centang "Rapor di sini" bila rapor semester itu tidak diisi di aplikasi ini (mis. ujian kembali ke kertas).</small>
     @error('periode') <div class="pesan-salah" role="alert">{{ $message }}</div> @enderror
     @foreach ($errors->get('periode.*') as $m) @foreach ($m as $x) <div class="pesan-salah" role="alert">{{ $x }}</div> @endforeach @endforeach
     <table class="tabel" style="margin-top:8px">
@@ -88,8 +88,9 @@
             @forelse ($periode as $p)
                 <tr>
                     <td>{{ $p->label() }}@if ($p->aktif) <span class="lencana">Aktif</span> @endif</td>
-                    <td><input type="date" name="periode[{{ $p->id }}][mulai]" value="{{ old("periode.{$p->id}.mulai", $p->mulai?->format('Y-m-d')) }}" aria-label="Mulai {{ $p->label() }}"></td>
-                    <td><input type="date" name="periode[{{ $p->id }}][selesai]" value="{{ old("periode.{$p->id}.selesai", $p->selesai?->format('Y-m-d')) }}" aria-label="Selesai {{ $p->label() }}"></td>
+                    @php $dariEduweb = $sinkron && $p->tipe === 'reguler'; @endphp
+                    <td><input type="date" name="periode[{{ $p->id }}][mulai]" value="{{ old("periode.{$p->id}.mulai", $p->mulai?->format('Y-m-d')) }}" aria-label="Mulai {{ $p->label() }}" @readonly($dariEduweb)></td>
+                    <td><input type="date" name="periode[{{ $p->id }}][selesai]" value="{{ old("periode.{$p->id}.selesai", $p->selesai?->format('Y-m-d')) }}" aria-label="Selesai {{ $p->label() }}" @readonly($dariEduweb)></td>
                     <td class="tengah"><input type="hidden" name="periode[{{ $p->id }}][rapor_di_sini]" value="0"><input type="checkbox" name="periode[{{ $p->id }}][rapor_di_sini]" value="1" @checked(old("periode.{$p->id}.rapor_di_sini", $p->rapor_di_sini)) aria-label="Rapor {{ $p->label() }} diisi di aplikasi ini"></td>
                 </tr>
             @empty
