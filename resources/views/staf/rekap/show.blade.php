@@ -7,30 +7,33 @@
 @endphp
 
 @section('konten')
-<div class="kepala-halaman">
-    <div>
-        <h1 class="judul-halaman">{{ $j->nama }}
-            @if ($kunci['terkunci']) <span class="lencana" style="vertical-align:middle">Nilai dikunci</span> @endif</h1>
-        <p class="sub">{{ $j->mapel->nama }} · Kelas {{ $kelasPilihan }} · KKM {{ $kkm }} · bobot PG {{ $j->bobot_pg }}% / esai {{ $j->bobotEsai() }}%</p>
+<div class="pita-info">
+    <div class="pita-atas">
+        <a class="tombol-pita" href="{{ route('staf.rekap.index') }}"><x-ikon nama="panah-kiri" :ukuran="16" />Kembali</a>
+        <div class="aksi-halaman">
+            <a class="tombol-pita" href="{{ route('staf.rekap.ekspor', array_filter([$j, 'kelas' => $kelasId])) }}"><x-ikon nama="unduh" :ukuran="16" />Excel</a>
+            <a class="tombol-pita" href="{{ route('staf.rekap.cetak', array_filter([$j, 'kelas' => $kelasId])) }}" target="_blank" rel="noopener">Cetak</a>
+        </div>
     </div>
-    <div class="aksi-halaman">
-        <a class="tombol kecil garis" href="{{ route('staf.rekap.index') }}"><x-ikon nama="panah-kiri" :ukuran="16" />Daftar</a>
-        <a class="tombol kecil garis" href="{{ route('staf.rekap.ekspor', array_filter([$j, 'kelas' => $kelasId])) }}"><x-ikon nama="unduh" :ukuran="16" />Excel</a>
-        <a class="tombol kecil garis" href="{{ route('staf.rekap.cetak', array_filter([$j, 'kelas' => $kelasId])) }}" target="_blank" rel="noopener">Cetak</a>
+    <div class="pita-isi">
+        <div><small>Jadwal</small><b>{{ $j->nama }}</b></div>
+        <div><small>Mapel</small><b>{{ $j->mapel->nama }}</b></div>
+        <div><small>Kelas</small><b>{{ $kelasPilihan }}</b></div>
+        <div><small>KKM</small><b><span class="pita-kkm">{{ $kkm }}</span></b></div>
+        <div><small>Bobot PG / Esai</small><b>{{ $j->bobot_pg }}% / {{ $j->bobotEsai() }}%</b></div>
+        <div><small>Nilai</small><b>{{ $kunci['terkunci'] ? 'Dikunci' : 'Belum dikunci' }}</b></div>
     </div>
 </div>
 
-<div class="kartu">
-    <div class="ringkasan" style="margin-bottom:0">
-        <div><strong>{{ $ringkasan['peserta'] }}</strong><span>Peserta</span></div>
-        <div><strong>{{ $ringkasan['selesai'] }}</strong><span>Selesai</span></div>
-        <div><strong>{{ $ringkasan['tidak_mengikuti'] }}</strong><span>Tidak mengikuti</span></div>
-        <div><strong>{{ $nm($ringkasan['rata_rata']) }}</strong><span>Rata-rata</span></div>
-        <div><strong>{{ $nm($ringkasan['tertinggi']) }}</strong><span>Tertinggi</span></div>
-        <div><strong>{{ $nm($ringkasan['terendah']) }}</strong><span>Terendah</span></div>
-        <div><strong>{{ $ringkasan['di_bawah_kkm'] }}</strong><span>Di bawah KKM</span></div>
-        <div><strong>{{ $ringkasan['belum_dikoreksi'] }}</strong><span>Belum dikoreksi</span></div>
-    </div>
+<div class="db-angka rata">
+    <div class="db-kotak biru"><b>{{ $ringkasan['peserta'] }}</b><span>Peserta</span></div>
+    <div class="db-kotak"><b>{{ $ringkasan['selesai'] }}</b><span>Selesai</span></div>
+    <div class="db-kotak"><b>{{ $ringkasan['tidak_mengikuti'] }}</b><span>Tidak mengikuti</span></div>
+    <div class="db-kotak gelap"><b>{{ $nm($ringkasan['rata_rata']) }}</b><span>Rata-rata</span></div>
+    <div class="db-kotak"><b>{{ $nm($ringkasan['tertinggi']) }}</b><span>Tertinggi</span></div>
+    <div class="db-kotak"><b>{{ $nm($ringkasan['terendah']) }}</b><span>Terendah</span></div>
+    <div class="db-kotak kuning"><b>{{ $ringkasan['di_bawah_kkm'] }}</b><span>Di bawah KKM</span></div>
+    <div class="db-kotak kuning"><b>{{ $ringkasan['belum_dikoreksi'] }}</b><span>Belum dikoreksi</span></div>
 </div>
 
 <div class="kartu">
@@ -60,14 +63,15 @@
     </div>
 </div>
 
-<div class="kartu tanpa-padding">
+<div class="db-panel">
+    <header><h3>Daftar Nilai Siswa</h3><small>{{ count($baris) }} siswa</small></header>
     <div class="gulir">
         <table class="tabel">
-            <thead><tr><th>No</th><th>Nama</th><th>Kelas</th><th>Status</th><th>B / S / K</th><th>PG</th><th>Esai</th><th>Akhir</th><th>Keterangan</th></tr></thead>
+            <thead><tr><th class="no">No</th><th>Nama</th><th>Kelas</th><th>Status</th><th>B / S / K</th><th>PG</th><th>Esai</th><th>Akhir</th><th>Keterangan</th></tr></thead>
             <tbody>
                 @forelse ($baris as $i => $b)
                     <tr class="{{ in_array($b['keterangan'], ['Belum tuntas', 'Belum dikoreksi'], true) ? 'mon-langgar' : (in_array($b['status'], ['belum'], true) ? 'mon-redup' : '') }}">
-                        <td>{{ $i + 1 }}</td>
+                        <td class="no">{{ $i + 1 }}</td>
                         <td><strong>{{ $b['nama'] }}</strong><small class="bantuan" style="margin:0">{{ $b['nisn'] }}{{ $b['ruang'] ? ' · '.$b['ruang'] : '' }}</small></td>
                         <td style="white-space:nowrap">{{ $b['kelas'] ?: '—' }}</td>
                         <td>{{ $namaStatus[$b['status']] ?? $b['status'] }}@if ($b['pelanggaran'] > 0)<small class="bantuan" style="margin:0">{{ $b['pelanggaran'] }} pelanggaran</small>@endif</td>

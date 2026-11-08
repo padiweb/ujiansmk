@@ -54,9 +54,10 @@
 @else
 <div class="kartu tanpa-padding">
     <div class="gulir">
-        <table class="tabel">
+        <table class="tabel tabel-daftar">
             <thead>
                 <tr>
+                    <th class="no">No</th>
                     @foreach ($def->kolom() as $k)
                         <th>{{ $k[1] }}</th>
                     @endforeach
@@ -68,6 +69,7 @@
             <tbody>
                 @forelse ($baris as $b)
                     <tr>
+                        <td class="no">{{ $baris->firstItem() + $loop->index }}</td>
                         @foreach ($def->kolom() as $k)
                             <td>{{ isset($k[2]) ? $k[2]($b) : ($b->{$k[0]} ?? '—') }}</td>
                         @endforeach
@@ -84,7 +86,7 @@
                         @endunless
                     </tr>
                 @empty
-                    <tr><td colspan="{{ count($def->kolom()) + 1 }}" class="kosong">Belum ada data.</td></tr>
+                    <tr><td colspan="{{ count($def->kolom()) + 2 }}" class="kosong">Belum ada data.</td></tr>
                 @endforelse
             </tbody>
         </table>

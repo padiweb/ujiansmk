@@ -644,3 +644,6 @@ h1, h2, h3 { color: var(--teks); }
 .saring .tombol.kecil { padding: 9px 16px; }
 .kartu.tanpa-padding > .judul-kartu { padding: 12px 18px !important; margin: 0; font-size: .88rem; font-weight: 800; background: #FAFAFA; border-bottom: 1px solid var(--garis-lembut); }
 .kartu.tanpa-padding .tabel td strong { font-weight: 600; }
+
+.db-angka.rata { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+.tabel-daftar .no, .db-panel .tabel .no { width: 44px; text-align: center; color: var(--teks-3); font-size: .78rem; font-weight: 600; }
