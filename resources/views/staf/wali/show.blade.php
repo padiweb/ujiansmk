@@ -81,7 +81,7 @@
                         <th rowspan="2" class="lekat no">No</th><th rowspan="2" class="lekat nama">Nama Siswa</th>
                         <th rowspan="2" class="tengah">Mapel<br>Lengkap</th><th rowspan="2" class="tengah">Rata-<br>rata</th>
                         <th colspan="3" class="tengah grup-nk">Absensi (hari)</th>
-                        <th rowspan="2" class="kolom-catatan">Catatan Wali Kelas</th><th rowspan="2">Keputusan</th><th rowspan="2" class="tengah">Cetak Rapor</th>
+                        <th rowspan="2" class="kolom-catatan">Catatan Wali Kelas</th><th rowspan="2">Keputusan</th><th rowspan="2" class="tengah">Aksi</th>
                     </tr>
                     <tr><th class="tengah grup-nk">Sakit</th><th class="tengah grup-nk">Izin</th><th class="tengah grup-nk">Alpa</th></tr>
                 </thead>
@@ -109,10 +109,10 @@
                                 </select>
                             </td>
                             <td class="sel-cetak">
-                                <button class="tombol kecil garis" type="submit" form="formCetakRapor" name="format" value="pratinjau" data-siswa="{{ $s->id }}" title="Pratinjau rapor {{ $s->nama }}">Pratinjau</button>
+                                <button class="ikon-aksi" type="submit" form="formCetakRapor" name="format" value="pratinjau" data-siswa="{{ $s->id }}" title="Pratinjau rapor" aria-label="Pratinjau rapor {{ $s->nama }}"><x-ikon nama="mata" :ukuran="17" /></button>
                                 @if ($kunci)
-                                    <button class="tombol kecil" type="submit" form="formCetakRapor" name="format" value="cetak" data-siswa="{{ $s->id }}">Cetak</button>
-                                    <button class="tombol kecil garis" type="submit" form="formCetakRapor" name="format" value="word" data-siswa="{{ $s->id }}">Word</button>
+                                    <button class="ikon-aksi" type="submit" form="formCetakRapor" name="format" value="cetak" data-siswa="{{ $s->id }}" title="Cetak rapor" aria-label="Cetak rapor {{ $s->nama }}"><x-ikon nama="cetak" :ukuran="17" /></button>
+                                    <button class="ikon-aksi" type="submit" form="formCetakRapor" name="format" value="word" data-siswa="{{ $s->id }}" title="Unduh Word" aria-label="Unduh Word {{ $s->nama }}"><x-ikon nama="berkas" :ukuran="17" /></button>
                                 @endif
                             </td>
                         </tr>

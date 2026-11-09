@@ -662,3 +662,19 @@ h1, h2, h3 { color: var(--teks); }
 .sel-cetak { white-space: nowrap; padding: 0 10px !important; }
 .sel-cetak .tombol { padding: 6px 10px; font-size: .76rem; margin-right: 4px; }
 .tabel-nilai td select { border-color: var(--garis); background-color: #fff; }
+
+/* ── Tabel lebih lega: status berupa tulisan biasa, aksi berupa ikon ── */
+.tabel td { padding-top: 15px; padding-bottom: 15px; }
+.db-panel .tabel td, .db-panel .tabel th { padding-top: 14px; padding-bottom: 14px; }
+.db-panel .tabel th { padding-top: 11px; padding-bottom: 11px; }
+.tabel .lencana, .tabel .lencana.kuning, .tabel .lencana.pucat { padding: 0; background: none; border: 0; border-radius: 0; font-size: .86rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--biru-tua); }
+.tabel .lencana.kuning { color: var(--kuning-tua); }
+.tabel .lencana.pucat { color: var(--teks-3); font-weight: 500; }
+.tabel .lencana-kelas { padding: 0; background: none; border: 0; border-radius: 0; font-weight: 600; color: var(--teks); }
+.tabel .lencana + .lencana { margin-left: 8px; }
+
+.ikon-aksi { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; margin-right: 4px; color: var(--biru); background: var(--putih); border: 1px solid var(--biru-garis); border-radius: 8px; cursor: pointer; }
+.ikon-aksi:last-child { margin-right: 0; }
+.ikon-aksi:hover { background: var(--biru-muda); border-color: var(--biru); }
+.sel-cetak { text-align: center; white-space: nowrap; padding: 0 12px !important; }
+.tabel-nilai td.sel-cetak { min-width: 124px; }
