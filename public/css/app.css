@@ -673,8 +673,37 @@ h1, h2, h3 { color: var(--teks); }
 .tabel .lencana-kelas { padding: 0; background: none; border: 0; border-radius: 0; font-weight: 600; color: var(--teks); }
 .tabel .lencana + .lencana { margin-left: 8px; }
 
-.ikon-aksi { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; margin-right: 4px; color: var(--biru); background: var(--putih); border: 1px solid var(--biru-garis); border-radius: 8px; cursor: pointer; }
-.ikon-aksi:last-child { margin-right: 0; }
-.ikon-aksi:hover { background: var(--biru-muda); border-color: var(--biru); }
 .sel-cetak { text-align: center; white-space: nowrap; padding: 0 12px !important; }
 .tabel-nilai td.sel-cetak { min-width: 124px; }
+
+/* ── Tombol ikon seragam dengan tombol global; kotak isian tabel nilai/wali berupa kolom isian utuh ── */
+.tombol.tombol-ikon { width: 34px; height: 34px; padding: 0; gap: 0; display: inline-flex; align-items: center; justify-content: center; margin-right: 6px; border-radius: var(--radius-kecil); }
+.tombol.tombol-ikon:last-child { margin-right: 0; }
+.tombol.tombol-ikon:hover { transform: none; }
+.sel-cetak { text-align: center; white-space: nowrap; padding: 0 12px !important; }
+.tabel-nilai td.sel-cetak { min-width: 130px; }
+
+.tabel-nilai td { height: auto; padding: 6px; }
+.tabel-nilai td.nama, .tabel-nilai td.no { padding-top: 6px; padding-bottom: 6px; }
+.tabel-nilai td.sel-hasil { padding: 6px 8px; }
+.tabel-nilai td input, .tabel-nilai td select {
+    display: block; width: 100%; min-width: 62px; height: 36px; padding: 0 8px; font: inherit; font-size: .88rem; font-weight: 600; color: var(--teks);
+    background: var(--putih); border: 1px solid #D1D5DB; border-radius: var(--radius-kecil); box-shadow: none; outline: none;
+    transition: border-color var(--transisi), box-shadow var(--transisi);
+}
+.tabel-nilai td input:hover, .tabel-nilai td select:hover { border-color: var(--biru-2); }
+.tabel-nilai td input:focus, .tabel-nilai td select:focus { background: #fff; border-color: var(--biru); box-shadow: 0 0 0 3px rgba(57, 96, 251, .14); }
+.tabel-nilai td input:disabled, .tabel-nilai td select:disabled { color: var(--teks-3); background: var(--latar); border-color: var(--garis); cursor: not-allowed; opacity: 1; }
+.tabel-nilai td.sel-pintas input { background: var(--biru-muda); border-color: var(--biru-garis); }
+.tabel-nilai td.sel-pintas input:disabled { background: var(--latar); border-color: var(--garis); }
+.tabel-nilai td.sel-absen input { width: 64px; margin: 0 auto; }
+.tabel-nilai td.kolom-catatan input { min-width: 180px; padding: 0 10px; font-weight: 400; text-align: left; }
+.tabel-nilai td select { min-width: 150px; padding: 0 6px; font-weight: 500; font-size: .84rem; }
+.tabel-nilai thead tr + tr th { top: 38px; }
+
+/* Kolom isian di dalam sel tabel (selain tabel nilai) tampil sebagai kolom isian utuh */
+.tabel td input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=file]), .tabel td select {
+    padding: 8px 10px; font: inherit; font-size: .88rem; color: var(--teks); background: var(--putih); border: 1px solid #D1D5DB; border-radius: var(--radius-kecil); outline: none;
+    transition: border-color var(--transisi), box-shadow var(--transisi);
+}
+.tabel td input:focus, .tabel td select:focus { border-color: var(--biru); box-shadow: 0 0 0 3px rgba(57, 96, 251, .14); }

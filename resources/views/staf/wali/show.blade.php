@@ -109,10 +109,10 @@
                                 </select>
                             </td>
                             <td class="sel-cetak">
-                                <button class="ikon-aksi" type="submit" form="formCetakRapor" name="format" value="pratinjau" data-siswa="{{ $s->id }}" title="Pratinjau rapor" aria-label="Pratinjau rapor {{ $s->nama }}"><x-ikon nama="mata" :ukuran="17" /></button>
+                                <button class="tombol kecil garis tombol-ikon" type="submit" form="formCetakRapor" name="format" value="pratinjau" data-siswa="{{ $s->id }}" title="Pratinjau rapor" aria-label="Pratinjau rapor {{ $s->nama }}"><x-ikon nama="mata" :ukuran="16" /></button>
                                 @if ($kunci)
-                                    <button class="ikon-aksi" type="submit" form="formCetakRapor" name="format" value="cetak" data-siswa="{{ $s->id }}" title="Cetak rapor" aria-label="Cetak rapor {{ $s->nama }}"><x-ikon nama="cetak" :ukuran="17" /></button>
-                                    <button class="ikon-aksi" type="submit" form="formCetakRapor" name="format" value="word" data-siswa="{{ $s->id }}" title="Unduh Word" aria-label="Unduh Word {{ $s->nama }}"><x-ikon nama="berkas" :ukuran="17" /></button>
+                                    <button class="tombol kecil tombol-ikon" type="submit" form="formCetakRapor" name="format" value="cetak" data-siswa="{{ $s->id }}" title="Cetak rapor" aria-label="Cetak rapor {{ $s->nama }}"><x-ikon nama="cetak" :ukuran="16" /></button>
+                                    <button class="tombol kecil garis tombol-ikon" type="submit" form="formCetakRapor" name="format" value="word" data-siswa="{{ $s->id }}" title="Unduh Word" aria-label="Unduh Word {{ $s->nama }}"><x-ikon nama="berkas" :ukuran="16" /></button>
                                 @endif
                             </td>
                         </tr>
