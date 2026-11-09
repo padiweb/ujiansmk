@@ -648,11 +648,6 @@ h1, h2, h3 { color: var(--teks); }
 .db-angka.rata { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
 .tabel-daftar .no, .db-panel .tabel .no { width: 44px; text-align: center; color: var(--teks-3); font-size: .78rem; font-weight: 600; }
 
-.bar-cetak { margin-bottom: 16px; }
-.bar-cetak input[type=date] { font-weight: 600; }
-.bar-aksi { display: flex; gap: 8px; flex-wrap: wrap; }
-.bar-cetak .bar-aksi .tombol { gap: 6px; }
-.bar-cetak .pesan-salah { flex: 1 1 100
 /* Pengaturan cetak rapor di atas tabel wali kelas */
 .bar-cetak { margin-bottom: 16px; }
 .bar-cetak input[type=date] { font-weight: 600; }
@@ -702,8 +697,35 @@ h1, h2, h3 { color: var(--teks); }
 .tabel-nilai thead tr + tr th { top: 38px; }
 
 /* Kolom isian di dalam sel tabel (selain tabel nilai) tampil sebagai kolom isian utuh */
-.tabel td input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=file]), .tabel td select {
+.tabel td input:where(:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=file])), .tabel td select {
     padding: 8px 10px; font: inherit; font-size: .88rem; color: var(--teks); background: var(--putih); border: 1px solid #D1D5DB; border-radius: var(--radius-kecil); outline: none;
     transition: border-color var(--transisi), box-shadow var(--transisi);
 }
 .tabel td input:focus, .tabel td select:focus { border-color: var(--biru); box-shadow: 0 0 0 3px rgba(57, 96, 251, .14); }
+
+/* Tabel nilai/wali lebih ringkas agar muat tanpa geser */
+.tabel-nilai td.sel-absen input { width: 54px; }
+.tabel-nilai td.nama { min-width: 175px; }
+.tabel-nilai .avatar-siswa { width: 30px; height: 30px; margin-right: 8px; font-size: .72rem; }
+.tabel-nilai td.kolom-catatan, .tabel-nilai td.kolom-catatan input { min-width: 150px; }
+.tabel-nilai td select { min-width: 128px; }
+.tabel-nilai td.sel-cetak { min-width: 0; width: 1%; padding: 0 10px !important; }
+.tabel-nilai td.sel-cetak .tombol-ikon { width: 32px; height: 32px; margin-right: 4px; }
+.tabel-nilai td.sel-cetak .tombol-ikon:last-child { margin-right: 0; }
+.tabel-nilai td, .tabel-nilai th { padding-left: 4px; padding-right: 4px; }
+.tabel-nilai td.nama { padding-left: 10px; }
+.tabel-nilai td input { min-width: 48px; padding: 0 4px; }
+.tabel-nilai td.sel-pintas input { width: 52px; margin: 0 auto; }
+.tabel-nilai td.sel-nilai input { width: 58px; margin: 0 auto; }
+.tabel-nilai td.sel-hasil { min-width: 40px; padding: 6px 4px; }
+.tabel-nilai .no { width: 36px; min-width: 36px; }
+.tabel-nilai .nama { left: 36px; min-width: 150px; }
+.tabel-nilai td.kolom-catatan, .tabel-nilai td.kolom-catatan input { min-width: 130px; }
+.tabel-nilai td.kolom-catatan { padding-right: 8px; }
+.tabel-nilai th { font-size: .66rem; letter-spacing: .03em; }
+.tabel-nilai td.sel-nilai input { width: 54px; }
+.tabel-nilai td.sel-pintas input { width: 48px; }
+.tabel-nilai td.sel-hasil { min-width: 36px; padding: 6px 2px; }
+.tabel-nilai td.kolom-catatan, .tabel-nilai td.kolom-catatan input { min-width: 100px; }
+.tabel-nilai .nama { min-width: 138px; }
+#formNilai { padding-bottom: 70px; }
