@@ -24,6 +24,28 @@
     <div class="pesan-salah catatan" role="status"><x-ikon nama="info" :ukuran="18" /><span>{{ $sudahPindah }} siswa sudah dinaikkan, ditinggalkan, atau diluluskan dari kelas ini di EduWeb. Rapor kelas ini belum final; selesaikan dan finalkan segera.</span></div>
 @endif
 
+@if (count($baris) > 0)
+    <form id="formCetakRapor" class="bar-saring bar-cetak" method="GET" action="{{ route('staf.wali.cetak', $kelas) }}" target="_blank">
+        <input type="hidden" name="periode" value="{{ $periode->id }}">
+        <input type="hidden" name="siswa" value="">
+        <div class="bar-isi">
+            <label for="tgl-rapor">Tgl Rapor</label>
+            <input id="tgl-rapor" type="date" name="tgl" value="{{ now()->format('Y-m-d') }}" required>
+        </div>
+        <div class="bar-aksi">
+            <button class="tombol kecil garis" type="submit" name="format" value="pratinjau">Pratinjau Kelas</button>
+            @if (count($siswaFinal) > 0)
+                <button class="tombol kecil" type="submit" name="format" value="cetak"><x-ikon nama="berkas" :ukuran="16" />Cetak Kelas</button>
+                <button class="tombol kecil garis" type="submit" name="format" value="word"><x-ikon nama="unduh" :ukuran="16" />Word Kelas</button>
+            @endif
+        </div>
+        <div class="pesan-salah" id="pesanCetakRapor" role="alert" hidden></div>
+    </form>
+    @push('skrip')
+        <script src="{{ asset('js/cetak-rapor.js') }}?v={{ filemtime(public_path('js/cetak-rapor.js')) }}" defer></script>
+    @endpush
+@endif
+
 <div class="db-panel" style="margin-bottom:16px">
     <header><h3>Kelengkapan Nilai Mata Pelajaran</h3><small>{{ count($mapel) }} mapel</small></header>
     <div class="gulir">
@@ -59,7 +81,7 @@
                         <th rowspan="2" class="lekat no">No</th><th rowspan="2" class="lekat nama">Nama Siswa</th>
                         <th rowspan="2" class="tengah">Mapel<br>Lengkap</th><th rowspan="2" class="tengah">Rata-<br>rata</th>
                         <th colspan="3" class="tengah grup-nk">Absensi (hari)</th>
-                        <th rowspan="2" class="kolom-catatan">Catatan Wali Kelas</th><th rowspan="2">Keputusan</th>
+                        <th rowspan="2" class="kolom-catatan">Catatan Wali Kelas</th><th rowspan="2">Keputusan</th><th rowspan="2" class="tengah">Cetak Rapor</th>
                     </tr>
                     <tr><th class="tengah grup-nk">Sakit</th><th class="tengah grup-nk">Izin</th><th class="tengah grup-nk">Alpa</th></tr>
                 </thead>
@@ -86,9 +108,16 @@
                                     @endforeach
                                 </select>
                             </td>
+                            <td class="sel-cetak">
+                                <button class="tombol kecil garis" type="submit" form="formCetakRapor" name="format" value="pratinjau" data-siswa="{{ $s->id }}" title="Pratinjau rapor {{ $s->nama }}">Pratinjau</button>
+                                @if ($kunci)
+                                    <button class="tombol kecil" type="submit" form="formCetakRapor" name="format" value="cetak" data-siswa="{{ $s->id }}">Cetak</button>
+                                    <button class="tombol kecil garis" type="submit" form="formCetakRapor" name="format" value="word" data-siswa="{{ $s->id }}">Word</button>
+                                @endif
+                            </td>
                         </tr>
                     @empty
-                        <tr><td colspan="9" class="kosong">Belum ada siswa aktif di kelas ini.</td></tr>
+                        <tr><td colspan="10" class="kosong">Belum ada siswa aktif di kelas ini.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -98,34 +127,6 @@
         <button class="tombol-simpan" type="submit" @disabled(count($baris) === 0)><x-ikon nama="centang" :ukuran="18" />Simpan Data Kelas</button>
     @endunless
 </form>
-
-@if (count($baris) > 0)
-    <div class="kartu" style="margin-top:20px">
-        <h2 class="judul-kartu">Cetak rapor</h2>
-        <p class="sub">Pratinjau bisa dilihat kapan saja untuk mengecek isi rapor; nilai yang belum diisi guru tertulis 0. Cetak dan Word hanya untuk siswa yang rapornya sudah final. Tanggal tanda tangan boleh diubah sesuai tanggal penyerahan rapor.</p>
-        <form id="formCetakRapor" method="GET" action="{{ route('staf.wali.cetak', $kelas) }}" target="_blank" class="aksi-form" style="flex-wrap:wrap;align-items:flex-end;gap:10px">
-            <input type="hidden" name="periode" value="{{ $periode->id }}">
-            <label>Siswa
-                <select name="siswa">
-                    <option value="">Semua siswa</option>
-                    @foreach ($baris as $b) <option value="{{ $b['siswa']->id }}">{{ $b['siswa']->nama }}@unless ($b['final']) (belum final)@endunless</option> @endforeach
-                </select>
-            </label>
-            <label>Tanggal tanda tangan
-                <input type="date" name="tgl" value="{{ now()->format('Y-m-d') }}" required>
-            </label>
-            <button class="tombol kecil garis" type="submit" name="format" value="pratinjau">Pratinjau</button>
-            @if (count($siswaFinal) > 0)
-                <button class="tombol kecil" type="submit" name="format" value="cetak">Cetak</button>
-                <button class="tombol kecil garis" type="submit" name="format" value="word">Unduh Word</button>
-            @endif
-        </form>
-        <div class="pesan-salah" id="pesanCetakRapor" role="alert" hidden style="margin-top:10px"></div>
-    </div>
-    @push('skrip')
-        <script src="{{ asset('js/cetak-rapor.js') }}?v={{ filemtime(public_path('js/cetak-rapor.js')) }}" defer></script>
-    @endpush
-@endif
 
 <div class="kartu" style="margin-top:20px">
     <h2 class="judul-kartu">Finalisasi rapor</h2>

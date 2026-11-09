@@ -205,7 +205,7 @@ class CetakRaporTest extends TestCase
 
     public function test_pratinjau_hanya_wali_atau_admin_dan_kartu_selalu_ada(): void
     {
-        $this->actingAs($this->wali, 'web')->get($this->url())->assertOk()->assertSee('Pratinjau')->assertDontSee('Unduh Word');
+        $this->actingAs($this->wali, 'web')->get($this->url())->assertOk()->assertSee('Pratinjau')->assertDontSee('Word Kelas');
 
         $this->actingAs(User::factory()->create(), 'web')->get($this->url('/cetak?format=pratinjau&periode='.$this->periode->id))->assertNotFound();
         $this->actingAs($this->admin, 'web')->get($this->url('/cetak?format=pratinjau&periode='.$this->periode->id.'&siswa='.$this->siswa[1]->id))->assertOk();
@@ -223,9 +223,9 @@ class CetakRaporTest extends TestCase
 
     public function test_kartu_cetak_muncul_di_halaman_wali_hanya_setelah_ada_yang_final(): void
     {
-        $this->actingAs($this->wali, 'web')->get($this->url())->assertDontSee('Unduh Word');
+        $this->actingAs($this->wali, 'web')->get($this->url())->assertDontSee('Word Kelas');
 
         $this->finalkan();
-        $this->get($this->url())->assertSee('Unduh Word')->assertSee('Tanggal tanda tangan');
+        $this->get($this->url())->assertSee('Word Kelas')->assertSee('Cetak Kelas')->assertSee('Tgl Rapor');
     }
 }

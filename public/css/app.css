@@ -647,3 +647,18 @@ h1, h2, h3 { color: var(--teks); }
 
 .db-angka.rata { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
 .tabel-daftar .no, .db-panel .tabel .no { width: 44px; text-align: center; color: var(--teks-3); font-size: .78rem; font-weight: 600; }
+
+.bar-cetak { margin-bottom: 16px; }
+.bar-cetak input[type=date] { font-weight: 600; }
+.bar-aksi { display: flex; gap: 8px; flex-wrap: wrap; }
+.bar-cetak .bar-aksi .tombol { gap: 6px; }
+.bar-cetak .pesan-salah { flex: 1 1 100
+/* Pengaturan cetak rapor di atas tabel wali kelas */
+.bar-cetak { margin-bottom: 16px; }
+.bar-cetak input[type=date] { font-weight: 600; }
+.bar-aksi { display: flex; gap: 8px; flex-wrap: wrap; }
+.bar-cetak .bar-aksi .tombol { gap: 6px; }
+.bar-cetak .pesan-salah { flex: 1 1 100%; margin: 0; }
+.sel-cetak { white-space: nowrap; padding: 0 10px !important; }
+.sel-cetak .tombol { padding: 6px 10px; font-size: .76rem; margin-right: 4px; }
+.tabel-nilai td select { border-color: var(--garis); background-color: #fff; }

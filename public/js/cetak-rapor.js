@@ -15,6 +15,8 @@
     form.addEventListener('submit', function (e) {
         var tombol = e.submitter;
         var format = tombol ? tombol.value : '';
+        // Tombol di baris siswa membawa id siswa; tombol "Kelas" mengosongkannya (semua siswa).
+        form.elements.siswa.value = (tombol && tombol.getAttribute('data-siswa')) || '';
         if (format !== 'cetak' && format !== 'pratinjau') return; // Word: unduhan biasa di tab baru
         e.preventDefault();
 
