@@ -2,7 +2,12 @@
 @section('judul', ($m ? 'Ubah ' : 'Tambah ').$def->judul())
 
 @section('konten')
-<h1 class="judul-halaman">{{ $m ? 'Ubah' : 'Tambah' }} {{ $def->judul() }}</h1>
+<div class="pita-info pita-form">
+    <div class="pita-atas">
+        <a class="tombol-pita" href="{{ route('staf.master.index', $def->slug()) }}"><x-ikon nama="panah-kiri" :ukuran="16" />Kembali</a>
+    </div>
+    <h1>{{ $m ? 'Ubah' : 'Tambah' }} {{ $def->judul() }}</h1>
+</div>
 
 <form class="kartu formulir" method="POST"
       action="{{ $m ? route('staf.master.update', [$def->slug(), $m->id]) : route('staf.master.store', $def->slug()) }}">

@@ -2,7 +2,12 @@
 @section('judul', $bank ? 'Ubah Bank Soal' : 'Buat Bank Soal')
 
 @section('konten')
-<h1 class="judul-halaman">{{ $bank ? 'Ubah' : 'Buat' }} Bank Soal</h1>
+<div class="pita-info pita-form">
+    <div class="pita-atas">
+        <a class="tombol-pita" href="{{ $bank ? route('staf.bank-soal.show', $bank) : route('staf.bank-soal.index') }}"><x-ikon nama="panah-kiri" :ukuran="16" />Kembali</a>
+    </div>
+    <h1>{{ $bank ? 'Ubah' : 'Buat' }} Bank Soal</h1>
+</div>
 
 <form class="kartu formulir" method="POST"
       action="{{ $bank ? route('staf.bank-soal.update', $bank) : route('staf.bank-soal.store') }}">

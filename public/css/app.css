@@ -729,3 +729,21 @@ h1, h2, h3 { color: var(--teks); }
 .tabel-nilai td.kolom-catatan, .tabel-nilai td.kolom-catatan input { min-width: 100px; }
 .tabel-nilai .nama { min-width: 138px; }
 #formNilai { padding-bottom: 70px; }
+
+/* ── Formulir: pita judul + kartu isian lebih lega ── */
+.pita-form { max-width: 760px; padding-bottom: 18px; }
+.pita-form .pita-atas { margin-bottom: 12px; }
+.pita-form h1 { font-size: 1.25rem; font-weight: 800; letter-spacing: -.01em; }
+.formulir { max-width: 760px; padding: 24px 26px 22px; }
+.formulir .aksi-form { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--garis-lembut); }
+.bidang label { font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--teks-2, var(--teks)); }
+.soal-kartu { padding: 0; overflow: hidden; }
+.soal-kepala { margin: 0; padding: 11px 18px; background: #FAFAFA; border-bottom: 1px solid var(--garis-lembut); }
+.soal-teks, .soal-gambar, .opsi-daftar, .rubrik { margin-left: 18px; margin-right: 18px; }
+.soal-teks { padding-top: 14px; }
+.soal-aksi { margin: 14px 0 0; padding: 11px 18px; background: #FAFAFA; border-top: 1px solid var(--garis-lembut); }
+.soal-no { border-radius: 6px; }
+.opsi-daftar li { border-width: 1px; padding: 9px 14px; }
+.opsi-daftar li.benar { border-color: var(--biru); }
+.bar-saring .bar-aksi { margin-left: auto; }
+.pita-form p { margin-top: 4px; font-size: .86rem; color: rgba(255, 255, 255, .75); }

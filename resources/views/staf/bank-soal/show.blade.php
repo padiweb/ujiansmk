@@ -2,60 +2,68 @@
 @section('judul', $bank->nama)
 
 @section('konten')
-<div class="kepala-halaman">
-    <div>
-        <h1 class="judul-halaman">{{ $bank->nama }}</h1>
-        <p class="sub">{{ $bank->mapel->nama }} · Kelas {{ $bank->tingkat }} · dibuat oleh {{ $bank->pembuat->nama }}</p>
+<div class="pita-info">
+    <div class="pita-atas">
+        <a class="tombol-pita" href="{{ route('staf.bank-soal.index') }}"><x-ikon nama="panah-kiri" :ukuran="16" />Kembali</a>
+        <div class="aksi-halaman">
+            <a class="tombol-pita" href="{{ route('staf.bank-soal.edit', $bank) }}"><x-ikon nama="ubah" :ukuran="16" />Ubah</a>
+            <form method="POST" action="{{ route('staf.bank-soal.salin', $bank) }}">
+                @csrf
+                <button class="tombol-pita" type="submit"><x-ikon nama="salin" :ukuran="16" />Salin bank</button>
+            </form>
+            <form method="POST" action="{{ route('staf.bank-soal.destroy', $bank) }}" onsubmit="return confirm('Hapus bank soal ini beserta seluruh soalnya?')">
+                @csrf
+                @method('DELETE')
+                <button class="tombol-pita" type="submit"><x-ikon nama="hapus" :ukuran="16" />Hapus</button>
+            </form>
+        </div>
     </div>
-    <div class="aksi-halaman">
-        <a class="tombol kecil garis" href="{{ route('staf.bank-soal.edit', $bank) }}"><x-ikon nama="ubah" :ukuran="16" />Ubah</a>
-        <form method="POST" action="{{ route('staf.bank-soal.salin', $bank) }}">
-            @csrf
-            <button class="tombol kecil garis" type="submit"><x-ikon nama="salin" :ukuran="16" />Salin bank</button>
-        </form>
-        <form method="POST" action="{{ route('staf.bank-soal.destroy', $bank) }}" onsubmit="return confirm('Hapus bank soal ini beserta seluruh soalnya?')">
-            @csrf
-            @method('DELETE')
-            <button class="tombol kecil bahaya" type="submit"><x-ikon nama="hapus" :ukuran="16" />Hapus</button>
-        </form>
+    <div class="pita-isi">
+        <div><small>Nama bank</small><b>{{ $bank->nama }}</b></div>
+        <div><small>Mata pelajaran</small><b>{{ $bank->mapel->nama }}</b></div>
+        <div><small>Tingkat</small><b>Kelas {{ $bank->tingkat }}</b></div>
+        <div><small>Pembuat</small><b>{{ $bank->pembuat->nama }}</b></div>
     </div>
 </div>
 
-<div class="kartu ringkasan-bank">
-    <div class="ringkasan">
-        <div><strong>{{ $ringkasan['pg'] }}</strong><span>pilihan ganda</span></div>
-        <div><strong>{{ $ringkasan['esai'] }}</strong><span>esai</span></div>
-        <div><strong>{{ $ringkasan['draf'] }}</strong><span>masih draf</span></div>
+<div class="db-angka rata">
+    <div class="db-kotak"><b>{{ $ringkasan['pg'] }}</b><span>Pilihan ganda</span></div>
+    <div class="db-kotak"><b>{{ $ringkasan['esai'] }}</b><span>Esai</span></div>
+    <div class="db-kotak"><b>{{ $ringkasan['draf'] }}</b><span>Masih draf</span></div>
+</div>
+
+<form class="bar-saring" method="GET" action="{{ route('staf.bank-soal.show', $bank) }}">
+    <div class="bar-isi">
+        <label for="f-tipe">Jenis soal</label>
+        <select id="f-tipe" name="tipe" onchange="this.form.submit()">
+            <option value="">Semua jenis</option>
+            <option value="pg" @selected(request('tipe') === 'pg')>Pilihan ganda</option>
+            <option value="esai" @selected(request('tipe') === 'esai')>Esai</option>
+        </select>
     </div>
-    <div class="aksi-form">
+    <div class="bar-isi">
+        <label for="f-status">Status</label>
+        <select id="f-status" name="status" onchange="this.form.submit()">
+            <option value="">Semua status</option>
+            <option value="siap" @selected(request('status') === 'siap')>Siap</option>
+            <option value="draf" @selected(request('status') === 'draf')>Draf</option>
+        </select>
+    </div>
+    <div class="bar-aksi">
         <a class="tombol kecil" href="{{ route('staf.soal.create', [$bank, 'tipe' => 'pg']) }}"><x-ikon nama="tambah" :ukuran="16" />Pilihan ganda</a>
         <a class="tombol kecil" href="{{ route('staf.soal.create', [$bank, 'tipe' => 'esai']) }}"><x-ikon nama="tambah" :ukuran="16" />Esai</a>
         @if (\App\Models\PenyediaOtomatis::tersedia())
-            <a class="tombol kecil" href="{{ route('staf.bank-soal.otomatis', $bank) }}"><x-ikon nama="otomatis" :ukuran="16" />Susun otomatis</a>
+            <a class="tombol kecil garis" href="{{ route('staf.bank-soal.otomatis', $bank) }}"><x-ikon nama="otomatis" :ukuran="16" />Susun otomatis</a>
         @endif
         <a class="tombol kecil garis" href="{{ route('staf.bank-soal.impor.form', $bank) }}"><x-ikon nama="unggah" :ukuran="16" />Impor Excel</a>
         @if ($ringkasan['draf'] > 0)
-            <form method="POST" action="{{ route('staf.bank-soal.siapkan-semua', $bank) }}">
-                @csrf
-                <button class="tombol kecil garis" type="submit">Tandai {{ $ringkasan['draf'] }} draf sebagai siap</button>
-            </form>
+            <button class="tombol kecil garis" type="submit" form="formSiapSemua">Tandai {{ $ringkasan['draf'] }} draf siap</button>
         @endif
     </div>
-</div>
-
-<form class="saring" method="GET" action="{{ route('staf.bank-soal.show', $bank) }}" style="margin-top:18px">
-    <select name="tipe" aria-label="Jenis soal">
-        <option value="">Semua jenis</option>
-        <option value="pg" @selected(request('tipe') === 'pg')>Pilihan ganda</option>
-        <option value="esai" @selected(request('tipe') === 'esai')>Esai</option>
-    </select>
-    <select name="status" aria-label="Status">
-        <option value="">Semua status</option>
-        <option value="siap" @selected(request('status') === 'siap')>Siap</option>
-        <option value="draf" @selected(request('status') === 'draf')>Draf</option>
-    </select>
-    <button class="tombol kecil garis" type="submit">Terapkan</button>
 </form>
+@if ($ringkasan['draf'] > 0)
+    <form id="formSiapSemua" method="POST" action="{{ route('staf.bank-soal.siapkan-semua', $bank) }}">@csrf</form>
+@endif
 
 @forelse ($soal as $i => $s)
     <article class="soal-kartu">

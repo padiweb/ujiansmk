@@ -8,8 +8,13 @@
 @endphp
 
 @section('konten')
-<h1 class="judul-halaman">{{ $soal ? 'Ubah' : 'Tambah' }} soal {{ $pg ? 'pilihan ganda' : 'esai' }}</h1>
-<p class="sub">{{ $bank->nama }}</p>
+<div class="pita-info pita-form">
+    <div class="pita-atas">
+        <a class="tombol-pita" href="{{ route('staf.bank-soal.show', $bank) }}"><x-ikon nama="panah-kiri" :ukuran="16" />Kembali</a>
+    </div>
+    <h1>{{ $soal ? 'Ubah' : 'Tambah' }} soal {{ $pg ? 'pilihan ganda' : 'esai' }}</h1>
+    <p>{{ $bank->nama }}</p>
+</div>
 
 <form class="kartu formulir" method="POST" enctype="multipart/form-data"
       action="{{ $soal ? route('staf.soal.update', [$bank, $soal]) : route('staf.soal.store', $bank) }}">
