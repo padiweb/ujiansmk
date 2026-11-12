@@ -14,46 +14,64 @@
 </div>
 
 @if ($pengawas)
-    <h2 class="judul-kartu" style="margin-top:6px">Pilih ruang</h2>
-    @forelse ($ruang as $r)
-        @php $s = $ringkasRuang[$r->id] ?? ['siswa' => 0, 'mengerjakan' => 0, 'terblokir' => 0]; @endphp
-        <a class="kartu kartu-monitor" href="{{ route('staf.monitor.ruang', $r) }}">
-            <div>
-                <strong>{{ $r->nama }}</strong>
-                <small class="bantuan" style="margin:2px 0 0">{{ $r->campur ? 'Campur tingkat' : 'Biasa' }} · kapasitas {{ $r->kapasitas }}</small>
-            </div>
-            <div class="ringkasan" style="margin:0">
-                <div><strong>{{ $s['siswa'] }}</strong><span>Siswa</span></div>
-                <div><strong>{{ $s['mengerjakan'] }}</strong><span>Mengerjakan</span></div>
-                <div><strong>{{ $s['terblokir'] }}</strong><span>Terblokir</span></div>
-            </div>
-        </a>
-    @empty
-        <div class="kartu kosong-kartu">Belum ada ruang. Tambahkan di menu Ruang Ujian.</div>
-    @endforelse
-
-    @if ($jadwal->isNotEmpty())
-        <h2 class="judul-kartu" style="margin-top:24px">Per ujian</h2>
-    @endif
+    <div class="db-panel" style="margin-bottom:18px">
+        <header><h3>Pilih ruang</h3><small>{{ $ruang->count() }} ruang</small></header>
+        <div class="gulir">
+            <table class="tabel tabel-daftar">
+                <thead><tr><th class="no">No</th><th>Ruang</th><th>Jenis</th><th>Kapasitas</th><th>Siswa</th><th>Mengerjakan</th><th>Terblokir</th><th class="kanan">Aksi</th></tr></thead>
+                <tbody>
+                    @forelse ($ruang as $r)
+                        @php $s = $ringkasRuang[$r->id] ?? ['siswa' => 0, 'mengerjakan' => 0, 'terblokir' => 0]; @endphp
+                        <tr>
+                            <td class="no">{{ $loop->iteration }}</td>
+                            <td><a href="{{ route('staf.monitor.ruang', $r) }}"><strong>{{ $r->nama }}</strong></a></td>
+                            <td>{{ $r->campur ? 'Campur tingkat' : 'Biasa' }}</td>
+                            <td>{{ $r->kapasitas }}</td>
+                            <td>{{ $s['siswa'] }}</td>
+                            <td>{{ $s['mengerjakan'] }}</td>
+                            <td>{{ $s['terblokir'] }}</td>
+                            <td class="kanan aksi-baris"><a href="{{ route('staf.monitor.ruang', $r) }}">Pantau</a></td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="8" class="kosong">Belum ada ruang. Tambahkan di menu Ruang Ujian.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
 @endif
 
-@forelse ($jadwal as $j)
-    @php $h = $hitung[$j->id] ?? collect(); @endphp
-    <a class="kartu kartu-monitor" href="{{ route('staf.monitor.show', $j) }}">
-        <div>
-            <strong>{{ $j->nama }}</strong>
-            <small class="bantuan" style="margin:2px 0 0">{{ $j->mapel->nama }} · {{ $j->mulai_pada->format('d/m/Y H:i') }}–{{ $j->tutup_pada->format('H:i') }} · {{ $jendela[$j->jendela()] }}</small>
-        </div>
-        <div class="ringkasan" style="margin:0">
-            <div><strong>{{ $h['berlangsung'] ?? 0 }}</strong><span>Mengerjakan</span></div>
-            <div><strong>{{ $h['diblokir'] ?? 0 }}</strong><span>Terblokir</span></div>
-            <div><strong>{{ $h['selesai'] ?? 0 }}</strong><span>Selesai</span></div>
-            <div><strong>{{ $h['belum'] ?? 0 }}</strong><span>Belum mulai</span></div>
-        </div>
-    </a>
-@empty
-    @unless ($pengawas)
-        <div class="kartu kosong-kartu">Tidak ada jadwal ujian aktif.</div>
-    @endunless
-@endforelse
+@if ($pengawas && $jadwal->isNotEmpty())
+    <h2 class="judul-kartu" style="margin-top:6px">Per ujian</h2>
+@endif
+
+@if ($jadwal->isNotEmpty() || ! $pengawas)
+<div class="db-panel">
+    <header><h3>{{ $pengawas ? 'Jadwal ujian' : 'Jadwal aktif' }}</h3><small>{{ $jadwal->count() }} jadwal</small></header>
+    <div class="gulir">
+        <table class="tabel tabel-daftar">
+            <thead><tr><th class="no">No</th><th>Jadwal</th><th>Mata pelajaran</th><th>Waktu</th><th>Status</th><th>Mengerjakan</th><th>Terblokir</th><th>Selesai</th><th>Belum mulai</th><th class="kanan">Aksi</th></tr></thead>
+            <tbody>
+                @forelse ($jadwal as $j)
+                    @php $h = $hitung[$j->id] ?? collect(); @endphp
+                    <tr>
+                        <td class="no">{{ $loop->iteration }}</td>
+                        <td><a href="{{ route('staf.monitor.show', $j) }}"><strong>{{ $j->nama }}</strong></a></td>
+                        <td>{{ $j->mapel->nama }}</td>
+                        <td>{{ $j->mulai_pada->format('d/m/Y H:i') }}–{{ $j->tutup_pada->format('H:i') }}</td>
+                        <td>{{ $jendela[$j->jendela()] }}</td>
+                        <td>{{ $h['berlangsung'] ?? 0 }}</td>
+                        <td>{{ $h['diblokir'] ?? 0 }}</td>
+                        <td>{{ $h['selesai'] ?? 0 }}</td>
+                        <td>{{ $h['belum'] ?? 0 }}</td>
+                        <td class="kanan aksi-baris"><a href="{{ route('staf.monitor.show', $j) }}">Pantau</a></td>
+                    </tr>
+                @empty
+                    <tr><td colspan="10" class="kosong">Tidak ada jadwal ujian aktif.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
 @endsection

@@ -2,9 +2,12 @@
 @section('judul', 'Pengaturan Sekolah')
 
 @section('konten')
-<h1 class="judul-halaman">Pengaturan Sekolah</h1>
+<div class="pita-info pita-form">
+    <h1>Pengaturan Sekolah</h1>
+    <p>Identitas sekolah yang dipakai pada rapor dan dokumen cetak.</p>
+</div>
 
-<form class="kartu formulir" method="POST" action="{{ route('staf.pengaturan.simpan') }}">
+<form class="kartu formulir dua-kolom" method="POST" action="{{ route('staf.pengaturan.simpan') }}">
     @csrf
     @method('PUT')
 
@@ -25,7 +28,7 @@
     @endforeach
 
     @if (config('ujian.mode_pengembang'))
-    <div class="bidang">
+    <div class="bidang penuh">
         <label for="f-mode">Sinkron dengan EduWeb</label>
         <select id="f-mode" name="mode_sinkron_eduweb">
             <option value="0" @selected(! old('mode_sinkron_eduweb', $p->mode_sinkron_eduweb))>Mati — data master boleh diisi di sini (impor Excel)</option>
@@ -35,7 +38,7 @@
     </div>
     @endif
 
-    <div class="aksi-form">
+    <div class="aksi-form penuh">
         <button class="tombol kecil" type="submit">Simpan</button>
     </div>
 </form>

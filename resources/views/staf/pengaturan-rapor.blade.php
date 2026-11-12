@@ -10,11 +10,9 @@
 @endphp
 
 @section('konten')
-<div class="kepala-halaman">
-    <div>
-        <h1 class="judul-halaman">Pengaturan Rapor</h1>
-        <p class="sub">Bobot nilai, predikat, dan rentang semester.</p>
-    </div>
+<div class="pita-info pita-form">
+    <h1>Pengaturan Rapor</h1>
+    <p>Bobot nilai, predikat, dan rentang semester.</p>
 </div>
 
 <form class="kartu formulir" method="POST" action="{{ route('staf.rapor.bobot') }}" id="formBobot" style="max-width:760px">

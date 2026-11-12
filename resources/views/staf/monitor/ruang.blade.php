@@ -2,14 +2,14 @@
 @section('judul', 'Monitor: '.$ruang->nama)
 
 @section('konten')
-<div class="kepala-halaman">
-    <div>
-        <h1 class="judul-halaman">{{ $ruang->nama }}</h1>
-        <p class="sub">Pantau ruang · <span id="monWaktu">{{ $data['waktu'] }}</span> <span id="monKoneksi" class="lencana kuning" hidden>Koneksi terputus</span></p>
+<div class="pita-info">
+    <div class="pita-atas">
+        <a class="tombol-pita" href="{{ route('staf.monitor.index') }}"><x-ikon nama="panah-kiri" :ukuran="16" />Ganti ruang</a>
+        <button type="button" id="monBunyi" class="tombol-pita" aria-pressed="false">Bunyi: mati</button>
     </div>
-    <div class="aksi-halaman">
-        <a class="tombol kecil garis" href="{{ route('staf.monitor.index') }}"><x-ikon nama="panah-kiri" :ukuran="16" />Ganti ruang</a>
-        <button type="button" id="monBunyi" class="tombol kecil garis" aria-pressed="false">Bunyi: mati</button>
+    <div class="pita-isi">
+        <div><small>Ruang</small><b>{{ $ruang->nama }}</b></div>
+        <div><small>Waktu server</small><b><span id="monWaktu">{{ $data['waktu'] }}</span></b> <span id="monKoneksi" class="lencana kuning" hidden>Koneksi terputus</span></div>
     </div>
 </div>
 
@@ -25,25 +25,29 @@
     @endforelse
 </div>
 
-<div class="kartu">
-    <div class="ringkasan" id="monRingkasan" style="margin-bottom:0">
-        @foreach (['mengerjakan' => 'Mengerjakan', 'selesai' => 'Selesai', 'melanggar' => 'Melanggar', 'terblokir' => 'Terblokir', 'belum' => 'Belum mulai', 'senyap' => 'Tidak ada kabar'] as $k => $l)
-            <div><strong data-ringkas="{{ $k }}">{{ $data['ringkasan'][$k] }}</strong><span>{{ $l }}</span></div>
-        @endforeach
-    </div>
+<div class="db-angka rata" id="monRingkasan">
+    @foreach (['mengerjakan' => 'Mengerjakan', 'selesai' => 'Selesai', 'melanggar' => 'Melanggar', 'terblokir' => 'Terblokir', 'belum' => 'Belum mulai', 'senyap' => 'Tidak ada kabar'] as $k => $l)
+        <div class="db-kotak"><b data-ringkas="{{ $k }}">{{ $data['ringkasan'][$k] }}</b><span>{{ $l }}</span></div>
+    @endforeach
 </div>
 
-<form class="saring" onsubmit="return false">
-    <input type="search" id="monCari" placeholder="Cari nama atau NISN…" aria-label="Cari peserta">
-    <select id="monStatus" aria-label="Saring status">
-        <option value="">Semua status</option>
-        <option value="berlangsung">Mengerjakan</option>
-        <option value="melanggar">Melanggar</option>
-        <option value="diblokir">Terblokir</option>
-        <option value="senyap">Tidak ada kabar</option>
-        <option value="belum">Belum mulai</option>
-        <option value="selesai">Selesai</option>
-    </select>
+<form class="bar-saring" onsubmit="return false">
+    <div class="bar-isi bar-cari">
+        <label for="monCari">Cari</label>
+        <input type="search" id="monCari" placeholder="Ketik nama atau NISN…" autocomplete="off">
+    </div>
+    <div class="bar-isi">
+        <label for="monStatus">Status</label>
+        <select id="monStatus">
+            <option value="">Semua status</option>
+            <option value="berlangsung">Mengerjakan</option>
+            <option value="melanggar">Melanggar</option>
+            <option value="diblokir">Terblokir</option>
+            <option value="senyap">Tidak ada kabar</option>
+            <option value="belum">Belum mulai</option>
+            <option value="selesai">Selesai</option>
+        </select>
+    </div>
 </form>
 
 <div class="kartu tanpa-padding">
