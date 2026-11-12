@@ -752,3 +752,11 @@ h1, h2, h3 { color: var(--teks); }
 .formulir.dua-kolom .penuh { grid-column: 1 / -1; }
 .pita-form h1 + p { margin-top: 4px; }
 @media (max-width: 640px) { .formulir.dua-kolom { grid-template-columns: 1fr; } }
+
+/* ── Teks di dalam pita biru tua selalu putih (judul, paragraf, nilai, tautan) ── */
+.pita-info h1, .pita-info h2, .pita-info h3, .pita-info p, .pita-info b, .pita-info strong, .pita-info span, .pita-info label { color: #fff; }
+.pita-info .pita-kkm { color: var(--biru-gelap); }
+.pita-info .lencana.kuning { color: var(--kuning-tua); }
+.pita-info a.tombol-pita, .pita-info a.tombol-pita:hover, .pita-info button.tombol-pita { color: #fff; }
+.pita-info .pita-isi small { color: rgba(255, 255, 255, .7); }
+.pita-form p { color: rgba(255, 255, 255, .78); }
