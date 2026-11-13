@@ -43,7 +43,7 @@
         <div class="db-panel" style="margin-bottom:16px">
             <header>
                 <h3>Peringkat {{ $kelasNama[$id] ?? 'Kelas' }}</h3>
-                <a href="{{ route('staf.statistik.cetak', ['kelas' => $id, 'periode' => $periode->id]) }}" target="_blank" rel="noopener">Cetak</a>
+                <a href="{{ route('staf.statistik.cetak', ['kelas' => $id, 'periode' => $periode->id]) }}" data-cetak>Cetak</a>
             </header>
             <div class="gulir">
                 <table class="tabel tabel-daftar">

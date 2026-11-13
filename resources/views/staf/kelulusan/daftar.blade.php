@@ -22,7 +22,7 @@
 </form>
 
 @if ($kelas)
-<form id="formCetakLulus" class="bar-saring bar-cetak" method="GET" action="{{ route('staf.kelulusan.cetak', $jenis) }}" target="_blank">
+<form id="formCetakLulus" class="bar-saring bar-cetak" method="GET" action="{{ route('staf.kelulusan.cetak', $jenis) }}" data-cetak>
     <input type="hidden" name="kelas" value="{{ $kelas->id }}">
     <input type="hidden" name="siswa" value="">
     <div class="bar-isi">

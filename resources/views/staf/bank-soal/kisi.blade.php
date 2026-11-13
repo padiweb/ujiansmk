@@ -7,7 +7,7 @@
 @include('staf.kelulusan.gaya')
 <style>@page { size: 33cm 21.5cm; } .tn td, .tn th { font-size: 10pt; } .lv { text-align: center; font-weight: bold; }</style>
 </head>
-<body>
+<body data-rapor="1">
 @unless ($word)
     <div class="alat tanpa-cetak">
         <button type="button" onclick="window.print()">Cetak</button>

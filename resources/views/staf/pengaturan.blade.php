@@ -13,8 +13,8 @@
 
     @php
         $isian = [
-            ['nama', 'Nama sekolah', true], ['alamat', 'Alamat', false], ['kota', 'Kota/Kabupaten', false],
-            ['provinsi', 'Provinsi', false], ['npsn', 'NPSN', false], ['kepala_sekolah', 'Kepala sekolah', false],
+            ['nama', 'Nama sekolah', true], ['nama_induk', 'Lembaga induk (baris atas kop)', false], ['alamat', 'Alamat', false], ['kota', 'Kota/Kabupaten', false],
+            ['provinsi', 'Provinsi', false], ['telepon', 'Telepon', false], ['website', 'Website', false], ['email', 'Email', false], ['npsn', 'NPSN', false], ['kepala_sekolah', 'Kepala sekolah', false],
             ['nip_kepala_sekolah', 'NIP kepala sekolah', false], ['kurikulum', 'Kurikulum', true],
         ];
     @endphp

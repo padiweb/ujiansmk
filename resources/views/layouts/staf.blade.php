@@ -193,6 +193,7 @@
 @endsection
 
 @push('skrip')
+<script src="{{ asset('js/cetak-bingkai.js') }}?v={{ filemtime(public_path('js/cetak-bingkai.js')) }}" defer></script>
 <script>
     (function () {
         var html = document.documentElement;

@@ -154,6 +154,26 @@ class UjianSekolahTest extends TestCase
         $this->get("/staf/kelulusan/skl/cetak?kelas={$this->xii->id}")->assertForbidden();
     }
 
+    public function test_kop_surat_memuat_logo_lembaga_induk_alamat_telepon_website_dan_email(): void
+    {
+        PengaturanSekolah::ambil()->update(['nama_induk' => 'Pondok Pesantren Contoh', 'alamat' => 'Jl. Contoh 1', 'telepon' => '0271-123', 'website' => 'smk.example.sch.id', 'email' => 'info@smk.example.sch.id']);
+        $this->actingAs($this->admin, 'web');
+
+        $this->get("/staf/kelulusan/skl/cetak?kelas={$this->xii->id}&siswa={$this->lulusan[0]->id}")->assertOk()
+            ->assertSee('images/logo_smk.png')->assertSee('PONDOK PESANTREN CONTOH')->assertSee('SMK ALHIKMAH TANON')
+            ->assertSee('Alamat : Jl. Contoh 1 Telp. 0271-123')->assertSee('Website : smk.example.sch.id')->assertSee('Email : info@smk.example.sch.id')
+            ->assertSee('data-rapor="1"', false);
+        $this->put('/staf/pengaturan', ['nama' => 'SMK Alhikmah Tanon', 'kurikulum' => 'Kurikulum Merdeka', 'nama_induk' => 'Yayasan Baru', 'telepon' => '0271-999', 'email' => 'salah'])->assertSessionHasErrors('email');
+        $this->put('/staf/pengaturan', ['nama' => 'SMK Alhikmah Tanon', 'kurikulum' => 'Kurikulum Merdeka', 'nama_induk' => 'Yayasan Baru', 'telepon' => '0271-999'])->assertSessionHas('berhasil');
+        $this->assertSame('Yayasan Baru', PengaturanSekolah::ambil()->nama_induk);
+    }
+
+    public function test_tautan_dan_formulir_cetak_memakai_bingkai_tanpa_tab_baru(): void
+    {
+        $this->actingAs($this->admin, 'web');
+        $this->get('/staf/kelulusan/transkrip')->assertOk()->assertSee('data-cetak', false)->assertDontSee('target="_blank"', false)->assertSee('js/cetak-bingkai.js');
+    }
+
     public function test_surat_mutasi_dicetak_dengan_tanggal_rapat(): void
     {
         $s = $this->lulusan[0];

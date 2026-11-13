@@ -20,7 +20,11 @@ class PengaturanSekolahController extends Controller
     {
         $data = $request->validate([
             'nama' => ['required', 'string', 'max:150'],
+            'nama_induk' => ['nullable', 'string', 'max:150'],
             'alamat' => ['nullable', 'string', 'max:500'],
+            'telepon' => ['nullable', 'string', 'max:40'],
+            'website' => ['nullable', 'string', 'max:120'],
+            'email' => ['nullable', 'email', 'max:120'],
             'kota' => ['nullable', 'string', 'max:60'],
             'provinsi' => ['nullable', 'string', 'max:60'],
             'npsn' => ['nullable', 'string', 'max:20'],

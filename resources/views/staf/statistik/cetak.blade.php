@@ -6,7 +6,7 @@
 <title>Peringkat {{ $kelas->nama }}</title>
 @include('staf.kelulusan.gaya')
 </head>
-<body>
+<body data-rapor="1">
 <div class="alat tanpa-cetak">
     <button type="button" onclick="window.print()">Cetak</button>
     <button type="button" class="garis" onclick="window.close()">Tutup</button>

@@ -7,9 +7,13 @@ table { border-collapse: collapse; width: 100%; }
 .lembar { page-break-after: always; }
 .lembar:last-child { page-break-after: auto; }
 .kop { border-bottom: 3px double #000; margin-bottom: 8px; }
-.kop td { text-align: center; padding-bottom: 6px; }
-.kop-nama { font-size: 16pt; font-weight: bold; letter-spacing: .5px; }
-.kop-alamat { font-size: 10.5pt; }
+.kop td { padding-bottom: 8px; vertical-align: middle; }
+.kop-logo { width: 75px; text-align: center; }
+.kop-logo img { width: 65px; }
+.kop-teks { text-align: center; line-height: 1.4; padding-right: 75px; }
+.kop-induk { font-size: 10pt; }
+.kop-nama { font-size: 15pt; font-weight: bold; }
+.kop-alamat { font-size: 9pt; }
 .judul { text-align: center; font-weight: bold; font-size: 14pt; text-decoration: underline; margin-top: 14px; }
 .nomor { text-align: center; margin-bottom: 12px; }
 .id td { padding: 2px 0; vertical-align: top; border: none; }

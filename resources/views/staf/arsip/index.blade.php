@@ -54,15 +54,15 @@
                         <td>@if ($terakhir)<span class="lencana-kelas">{{ $terakhir->nama }}</span> <small class="sub-baris">{{ $terakhir->tahunAjaran?->nama }}</small>@else – @endif</td>
                         <td>
                             @forelse (($rapor[$s->id] ?? collect())->sortBy(fn ($r) => $r->periode->tahunAjaran->nama.$r->periode->semester) as $r)
-                                <a href="{{ route('staf.wali.cetak', ['kelas' => $r->kelas_id, 'periode' => $r->periode_id, 'siswa' => $s->id, 'format' => 'cetak']) }}" target="_blank" rel="noopener">{{ ucfirst($r->periode->semester) }} {{ $r->periode->tahunAjaran->nama }}</a>@if (! $loop->last)<br>@endif
+                                <a href="{{ route('staf.wali.cetak', ['kelas' => $r->kelas_id, 'periode' => $r->periode_id, 'siswa' => $s->id, 'format' => 'cetak']) }}" data-cetak>{{ ucfirst($r->periode->semester) }} {{ $r->periode->tahunAjaran->nama }}</a>@if (! $loop->last)<br>@endif
                             @empty –
                             @endforelse
                         </td>
                         <td class="kanan aksi-baris">
                             @if ($xii && $status === 'lulus')
-                                <a href="{{ route('staf.kelulusan.cetak', ['jenis' => 'transkrip', 'kelas' => $terakhir->id, 'siswa' => $s->id]) }}" target="_blank" rel="noopener">Transkrip</a>
-                                <a href="{{ route('staf.kelulusan.cetak', ['jenis' => 'skl', 'kelas' => $terakhir->id, 'siswa' => $s->id]) }}" target="_blank" rel="noopener">SKL</a>
-                                <a href="{{ route('staf.kelulusan.cetak', ['jenis' => 'mutasi', 'kelas' => $terakhir->id, 'siswa' => $s->id]) }}" target="_blank" rel="noopener">Mutasi</a>
+                                <a href="{{ route('staf.kelulusan.cetak', ['jenis' => 'transkrip', 'kelas' => $terakhir->id, 'siswa' => $s->id]) }}" data-cetak>Transkrip</a>
+                                <a href="{{ route('staf.kelulusan.cetak', ['jenis' => 'skl', 'kelas' => $terakhir->id, 'siswa' => $s->id]) }}" data-cetak>SKL</a>
+                                <a href="{{ route('staf.kelulusan.cetak', ['jenis' => 'mutasi', 'kelas' => $terakhir->id, 'siswa' => $s->id]) }}" data-cetak>Mutasi</a>
                             @else –
                             @endif
                         </td>

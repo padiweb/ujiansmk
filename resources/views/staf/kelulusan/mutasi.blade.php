@@ -7,7 +7,7 @@
 @include('staf.kelulusan.gaya')
 <style>.poin { margin: 6px 0 6px 18px; } .poin p { margin: 4px 0; text-align: justify; }</style>
 </head>
-<body>
+<body data-rapor="1">
 @unless ($word)
     <div class="alat tanpa-cetak">
         <button type="button" onclick="window.print()">Cetak</button>
