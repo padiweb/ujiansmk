@@ -150,12 +150,24 @@ class JadwalUjianTest extends TestCase
         $this->post('/staf/jadwal-ujian', [])->assertSessionHasErrors(['kegiatan_id', 'mapel_id', 'durasi_menit', 'mulai_pada', 'tutup_pada', 'kelas_ids', 'bank_ids']);
         $this->post('/staf/jadwal-ujian', $this->data(['durasi_menit' => 4]))->assertSessionHasErrors('durasi_menit');
         $this->post('/staf/jadwal-ujian', $this->data(['durasi_menit' => 481]))->assertSessionHasErrors('durasi_menit');
+        $this->post('/staf/jadwal-ujian', $this->data(['durasi_menit' => 60, 'min_kumpul_menit' => 60]))->assertSessionHasErrors('min_kumpul_menit');
+        $this->post('/staf/jadwal-ujian', $this->data(['durasi_menit' => 60, 'min_kumpul_menit' => -1]))->assertSessionHasErrors('min_kumpul_menit');
         $this->post('/staf/jadwal-ujian', $this->data(['batas_pelanggaran' => 0]))->assertSessionHasErrors('batas_pelanggaran');
         $this->post('/staf/jadwal-ujian', $this->data(['bobot_pg' => 101]))->assertSessionHasErrors('bobot_pg');
         $this->post('/staf/jadwal-ujian', $this->data(['tampilkan_hasil' => 'rahasia']))->assertSessionHasErrors('tampilkan_hasil');
         $this->post('/staf/jadwal-ujian', $this->data(['tutup_pada' => now()->format('Y-m-d\TH:i'), 'mulai_pada' => now()->addDay()->format('Y-m-d\TH:i')]))
             ->assertSessionHasErrors('tutup_pada');
         $this->assertSame(0, JadwalUjian::count());
+    }
+
+    public function test_waktu_minimal_mengumpulkan_tersimpan_dan_tampil(): void
+    {
+        $this->actingAs($this->admin, 'web');
+        $this->post('/staf/jadwal-ujian', $this->data(['durasi_menit' => 60, 'min_kumpul_menit' => 30]))->assertSessionHasNoErrors();
+        $j = JadwalUjian::latest('id')->first();
+        $this->assertSame(30, $j->min_kumpul_menit);
+        $this->get("/staf/jadwal-ujian/{$j->id}")->assertOk()->assertSee('setelah 30 menit');
+        $this->get("/staf/jadwal-ujian/{$j->id}/ubah")->assertOk()->assertSee('Waktu minimal sebelum bisa mengumpulkan');
     }
 
     public function test_kelas_harus_dari_tahun_ajaran_semester_yang_dipilih(): void

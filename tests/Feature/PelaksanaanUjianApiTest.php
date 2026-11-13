@@ -471,6 +471,59 @@ class PelaksanaanUjianApiTest extends TestCase
         $this->assertSame('A', Jawaban::where('sesi_id', $sesi->id)->where('soal_id', $this->soal['s1']->id)->value('opsi_label'));
     }
 
+    public function test_kirim_ditahan_sebelum_waktu_minimal_dan_jawaban_tetap_tersimpan(): void
+    {
+        $this->siapkanUjian(['durasi_menit' => 60, 'min_kumpul_menit' => 20]);
+        $token = $this->mulaiSesi($this->siswa[0]);
+        $sesi = $this->sesiDari($this->siswa[0]);
+        $boleh = $sesi->mulai_pada->copy()->addMinutes(20)->getTimestampMs();
+
+        $paket = $this->getJson("/api/ujian/{$sesi->id}/paket", $this->header($token))->assertOk();
+        $this->assertSame($boleh, $paket->json('keadaan.bisa_kirim'));
+
+        // Terlalu cepat: ditolak 422, ujian tetap berjalan, tetapi jawaban yang ikut terkirim tersimpan.
+        $r = $this->postJson("/api/ujian/{$sesi->id}/kirim", ['jawaban' => $this->jawabanBenar()], $this->header($token))->assertStatus(422);
+        $r->assertJsonPath('kode', 'terlalu_cepat')->assertJsonPath('status', 'berlangsung');
+        $this->assertStringContainsString('menit', $r->json('pesan'));
+        $this->assertSame('berlangsung', $sesi->fresh()->status);
+        $this->assertSame(3, Jawaban::where('sesi_id', $sesi->id)->count());
+        $this->assertNull($sesi->fresh()->hasil);
+
+        // Setelah waktu minimal: boleh.
+        Carbon::setTestNow($sesi->mulai_pada->copy()->addMinutes(21));
+        $this->postJson("/api/ujian/{$sesi->id}/kirim", ['jawaban' => $this->jawabanBenar()], $this->header($token))->assertOk()->assertJsonPath('selesai', true);
+        $this->assertSame('kirim', $sesi->fresh()->alasan_selesai);
+    }
+
+    public function test_waktu_minimal_tidak_menahan_siswa_melewati_batas_waktu_dan_nol_berarti_bebas(): void
+    {
+        $this->siapkanUjian(['durasi_menit' => 30, 'min_kumpul_menit' => 25]);
+        $token = $this->mulaiSesi($this->siswa[0]);
+        $sesi = $this->sesiDari($this->siswa[0]);
+        // Pengawas memperpendek sisa waktu: waktu minimal dibatasi batas selesai.
+        $sesi->update(['batas_selesai' => $sesi->mulai_pada->copy()->addMinutes(10)]);
+        Carbon::setTestNow($sesi->mulai_pada->copy()->addMinutes(10)->addSecond());
+        $this->postJson("/api/ujian/{$sesi->id}/kirim", ['jawaban' => $this->jawabanBenar()], $this->header($token))->assertOk();
+        $this->assertSame('waktu_habis', $sesi->fresh()->alasan_selesai);
+
+    }
+
+    public function test_nol_menit_berarti_boleh_langsung_mengumpulkan(): void
+    {
+        $this->siapkanUjian(['durasi_menit' => 30, 'min_kumpul_menit' => 0]);
+        $token = $this->mulaiSesi($this->siswa[0]);
+        $sesi = $this->sesiDari($this->siswa[0]);
+
+        $this->getJson("/api/ujian/{$sesi->id}/paket", $this->header($token))->assertOk()->assertJsonPath('keadaan.bisa_kirim', null);
+        $this->postJson("/api/ujian/{$sesi->id}/kirim", ['jawaban' => []], $this->header($token))->assertOk();
+        $this->assertNull($this->layananBisaKirim($sesi));
+    }
+
+    private function layananBisaKirim($sesi)
+    {
+        return app(\App\Services\LayananSesi::class)->bisaKirimPada($sesi->fresh());
+    }
+
     public function test_kirim_setelah_toleransi_tidak_menyimpan_jawaban_baru_tetapi_menilai_yang_sudah_ada(): void
     {
         $this->siapkanUjian(['durasi_menit' => 30]);

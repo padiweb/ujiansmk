@@ -47,6 +47,7 @@
         <div><dt>Dibuka</dt><dd>{{ $j->mulai_pada->format('d/m/Y H:i') }}</dd></div>
         <div><dt>Ditutup</dt><dd>{{ $j->tutup_pada->format('d/m/Y H:i') }} @if ($j->status === 'aktif') <span class="lencana pucat">{{ $jendela[$j->jendela()] }}</span> @endif</dd></div>
         <div><dt>Durasi</dt><dd>{{ $j->durasi_menit }} menit sejak siswa mulai</dd></div>
+        @if ($j->min_kumpul_menit > 0)<div><dt>Boleh mengumpulkan</dt><dd>setelah {{ $j->min_kumpul_menit }} menit</dd></div>@endif
         <div><dt>Acak</dt><dd>Soal: {{ $j->acak_soal ? 'ya' : 'tidak' }} · Opsi: {{ $j->acak_opsi ? 'ya' : 'tidak' }}</dd></div>
         <div><dt>Batas pelanggaran</dt><dd>{{ $j->batas_pelanggaran }} (blokir pada pelanggaran ke-{{ $j->batas_pelanggaran }})</dd></div>
         <div><dt>Bobot nilai</dt><dd>PG {{ $j->bobot_pg }}% · Esai {{ $j->bobotEsai() }}%</dd></div>

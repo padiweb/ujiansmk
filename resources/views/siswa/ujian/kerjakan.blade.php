@@ -35,6 +35,7 @@
             <form id="formSoal" onsubmit="return false" hidden></form>
             <div id="areaKirim" class="kartu" hidden>
                 <button type="button" id="tombolKirim" class="tombol"><x-ikon nama="centang" :ukuran="18" />Kirim jawaban</button>
+                <small id="infoTunggu" class="bantuan" style="text-align:center" hidden></small>
                 <small class="bantuan" style="text-align:center">Pastikan semua soal sudah dijawab. Jawaban tidak bisa diubah setelah dikirim.</small>
             </div>
         </main>

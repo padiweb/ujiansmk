@@ -33,6 +33,7 @@
         kotor: {},           // soal_id -> true (belum tersinkron)
         selisih: 0,          // jam_server - jam_klien (ms)
         batas: 0,            // batas selesai (ms, jam server)
+        bisaKirim: 0,        // saat paling awal boleh mengumpulkan (ms, jam server); 0 = tanpa pembatasan
         selang: 20,          // detik, ditentukan server
         status: 'berlangsung',
         terkunci: false,     // waktu habis / terkirim / diblokir: masukan dikunci
@@ -68,6 +69,7 @@
         if (!k) return;
         if (typeof k.waktu_server === 'number') S.selisih = k.waktu_server - Date.now();
         if (typeof k.batas_selesai === 'number') S.batas = k.batas_selesai;
+        S.bisaKirim = typeof k.bisa_kirim === 'number' ? k.bisa_kirim : 0;
         if (typeof k.selang === 'number') S.selang = Math.max(10, Math.min(120, k.selang));
         if (typeof k.pelanggaran === 'number') tampilPelanggaran(k.pelanggaran);
         if (k.status) S.status = k.status;
@@ -243,6 +245,39 @@
         el.classList.toggle('peringatan', l <= 300 && l > 60);
         el.classList.toggle('bahaya', l <= 60);
         if (l <= 0 && !S.terkunci) waktuHabis();
+        aturTombolKirim();
+    }
+
+    /* Tombol Kirim baru aktif setelah waktu minimal (diatur admin) agar siswa tidak terburu-buru. */
+    function sisaTungguKirim() {
+        return S.bisaKirim ? Math.max(0, Math.ceil((S.bisaKirim - (Date.now() + S.selisih)) / 1000)) : 0;
+    }
+
+    function teksTunggu(d) {
+        var m = Math.floor(d / 60), s = d % 60;
+        return m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function aturTombolKirim() {
+        var tombol = $('tombolKirim');
+        if (!tombol) return;
+        var tunggu = sisaTungguKirim();
+        var label = tombol.querySelector('.label-kirim');
+        if (!label) {
+            label = document.createElement('span');
+            label.className = 'label-kirim';
+            label.textContent = tombol.textContent.trim();
+            tombol.querySelectorAll('svg').forEach(function (v) { v.remove(); });
+            tombol.textContent = '';
+            tombol.appendChild(label);
+        }
+        tombol.disabled = tunggu > 0;
+        label.textContent = tunggu > 0 ? 'Kirim jawaban (aktif dalam ' + teksTunggu(tunggu) + ')' : 'Kirim jawaban';
+        var info = $('infoTunggu');
+        if (info) {
+            info.hidden = tunggu <= 0;
+            info.textContent = tunggu > 0 ? 'Gunakan waktu ini untuk memeriksa kembali semua jawaban Anda. Tombol kirim akan aktif otomatis.' : '';
+        }
     }
 
     function waktuHabis() {
@@ -263,6 +298,14 @@
         S.sedangKirim = true;
         minta(cfg.kirim, { badan: { jawaban: semuaJawaban() } }).then(function (r) {
             if (r.status === 401) { S.sedangKirim = false; return galatFatal(); }
+            if (r.status === 422 && r.data && r.data.kode === 'terlalu_cepat') {
+                // Belum waktunya mengumpulkan: buka kembali isian dan tampilkan pesan.
+                S.sedangKirim = false;
+                terapkanKeadaan(r.data);
+                bukaKunci();
+                lapisan('Belum bisa dikumpulkan', r.data.pesan || 'Periksa kembali jawaban Anda.', [{ teks: 'Periksa lagi', aksi: tutupLapisan }]);
+                return;
+            }
             if (r.status >= 400) throw new Error('gagal');
             S.selesai = true;
             try { localStorage.removeItem(kunciLokal); } catch (e) { /* abaikan */ }
@@ -278,6 +321,10 @@
 
     function konfirmasiKirim() {
         if (S.terkunci) return;
+        if (sisaTungguKirim() > 0) {
+            lapisan('Belum bisa dikumpulkan', 'Periksa kembali jawaban Anda. Tombol kirim aktif dalam ' + teksTunggu(sisaTungguKirim()) + '.', [{ teks: 'Periksa lagi', aksi: tutupLapisan }]);
+            return;
+        }
         var kosong = S.soal.filter(function (s) { return !terjawab(s.id); }).length;
         lapisan('Kirim jawaban?',
             kosong > 0 ? kosong + ' soal belum Anda jawab. Jawaban tidak bisa diubah setelah dikirim.' : 'Semua soal sudah dijawab. Jawaban tidak bisa diubah setelah dikirim.',

@@ -108,7 +108,18 @@ class UjianApiController extends Controller
     {
         /** @var SesiUjian $sesi */
         $sesi = $request->attributes->get('sesi');
-        $hasil = $this->layanan->kirim($sesi, (array) $request->input('jawaban', []));
+        try {
+            $hasil = $this->layanan->kirim($sesi, (array) $request->input('jawaban', []));
+        } catch (\App\Services\KesalahanUjian $e) {
+            if ($e->kode !== 'terlalu_cepat') {
+                throw $e;
+            }
+
+            // Jawaban dikirim bersama agar tidak hilang; hanya penyelesaian yang ditahan.
+            $this->layanan->sinkron($sesi, (array) $request->input('jawaban', []));
+
+            return response()->json(['pesan' => $e->getMessage(), 'kode' => $e->kode] + $this->layanan->keadaan($sesi->refresh()), $e->status)->header('Cache-Control', 'no-store');
+        }
         $sesi->refresh();
 
         $tampil = $sesi->jadwal->tampilkan_hasil === 'langsung';

@@ -208,6 +208,7 @@ class JadwalUjianController extends Controller
             'kegiatan_id' => ['required', Rule::exists('kegiatan_ujian', 'id')],
             'mapel_id' => ['required', Rule::exists('mapel', 'id')],
             'durasi_menit' => ['required', 'integer', 'between:5,480'],
+            'min_kumpul_menit' => ['nullable', 'integer', 'min:0', 'lt:durasi_menit'],
             'mulai_pada' => ['required', 'date'],
             'tutup_pada' => ['required', 'date', 'after:mulai_pada'],
             'kelas_ids' => ['required', 'array', 'min:1'],
@@ -228,10 +229,11 @@ class JadwalUjianController extends Controller
 
         $v = Validator::make($request->all(), $aturan, [
             'tutup_pada.after' => 'Waktu tutup harus setelah waktu mulai.',
+            'min_kumpul_menit.lt' => 'Waktu minimal sebelum mengumpulkan harus lebih kecil dari durasi pengerjaan.',
             'kelas_ids.required' => 'Pilih minimal satu kelas peserta.',
             'bank_ids.required' => 'Pilih minimal satu bank soal.',
         ], [
-            'kegiatan_id' => 'Kegiatan', 'mapel_id' => 'Mata pelajaran', 'durasi_menit' => 'Durasi',
+            'kegiatan_id' => 'Kegiatan', 'mapel_id' => 'Mata pelajaran', 'durasi_menit' => 'Durasi', 'min_kumpul_menit' => 'Waktu minimal mengumpulkan',
             'mulai_pada' => 'Waktu mulai', 'tutup_pada' => 'Waktu tutup', 'batas_pelanggaran' => 'Batas pelanggaran',
             'bobot_pg' => 'Bobot PG', 'tampilkan_hasil' => 'Tampilan hasil',
         ]);
@@ -296,6 +298,7 @@ class JadwalUjianController extends Controller
             'periode_id' => $data['periode_id'],
             'mapel_id' => $data['mapel_id'],
             'durasi_menit' => $data['durasi_menit'],
+            'min_kumpul_menit' => (int) ($data['min_kumpul_menit'] ?? 0),
             'mulai_pada' => $data['mulai_pada'],
             'tutup_pada' => $data['tutup_pada'],
             'acak_soal' => (bool) ($data['acak_soal'] ?? false),

@@ -79,6 +79,13 @@
             @error('durasi_menit') <small class="galat-bidang">{{ $message }}</small> @enderror
         </div>
 
+        <div class="bidang @error('min_kumpul_menit') salah @enderror">
+            <label for="min_kumpul_menit">Waktu minimal sebelum bisa mengumpulkan (menit)</label>
+            <input id="min_kumpul_menit" name="min_kumpul_menit" type="number" min="0" max="479" value="{{ old('min_kumpul_menit', $j?->min_kumpul_menit ?? 0) }}">
+            <small class="bantuan">Siswa baru bisa menekan Kirim setelah waktu ini. 0 = langsung boleh.</small>
+            @error('min_kumpul_menit') <small class="galat-bidang">{{ $message }}</small> @enderror
+        </div>
+
         <fieldset class="opsi-blok @error('bank_ids') salah @enderror">
             <legend>Bank soal <span class="wajib">*</span></legend>
             <small class="bantuan" style="margin:0 0 8px">Hanya bank untuk mata pelajaran yang dipilih. Kosongkan jumlah untuk memakai semua soal yang siap.</small>

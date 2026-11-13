@@ -167,6 +167,21 @@ class LayananSesi
         return $this->keadaan($sesi);
     }
 
+    /**
+     * Saat paling awal siswa boleh mengumpulkan: mulai + waktu minimal jadwal, dibatasi batas selesai
+     * (waktu minimal tidak pernah menahan siswa melewati batas waktunya). Null bila tidak ada pembatasan.
+     */
+    public function bisaKirimPada(SesiUjian $sesi): ?Carbon
+    {
+        $menit = (int) ($sesi->jadwal->min_kumpul_menit ?? 0);
+        if ($menit <= 0 || ! $sesi->mulai_pada) {
+            return null;
+        }
+        $saat = $sesi->mulai_pada->copy()->addMinutes($menit);
+
+        return $sesi->batas_selesai && $saat->gt($sesi->batas_selesai) ? $sesi->batas_selesai->copy() : $saat;
+    }
+
     /** Kirim jawaban terakhir lalu akhiri ujian dan nilai PG. */
     public function kirim(SesiUjian $sesi, array $jawaban): HasilUjian
     {
@@ -175,6 +190,12 @@ class LayananSesi
         }
 
         $sekarang = now();
+        $boleh = $this->bisaKirimPada($sesi);
+        if ($boleh && $sekarang->lt($boleh) && $sekarang->lte($sesi->batas_selesai)) {
+            $sisa = (int) ceil($sekarang->diffInSeconds($boleh, true));
+
+            throw new KesalahanUjian('Jawaban belum bisa dikumpulkan. Periksa kembali jawaban Anda; tombol kirim aktif dalam '.$this->durasiTeks($sisa).'.', 'terlalu_cepat', 422);
+        }
         $dalamToleransi = $sekarang->lte($sesi->batas_selesai->copy()->addSeconds($this->toleransi()));
         if ($dalamToleransi && $jawaban !== []) {
             $this->simpanJawaban($sesi, $jawaban, terlambat: $sekarang->gt($sesi->batas_selesai));
@@ -243,9 +264,15 @@ class LayananSesi
             'status' => $sesi->status,
             'waktu_server' => (int) round(microtime(true) * 1000),
             'batas_selesai' => $sesi->batas_selesai?->getTimestampMs(),
+            'bisa_kirim' => $this->bisaKirimPada($sesi)?->getTimestampMs(),
             'pelanggaran' => $sesi->jumlah_pelanggaran,
             'selang' => $this->selang(),
         ];
+    }
+
+    private function durasiTeks(int $detik): string
+    {
+        return $detik >= 60 ? ceil($detik / 60).' menit' : max(1, $detik).' detik';
     }
 
     /** @param  array<int|string,mixed>  $masuk */
