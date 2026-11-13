@@ -14,6 +14,7 @@ use App\Http\Controllers\Staf\ImporSoalController;
 use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
+use App\Http\Controllers\Staf\NilaiLampauController;
 use App\Http\Controllers\Staf\NilaiRaporController;
 use App\Http\Controllers\Staf\CetakRaporController;
 use App\Http\Controllers\Staf\WaliKelasController;
@@ -132,6 +133,12 @@ Route::prefix('staf')->group(function () {
             Route::post('/', [NilaiRaporController::class, 'simpan'])->middleware('throttle:30,1')->name('simpan');
             Route::post('/ambil-ulang', [NilaiRaporController::class, 'ambilUlang'])->middleware('throttle:10,1')->name('ambil-ulang');
         });
+    });
+
+    // Nilai lampau: nilai rapor semester lama; guru hanya mapel yang diampunya (dicek di pengendali).
+    Route::middleware(['auth:web', 'peran:admin,guru'])->prefix('nilai-lampau')->name('staf.lampau.')->group(function () {
+        Route::get('/', [NilaiLampauController::class, 'index'])->name('index');
+        Route::post('/', [NilaiLampauController::class, 'simpan'])->middleware('throttle:30,1')->name('simpan');
     });
 
     // Wali kelas: admin semua kelas, guru hanya kelas yang diwalikannya (dicek di layanan).
