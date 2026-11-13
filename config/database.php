@@ -64,6 +64,20 @@ return [
             ]) : [],
         ],
 
+        // Database aplikasi lama (hanya DIBACA oleh perintah migrasi:lama). Isi LAMA_DB_* di .env saat migrasi.
+        'lama' => [
+            'driver' => 'mysql',
+            'host' => env('LAMA_DB_HOST', '127.0.0.1'),
+            'port' => env('LAMA_DB_PORT', '3306'),
+            'database' => env('LAMA_DB_DATABASE', ''),
+            'username' => env('LAMA_DB_USERNAME', 'root'),
+            'password' => env('LAMA_DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => false,
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),
