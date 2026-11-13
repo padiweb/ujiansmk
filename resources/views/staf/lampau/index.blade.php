@@ -5,7 +5,7 @@
 <div class="kepala-halaman">
     <div>
         <h1 class="judul-halaman">Nilai Lampau</h1>
-        <p class="sub">Nilai rapor semester lama yang belum pernah diisi lewat aplikasi ini.</p>
+        <p class="sub">Nilai rapor semester lama untuk siswa yang sekarang duduk di kelas yang dipilih.</p>
     </div>
 </div>
 
@@ -15,14 +15,14 @@
 <form class="bar-saring" method="GET" action="{{ route('staf.lampau.index') }}">
     <div class="bar-isi">
         <label for="f-periode">Semester</label>
-        <select id="f-periode" name="periode" onchange="this.form.kelas.value='';this.form.submit()">
+        <select id="f-periode" name="periode" onchange="this.form.submit()">
             @foreach ($daftarPeriode as $p)
                 <option value="{{ $p->id }}" @selected($periode?->id === $p->id)>{{ $p->label() }}</option>
             @endforeach
         </select>
     </div>
     <div class="bar-isi">
-        <label for="f-kelas">Kelas</label>
+        <label for="f-kelas">Kelas saat ini</label>
         <select id="f-kelas" name="kelas" onchange="this.form.submit()">
             <option value="">Pilih kelas</option>
             @foreach ($daftarKelas as $k)
@@ -48,10 +48,17 @@
     <input type="hidden" name="kelas" value="{{ $kelas->id }}">
     <input type="hidden" name="mapel" value="{{ $mapel->id }}">
 
+    <div class="bar-saring">
+        <div class="bar-isi bar-cari">
+            <label for="f-kelas-lama">Nama kelas pada semester itu</label>
+            <input id="f-kelas-lama" name="kelas_lama" type="text" maxlength="50" value="{{ old('kelas_lama', $kelasLama) }}" placeholder="Contoh: X TKJ 1" autocomplete="off">
+        </div>
+    </div>
+
     <div class="pita-info">
         <div class="pita-isi">
             <div><small>Mapel</small><b>{{ $mapel->nama }}</b></div>
-            <div><small>Kelas</small><b>{{ $kelas->nama }}</b></div>
+            <div><small>Kelas saat ini</small><b>{{ $kelas->nama }}</b></div>
             <div><small>Semester</small><b>{{ $periode->label() }}</b></div>
             <div><small>KKM</small><b><span class="pita-kkm">{{ $mapel->kkm }}</span></b></div>
             <div><small>Siswa</small><b>{{ count($baris) }}</b></div>

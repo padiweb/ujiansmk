@@ -29,10 +29,16 @@ class LayananNilaiLampau
             ->orderByDesc('tahun_ajaran_id')->orderBy('semester')->get();
     }
 
-    /** @return Collection<int,Kelas> kelas pada tahun ajaran semester itu */
-    public function daftarKelas(Periode $periode): Collection
+    /**
+     * Kelas SAAT INI (tahun ajaran aktif, bukan kelas semester lama): nilai lampau diisi untuk siswa yang sekarang duduk di kelas ini.
+     *
+     * @return Collection<int,Kelas>
+     */
+    public function daftarKelas(): Collection
     {
-        return Kelas::where('tahun_ajaran_id', $periode->tahun_ajaran_id)->orderBy('tingkat')->orderBy('nama')->get();
+        $tahun = Periode::where('aktif', true)->value('tahun_ajaran_id') ?? Kelas::max('tahun_ajaran_id');
+
+        return Kelas::where('tahun_ajaran_id', $tahun)->orderBy('tingkat')->orderBy('nama')->get();
     }
 
     /** Admin: semua mapel. Guru: mapel yang pernah/sedang diampunya. */
@@ -50,6 +56,14 @@ class LayananNilaiLampau
             'guru' => Pengampu::where('guru_id', $user->id)->where('mapel_id', $mapel->id)->exists(),
             default => false,
         };
+    }
+
+    /** Nama kelas pada semester lampau itu (teks bebas yang pernah dicatat untuk kelas ini), bila ada. */
+    public function kelasLama(Mapel $mapel, Kelas $kelas, Periode $periode): ?string
+    {
+        $n = NilaiRapor::where('mapel_id', $mapel->id)->where('kelas_id', $kelas->id)->where('periode_id', $periode->id)->latest('updated_at')->first();
+
+        return ($n?->snapshot['lampau'] ?? false) ? ($n->snapshot['kelas_nama'] ?? null) : null;
     }
 
     /** @return list<array{siswa:Siswa,np:?int,nk:?int,na:?int,predikat:?string,ada:bool}> */
@@ -73,13 +87,10 @@ class LayananNilaiLampau
      *
      * @throws DomainException
      */
-    public function simpan(User $pelaku, Mapel $mapel, Kelas $kelas, Periode $periode, array $input): array
+    public function simpan(User $pelaku, Mapel $mapel, Kelas $kelas, Periode $periode, array $input, ?string $kelasLama = null): array
     {
         if ($periode->rapor_di_sini) {
             throw new DomainException('Semester ini rapornya diisi di aplikasi ini. Gunakan menu Input Nilai.');
-        }
-        if ($periode->tahun_ajaran_id !== $kelas->tahun_ajaran_id) {
-            throw new DomainException('Kelas tidak sesuai dengan tahun ajaran semester.');
         }
 
         $bobot = $this->rapor->bobot();
@@ -88,8 +99,9 @@ class LayananNilaiLampau
         $disimpan = 0;
         $dilewati = 0;
         $salah = 0;
+        $kelasLama = mb_substr(trim((string) $kelasLama), 0, 50) ?: $kelas->nama;
 
-        DB::transaction(function () use ($pelaku, $mapel, $kelas, $periode, $input, $bobot, $skala, $siswaIds, &$disimpan, &$dilewati, &$salah) {
+        DB::transaction(function () use ($pelaku, $mapel, $kelas, $periode, $input, $bobot, $skala, $siswaIds, $kelasLama, &$disimpan, &$dilewati, &$salah) {
             $ada = NilaiRapor::where('mapel_id', $mapel->id)->where('kelas_id', $kelas->id)->where('periode_id', $periode->id)->lockForUpdate()->get()->keyBy('siswa_id');
 
             foreach ($input as $siswaId => $baris) {
@@ -123,7 +135,7 @@ class LayananNilaiLampau
                     'ujian' => $np ?: null, 'harian' => $np ?: null, 'tugas_akhir' => $np ?: null, 'praktik' => $nk ?: null, 'adab' => $nk ?: null,
                     'ujian_sumber' => 'manual', 'harian_sumber' => 'manual', 'guru_id' => $pelaku->id,
                     'np' => $np, 'nk' => $nk, 'na' => $na, 'predikat' => $this->rapor->predikat($na, $skala), 'status' => 'final',
-                    'snapshot' => ['mapel_nama' => $mapel->nama, 'kelas_nama' => $kelas->nama, 'kkm' => $mapel->kkm, 'lampau' => true, 'bobot' => $bobot],
+                    'snapshot' => ['mapel_nama' => $mapel->nama, 'kelas_nama' => $kelasLama, 'kkm' => $mapel->kkm, 'lampau' => true, 'bobot' => $bobot],
                 ];
                 $n = $ada[$siswaId] ?? null;
                 if ($n) {

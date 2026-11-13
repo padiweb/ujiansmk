@@ -78,6 +78,23 @@ class NilaiLampauTest extends TestCase
         $this->assertNull(NilaiRapor::where('siswa_id', $this->siswa[2]->id)->first());
     }
 
+    public function test_semester_tahun_lain_diisi_untuk_kelas_saat_ini_dengan_nama_kelas_lama(): void
+    {
+        $lama = \App\Models\TahunAjaran::create(['nama' => '2020/2021', 'aktif' => false]);
+        $sem = Periode::create(['tahun_ajaran_id' => $lama->id, 'semester' => 'ganjil', 'tipe' => 'reguler', 'aktif' => false, 'rapor_di_sini' => false]);
+        $this->actingAs($this->guru, 'web');
+
+        $url = "/staf/nilai-lampau?periode={$sem->id}&kelas={$this->kelas->id}&mapel={$this->mtk->id}";
+        $this->get($url)->assertOk()->assertSee($this->siswa[0]->nama)->assertSee('Nama kelas pada semester itu');
+
+        $this->post('/staf/nilai-lampau', ['periode' => $sem->id, 'kelas' => $this->kelas->id, 'mapel' => $this->mtk->id, 'kelas_lama' => 'VII A',
+            'nilai' => [$this->siswa[0]->id => ['np' => '88', 'nk' => '86']]])->assertSessionHas('berhasil');
+
+        $n = NilaiRapor::where('siswa_id', $this->siswa[0]->id)->where('periode_id', $sem->id)->first();
+        $this->assertSame([88, 86, 'VII A', $this->kelas->id], [$n->np, $n->nk, $n->snapshot['kelas_nama'], $n->kelas_id]);
+        $this->get($url)->assertSee('value="VII A"', false);
+    }
+
     public function test_semester_yang_rapornya_diisi_di_sini_ditolak(): void
     {
         $this->periode->update(['rapor_di_sini' => true]);

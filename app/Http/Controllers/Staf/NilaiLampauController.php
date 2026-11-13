@@ -22,7 +22,7 @@ class NilaiLampauController extends Controller
         $user = $request->user('web');
         $daftarPeriode = $this->lampau->daftarPeriode();
         $periode = $daftarPeriode->firstWhere('id', (int) $request->input('periode')) ?? $daftarPeriode->first();
-        $daftarKelas = $periode ? $this->lampau->daftarKelas($periode) : collect();
+        $daftarKelas = $this->lampau->daftarKelas();
         $kelas = $daftarKelas->firstWhere('id', (int) $request->input('kelas'));
         $daftarMapel = $this->lampau->daftarMapel($user);
         $mapel = $daftarMapel->firstWhere('id', (int) $request->input('mapel'));
@@ -32,6 +32,7 @@ class NilaiLampauController extends Controller
             'daftarKelas' => $daftarKelas, 'kelas' => $kelas,
             'daftarMapel' => $daftarMapel, 'mapel' => $mapel,
             'baris' => $periode && $kelas && $mapel ? $this->lampau->tabel($mapel, $kelas, $periode) : [],
+            'kelasLama' => $periode && $kelas && $mapel ? $this->lampau->kelasLama($mapel, $kelas, $periode) : null,
         ]);
     }
 
@@ -39,7 +40,7 @@ class NilaiLampauController extends Controller
     {
         $request->validate([
             'periode' => ['required', 'integer'], 'kelas' => ['required', 'integer'], 'mapel' => ['required', 'integer'],
-            'nilai' => ['nullable', 'array'], 'nilai.*' => ['array'],
+            'nilai' => ['nullable', 'array'], 'nilai.*' => ['array'], 'kelas_lama' => ['nullable', 'string', 'max:50'],
         ]);
         $periode = Periode::findOrFail((int) $request->input('periode'));
         $kelas = Kelas::findOrFail((int) $request->input('kelas'));
@@ -47,7 +48,7 @@ class NilaiLampauController extends Controller
         abort_unless($this->lampau->boleh($request->user('web'), $mapel), 404);
 
         try {
-            $h = $this->lampau->simpan($request->user('web'), $mapel, $kelas, $periode, $request->input('nilai', []));
+            $h = $this->lampau->simpan($request->user('web'), $mapel, $kelas, $periode, $request->input('nilai', []), $request->input('kelas_lama'));
         } catch (DomainException $e) {
             return back()->with('gagal', $e->getMessage());
         }
