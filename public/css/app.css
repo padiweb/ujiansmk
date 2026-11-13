@@ -760,3 +760,7 @@ h1, h2, h3 { color: var(--teks); }
 .pita-info a.tombol-pita, .pita-info a.tombol-pita:hover, .pita-info button.tombol-pita { color: #fff; }
 .pita-info .pita-isi small { color: rgba(255, 255, 255, .7); }
 .pita-form p { color: rgba(255, 255, 255, .78); }
+
+.db-panel .isi-panel { padding: 14px 18px 16px; }
+.db-panel .isi-panel .sub { margin: 0 0 10px; }
+.db-panel .isi-panel .aksi-form { margin-top: 0; }

@@ -128,10 +128,11 @@
     @endunless
 </form>
 
-<div class="kartu" style="margin-top:20px">
-    <h2 class="judul-kartu">Finalisasi rapor</h2>
+<div class="db-panel" style="margin-top:20px">
+    <header><h3>Finalisasi Rapor</h3><small>{{ $final ? 'Final' : 'Belum final' }}</small></header>
+    <div class="isi-panel">
     @if ($final)
-        <p class="sub">Rapor kelas ini sudah final: nilai, absensi, catatan, dan keputusan tidak dapat diubah.</p>
+        <p class="sub">Rapor final, data tidak dapat diubah.</p>
         @if ($admin)
             <form method="POST" action="{{ route('staf.wali.buka-final', [$kelas, 'periode' => $periode->id]) }}" class="aksi-form" onsubmit="return confirm('Buka final rapor kelas ini? Nilai dapat diubah kembali dan tindakan ini dicatat.')">
                 @csrf
@@ -145,10 +146,10 @@
             @foreach ($hambatan as $h) <li>{{ $h }}</li> @endforeach
         </ul>
     @else
-        <p class="sub">Semua nilai sudah lengkap. Setelah difinalkan, nilai dan data rapor kelas ini tidak dapat diubah.</p>
         <form method="POST" action="{{ route('staf.wali.finalkan', [$kelas, 'periode' => $periode->id]) }}" onsubmit="return confirm('Finalkan rapor kelas {{ $kelas->nama }}? Nilai, absensi, dan catatan tidak dapat diubah lagi.')">
-            @csrf <button class="tombol" type="submit">Finalkan rapor kelas</button>
+            @csrf <button class="tombol kecil" type="submit">Finalkan rapor kelas</button>
         </form>
     @endif
+    </div>
 </div>
 @endsection
