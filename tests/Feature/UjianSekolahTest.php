@@ -166,6 +166,22 @@ class UjianSekolahTest extends TestCase
         $this->actingAs($this->guru, 'web')->get('/staf/kelulusan/mutasi')->assertForbidden();
     }
 
+    public function test_arsip_siswa_menampilkan_alumni_dengan_tautan_dokumen_dan_hanya_untuk_admin(): void
+    {
+        $s = $this->lulusan[0];
+        $s->update(['status' => 'lulus']);
+        \DB::table('keanggotaan_kelas')->where('siswa_id', $s->id)->update(['status' => 'lulus']);
+        \App\Models\RaporSiswa::create(['siswa_id' => $s->id, 'periode_id' => $this->jadwal->periode_id, 'kelas_id' => $this->xii->id, 'kelas_nama' => 'XII TKJ', 'status' => 'final']);
+
+        $this->actingAs($this->admin, 'web')->get('/staf/arsip-siswa')->assertOk()->assertSee($s->nama)->assertSee('XII TKJ')
+            ->assertSee('Transkrip')->assertSee('SKL')->assertSee('Mutasi')->assertSee('Ganjil 2025/2026')->assertDontSee($this->lulusan[1]->nama);
+        $this->get('/staf/arsip-siswa?status=keluar')->assertOk()->assertSee('Belum ada siswa keluar');
+        $this->get('/staf/arsip-siswa?q=zzzz')->assertOk()->assertSee('Belum ada siswa lulus');
+        $this->get("/staf/kelulusan/transkrip/cetak?kelas={$this->xii->id}&siswa={$s->id}")->assertOk()->assertSee($s->nama); // alumni tetap bisa dicetak
+
+        $this->actingAs($this->guru, 'web')->get('/staf/arsip-siswa')->assertForbidden();
+    }
+
     public function test_cetak_menolak_kelas_bukan_xii_dan_jenis_tidak_dikenal(): void
     {
         $this->actingAs($this->admin, 'web');

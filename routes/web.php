@@ -14,6 +14,7 @@ use App\Http\Controllers\Staf\ImporSoalController;
 use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
+use App\Http\Controllers\Staf\ArsipSiswaController;
 use App\Http\Controllers\Staf\KelulusanController;
 use App\Http\Controllers\Staf\NilaiLampauController;
 use App\Http\Controllers\Staf\UjianSekolahController;
@@ -151,6 +152,9 @@ Route::prefix('staf')->group(function () {
             Route::post('/', [UjianSekolahController::class, 'simpan'])->middleware('throttle:30,1')->name('simpan');
         });
     });
+
+    // Arsip siswa (lulus/keluar): hanya admin.
+    Route::get('arsip-siswa', [ArsipSiswaController::class, 'index'])->middleware(['auth:web', 'peran:admin'])->name('staf.arsip.index');
 
     // Transkrip US dan SKL: hanya admin.
     Route::middleware(['auth:web', 'peran:admin'])->prefix('kelulusan')->name('staf.kelulusan.')->whereIn('jenis', ['transkrip', 'skl', 'mutasi'])->group(function () {
