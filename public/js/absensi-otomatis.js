@@ -65,8 +65,8 @@
                     lanjut = jedaGalat;
                     return;
                 }
-                var n = terapkan(j.data || {});
-                tulis('Tersambung ke EduWeb · diperbarui ' + (j.waktu || '') + (n ? ' · ' + n + ' isian berubah' : ''), false);
+                terapkan(j.data || {});
+                tulis('', false); // berhasil: tidak ada tulisan; hanya galat yang ditampilkan
             })
             .catch(function () {
                 tulis('Tidak bisa memeriksa EduWeb', true);
@@ -83,6 +83,5 @@
         else clearTimeout(timer);
     });
 
-    tulis('Memeriksa EduWeb…', false);
     periksa();
 })();
