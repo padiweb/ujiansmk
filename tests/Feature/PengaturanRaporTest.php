@@ -178,7 +178,7 @@ class PengaturanRaporTest extends TestCase
 
         $this->assertSame('2025-07-14', $p->fresh()->mulai->format('Y-m-d')); // tanggal tetap dari EduWeb
         $this->assertFalse((bool) $p->fresh()->rapor_di_sini);                  // penanda lokal tetap bisa diubah
-        $this->get('/staf/pengaturan-rapor')->assertSee('mengikuti EduWeb');
+        $this->get('/staf/pengaturan-rapor')->assertOk()->assertSee('readonly', false);
     }
 
     public function test_admin_menambah_semester_us_tanpa_mengubah_semester_aktif_walau_sinkron_menyala(): void

@@ -42,6 +42,22 @@ class KegiatanUjianTest extends TestCase
         $this->post('/staf/kegiatan', ['periode_id' => $p, 'nama' => ''])->assertSessionHasErrors('nama');
     }
 
+    public function test_kegiatan_bernama_ujian_sekolah_di_semester_reguler_diberi_peringatan(): void
+    {
+        $this->actingAs($this->admin, 'web');
+        $reguler = $this->jadwal->periode_id;
+        $us = \App\Models\Periode::create(['tahun_ajaran_id' => $this->jadwal->periode->tahun_ajaran_id, 'semester' => 'genap', 'tipe' => 'ujian_sekolah', 'aktif' => false, 'rapor_di_sini' => false]);
+
+        $this->post('/staf/kegiatan', ['periode_id' => $reguler, 'nama' => 'Ujian Sekolah 2026'])
+            ->assertSessionHas('catatan', fn ($m) => str_contains($m, 'semester reguler'))->assertSessionMissing('berhasil');
+        $this->post('/staf/kegiatan', ['periode_id' => $us->id, 'nama' => 'Ujian Sekolah 2026'])->assertSessionHas('berhasil')->assertSessionMissing('catatan');
+        $this->post('/staf/kegiatan', ['periode_id' => $reguler, 'nama' => 'Asesmen Sumatif Akhir'])->assertSessionHas('berhasil'); // nama biasa tidak diperingatkan
+
+        $k = KegiatanUjian::where('periode_id', $reguler)->where('nama', 'Ujian Sekolah 2026')->first();
+        $this->put("/staf/kegiatan/{$k->id}", ['untuk_rapor' => '1'])->assertSessionHas('catatan', fn ($m) => str_contains($m, 'sehingga nilainya bisa ikut masuk rapor'));
+        $this->put("/staf/kegiatan/{$k->id}", ['untuk_rapor' => '0'])->assertSessionHas('catatan', fn ($m) => ! str_contains($m, 'sehingga nilainya'));
+    }
+
     public function test_ganti_nama_kegiatan_memperbarui_nama_semua_jadwalnya(): void
     {
         $this->actingAs($this->admin, 'web')->put("/staf/kegiatan/{$this->kegiatan->id}", ['nama' => 'Asesmen Sumatif Gasal'])->assertSessionHas('berhasil');

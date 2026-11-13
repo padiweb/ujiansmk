@@ -33,7 +33,9 @@ class KegiatanUjianController extends Controller
         $k = KegiatanUjian::create(['periode_id' => $data['periode_id'], 'nama' => trim($data['nama']), 'aktif' => true]);
         AuditLog::catat('kegiatan.tambah', "kegiatan {$k->id}", $request->user('web'));
 
-        return back()->with('berhasil', "Kegiatan \"{$k->nama}\" ditambahkan.");
+        $pesan = "Kegiatan \"{$k->nama}\" ditambahkan.";
+
+        return ($w = $k->peringatanUjianSekolah()) ? back()->with('catatan', $pesan.' '.$w) : back()->with('berhasil', $pesan);
     }
 
     /** Ganti nama (nama semua jadwalnya ikut diperbarui) atau aktif/nonaktifkan. */
@@ -57,7 +59,7 @@ class KegiatanUjianController extends Controller
         }
         AuditLog::catat('kegiatan.ubah', "kegiatan {$kegiatan->id}", $request->user('web'));
 
-        return back()->with('berhasil', 'Kegiatan diperbarui.');
+        return ($w = $kegiatan->fresh()->peringatanUjianSekolah()) ? back()->with('catatan', 'Kegiatan diperbarui. '.$w) : back()->with('berhasil', 'Kegiatan diperbarui.');
     }
 
     public function destroy(Request $request, KegiatanUjian $kegiatan): RedirectResponse

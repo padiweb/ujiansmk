@@ -34,6 +34,25 @@ class KegiatanUjian extends Model
         return $this->hasOne(Denah::class, 'kegiatan_id');
     }
 
+    /**
+     * Peringatan bila namanya menyiratkan Ujian Sekolah (US/USBN/Ujian Sekolah) tetapi semesternya reguler:
+     * nilainya bisa ikut masuk rapor semester. Null bila tidak ada masalah.
+     */
+    public function peringatanUjianSekolah(): ?string
+    {
+        $periode = $this->periode ?? $this->periode()->first();
+        if (! $periode || $periode->tipe !== 'reguler') {
+            return null;
+        }
+        if (! preg_match('/\bujian\s+sekolah\b|\bUSBN\b|\bUS\b/iu', (string) $this->nama)) {
+            return null;
+        }
+
+        return 'Kegiatan "'.$this->nama.'" tampak seperti Ujian Sekolah, tetapi berada di semester reguler'
+            .($this->untuk_rapor ? ' dan bertanda "untuk rapor", sehingga nilainya bisa ikut masuk rapor' : '')
+            .'. Untuk Ujian Sekolah, buat kegiatan pada semester Ujian Sekolah (tambahkan di Pengaturan Rapor).';
+    }
+
     /** Nama jadwal yang tampil di semua halaman: kegiatan + mata pelajaran. */
     public function namaJadwal(Mapel $mapel): string
     {

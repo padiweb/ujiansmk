@@ -19,7 +19,6 @@
     @csrf
     @method('PUT')
     <h2 class="judul-kartu">Bobot nilai (%)</h2>
-    <small class="bantuan">Komponen berbobot 0 tidak dipakai. Harian diisi dari rata-rata nilai tugas dan kuis di EduWeb.</small>
     @error('bobot') @foreach ($errors->get('bobot') as $m) <div class="pesan-salah" role="alert">{{ $m }}</div> @endforeach @enderror
 
     @foreach ($kelompok as $judul => $kunci)
@@ -55,7 +54,6 @@
     @csrf
     @method('PUT')
     <h2 class="judul-kartu">Skala predikat</h2>
-    <small class="bantuan">Nilai akhir mendapat predikat dengan batas bawah tertinggi yang terlampaui. Kosongkan baris untuk menghapusnya.</small>
     @error('skala') @foreach ($errors->get('skala') as $m) <div class="pesan-salah" role="alert">{{ $m }}</div> @endforeach @enderror
     <table class="tabel" style="margin-top:8px">
         <thead><tr><th>Batas bawah (≥)</th><th>Predikat</th><th>Keterangan</th></tr></thead>
@@ -77,7 +75,6 @@
     @csrf
     @method('PUT')
     <h2 class="judul-kartu">Semester</h2>
-    <small class="bantuan">Rentang tanggal dipakai untuk menarik absensi dan nilai tugas dari EduWeb.@if ($sinkron) Tanggal semester reguler mengikuti EduWeb (diperbarui saat sinkron); atur di EduWeb, bukan di sini.@endif "Tampilkan ke siswa" membuka rapor final di beranda siswa; nyalakan pada hari penyerahan rapor. Hilangkan centang "Rapor di sini" bila rapor semester itu tidak diisi di aplikasi ini (mis. ujian kembali ke kertas).</small>
     @error('periode') <div class="pesan-salah" role="alert">{{ $message }}</div> @enderror
     @foreach ($errors->get('periode.*') as $m) @foreach ($m as $x) <div class="pesan-salah" role="alert">{{ $x }}</div> @endforeach @endforeach
     <table class="tabel" style="margin-top:8px">
@@ -103,7 +100,6 @@
 <form class="kartu formulir" method="POST" action="{{ route('staf.rapor.periode-us') }}" style="max-width:760px;margin-top:16px">
     @csrf
     <h2 class="judul-kartu">Semester Ujian Sekolah (kelas XII)</h2>
-    <small class="bantuan">Dipakai untuk jadwal ujian US dan nilai CBT di menu Input Nilai US. Semester ini dikelola di sini, tidak datang dari EduWeb.</small>
     @php $us = $periode->where('tipe', 'ujian_sekolah'); @endphp
     @if ($us->isNotEmpty())
         <ul class="petunjuk" style="margin:8px 0">
@@ -127,7 +123,6 @@
 
 <div class="kartu" style="max-width:760px;margin-top:16px">
     <h2 class="judul-kartu">Akses EduWeb ke status rapor</h2>
-    <small class="bantuan">Kunci ini dipakai EduWeb untuk membaca status final rapor sebelum menaikkan atau meluluskan siswa. Hanya status dan keputusan wali kelas yang dapat dibaca.</small>
     @if (session('kunci_api_baru'))
         <div class="pesan-salah catatan" role="status"><x-ikon nama="info" :ukuran="18" /><span>Kunci baru: <code>{{ session('kunci_api_baru') }}</code></span></div>
     @endif
