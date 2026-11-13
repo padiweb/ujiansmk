@@ -16,6 +16,7 @@ use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
 use App\Http\Controllers\Staf\ArsipSiswaController;
 use App\Http\Controllers\Staf\StatistikController;
+use App\Http\Controllers\Staf\ImporNilaiLampauController;
 use App\Http\Controllers\Staf\KelulusanController;
 use App\Http\Controllers\Staf\NilaiLampauController;
 use App\Http\Controllers\Staf\UjianSekolahController;
@@ -138,6 +139,14 @@ Route::prefix('staf')->group(function () {
             Route::post('/', [NilaiRaporController::class, 'simpan'])->middleware('throttle:30,1')->name('simpan');
             Route::post('/ambil-ulang', [NilaiRaporController::class, 'ambilUlang'])->middleware('throttle:10,1')->name('ambil-ulang');
         });
+    });
+
+    // Impor Excel nilai lampau: hanya admin (tidak terkunci oleh sinkron EduWeb karena bukan data induk).
+    Route::middleware(['auth:web', 'peran:admin'])->prefix('nilai-lampau/impor')->name('staf.lampau.impor.')->group(function () {
+        Route::get('/', [ImporNilaiLampauController::class, 'formLampau'])->name('form');
+        Route::get('/templat', [ImporNilaiLampauController::class, 'templatLampau'])->name('templat');
+        Route::post('/', [ImporNilaiLampauController::class, 'pratinjauLampau'])->middleware('throttle:20,1')->name('pratinjau');
+        Route::post('/{token}', [ImporNilaiLampauController::class, 'simpanLampau'])->middleware('throttle:20,1')->name('simpan');
     });
 
     // Nilai lampau: nilai rapor semester lama; guru hanya mapel yang diampunya (dicek di pengendali).

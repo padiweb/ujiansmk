@@ -87,7 +87,7 @@ class LayananNilaiLampau
      *
      * @throws DomainException
      */
-    public function simpan(User $pelaku, Mapel $mapel, Kelas $kelas, Periode $periode, array $input, ?string $kelasLama = null): array
+    public function simpan(User $pelaku, Mapel $mapel, Kelas $kelas, Periode $periode, array $input, ?string $kelasLama = null, bool $catat = true): array
     {
         if ($periode->rapor_di_sini) {
             throw new DomainException('Semester ini rapornya diisi di aplikasi ini. Gunakan menu Input Nilai.');
@@ -147,7 +147,9 @@ class LayananNilaiLampau
             }
         });
 
-        AuditLog::catat('nilai_lampau.simpan', "mapel {$mapel->id} kelas {$kelas->id} periode {$periode->id}: {$disimpan} siswa", $pelaku);
+        if ($catat) {
+            AuditLog::catat('nilai_lampau.simpan', "mapel {$mapel->id} kelas {$kelas->id} periode {$periode->id}: {$disimpan} siswa", $pelaku);
+        }
 
         return ['disimpan' => $disimpan, 'dilewati' => $dilewati, 'salah' => $salah];
     }

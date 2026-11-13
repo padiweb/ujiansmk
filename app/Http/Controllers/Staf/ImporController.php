@@ -101,7 +101,7 @@ class ImporController extends Controller
         return response()->download($jalur, 'kata-sandi-sementara.xlsx')->deleteFileAfterSend(true);
     }
 
-    private function rute(string $entitas): array
+    protected function rute(string $entitas): array
     {
         return [
             'templat' => route('staf.impor.templat', $entitas),
@@ -113,7 +113,7 @@ class ImporController extends Controller
         ];
     }
 
-    private function pengimpor(string $entitas): Pengimpor
+    protected function pengimpor(string $entitas): Pengimpor
     {
         return Pengimpor::temukan($entitas) ?? abort(404);
     }

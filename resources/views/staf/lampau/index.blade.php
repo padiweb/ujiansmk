@@ -7,6 +7,9 @@
         <h1 class="judul-halaman">Nilai Lampau</h1>
         <p class="sub">Nilai rapor semester lama untuk siswa yang sekarang duduk di kelas yang dipilih.</p>
     </div>
+    @if ($admin)
+        <div class="aksi-halaman"><a class="tombol kecil garis" href="{{ route('staf.lampau.impor.form') }}"><x-ikon nama="unggah" :ukuran="16" />Impor Excel</a></div>
+    @endif
 </div>
 
 @if ($daftarPeriode->isEmpty())

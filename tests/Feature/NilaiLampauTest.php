@@ -99,6 +99,54 @@ class NilaiLampauTest extends TestCase
         $this->get($url)->assertSee('value="VII A"', false);
     }
 
+    private function xlsx(array $baris): \Illuminate\Http\UploadedFile
+    {
+        $buku = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+        $lembar = $buku->getActiveSheet();
+        foreach (array_merge([['NISN', 'Tahun Ajaran', 'Semester', 'Kode Mapel', 'NP', 'NK', 'Nama Kelas Saat Itu']], $baris) as $r => $isi) {
+            foreach (array_values($isi) as $c => $nilai) {
+                if ($nilai !== null) {
+                    $lembar->setCellValueExplicit([$c + 1, $r + 1], (string) $nilai, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                }
+            }
+        }
+        $jalur = tempnam(sys_get_temp_dir(), 'lamp').'.xlsx';
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($buku))->save($jalur);
+
+        return new \Illuminate\Http\UploadedFile($jalur, 'nilai.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
+    }
+
+    public function test_impor_excel_nilai_lampau_pratinjau_lalu_simpan_dan_semua_atau_tidak_sama_sekali(): void
+    {
+        $this->actingAs($this->admin, 'web');
+        $lama = \App\Models\TahunAjaran::create(['nama' => '2022/2023', 'aktif' => false]);
+        Periode::create(['tahun_ajaran_id' => $lama->id, 'semester' => 'ganjil', 'tipe' => 'reguler', 'aktif' => false, 'rapor_di_sini' => false]);
+        $a = $this->siswa[0];
+
+        $this->get('/staf/nilai-lampau/impor')->assertOk()->assertSee('Nilai Lampau');
+        $this->get('/staf/nilai-lampau/impor/templat')->assertOk();
+
+        // Satu baris salah: seluruh berkas ditolak dan tidak ada nilai tersimpan.
+        $r = $this->post('/staf/nilai-lampau/impor', ['berkas' => $this->xlsx([
+            [$a->nisn, '2022/2023', 'Ganjil', 'MTK', '88', '84', 'VII A'],
+            [$a->nisn, '2022/2023', 'Genap', 'MTK', '90', '', ''],
+        ])])->assertOk();
+        $this->assertNull($r->viewData('token'));
+        $this->assertSame(0, NilaiRapor::where('periode_id', '!=', $this->periode->id)->count());
+
+        $r = $this->post('/staf/nilai-lampau/impor', ['berkas' => $this->xlsx([[$a->nisn, '2022/2023', 'Ganjil', 'MTK', '88', '84', 'VII A']])])->assertOk();
+        $token = $r->viewData('token');
+        $this->assertNotNull($token);
+        $this->assertSame(0, NilaiRapor::where('periode_id', '!=', $this->periode->id)->count()); // pratinjau tidak menyimpan
+
+        $this->post("/staf/nilai-lampau/impor/{$token}")->assertOk();
+        $n = NilaiRapor::where('siswa_id', $a->id)->where('periode_id', '!=', $this->periode->id)->first();
+        $this->assertSame([88, 84, 'final', 'VII A'], [$n->np, $n->nk, $n->status, $n->snapshot['kelas_nama']]);
+
+        // Guru tidak boleh mengimpor.
+        $this->actingAs($this->guru, 'web')->get('/staf/nilai-lampau/impor')->assertForbidden();
+    }
+
     public function test_semester_yang_rapornya_diisi_di_sini_ditolak(): void
     {
         $this->periode->update(['rapor_di_sini' => true]);

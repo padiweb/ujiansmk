@@ -30,7 +30,7 @@ class NilaiLampauController extends Controller
         return view('staf.lampau.index', [
             'daftarPeriode' => $daftarPeriode, 'periode' => $periode,
             'daftarKelas' => $daftarKelas, 'kelas' => $kelas,
-            'daftarMapel' => $daftarMapel, 'mapel' => $mapel,
+            'daftarMapel' => $daftarMapel, 'mapel' => $mapel, 'admin' => $user->role === 'admin',
             'baris' => $periode && $kelas && $mapel ? $this->lampau->tabel($mapel, $kelas, $periode) : [],
             'kelasLama' => $periode && $kelas && $mapel ? $this->lampau->kelasLama($mapel, $kelas, $periode) : null,
         ]);
