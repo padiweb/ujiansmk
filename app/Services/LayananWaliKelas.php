@@ -114,6 +114,40 @@ class LayananWaliKelas
         return DB::table('keanggotaan_kelas')->where('kelas_id', $kelas->id)->whereIn('status', ['naik', 'tinggal', 'lulus'])->count();
     }
 
+    /**
+     * Status kenaikan kelas tiap siswa di kelas ini, dibaca dari data lokal (keanggotaan kelas diperbarui oleh kejadian EduWeb).
+     * kode: kosong | draf | menunggu | diproses. 'beda' true bila keputusan admin EduWeb berbeda dari keputusan wali.
+     *
+     * @return array<int,array{kode:string,label:string,beda:bool}>
+     */
+    public function statusKenaikan(Kelas $kelas, Periode $periode): array
+    {
+        $rapor = RaporSiswa::where('kelas_id', $kelas->id)->where('periode_id', $periode->id)->get()->keyBy('siswa_id');
+        $anggota = DB::table('keanggotaan_kelas')->where('kelas_id', $kelas->id)->pluck('status', 'siswa_id');
+        $hasil = [];
+
+        foreach ($this->nilai->siswa($kelas) as $s) {
+            $r = $rapor[$s->id] ?? null;
+            $resmi = $anggota[$s->id] ?? 'aktif';
+            $usulan = $r?->keputusan;
+
+            if (in_array($resmi, ['naik', 'tinggal', 'lulus'], true)) {
+                $hasil[$s->id] = [
+                    'kode' => 'diproses', 'beda' => $usulan !== null && $usulan !== $resmi,
+                    'label' => 'Sudah diproses: '.(self::KEPUTUSAN[$resmi] ?? $resmi).($usulan !== null && $usulan !== $resmi ? ' (usulan wali: '.(self::KEPUTUSAN[$usulan] ?? $usulan).')' : ''),
+                ];
+            } elseif ($usulan !== null && $r?->status === 'final') {
+                $hasil[$s->id] = ['kode' => 'menunggu', 'beda' => false, 'label' => 'Menunggu admin EduWeb'];
+            } elseif ($usulan !== null) {
+                $hasil[$s->id] = ['kode' => 'draf', 'beda' => false, 'label' => 'Belum final'];
+            } else {
+                $hasil[$s->id] = ['kode' => 'kosong', 'beda' => false, 'label' => '–'];
+            }
+        }
+
+        return $hasil;
+    }
+
     public function final(Kelas $kelas, Periode $periode): bool
     {
         $rapor = RaporSiswa::where('kelas_id', $kelas->id)->where('periode_id', $periode->id)->pluck('status');

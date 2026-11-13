@@ -200,8 +200,34 @@ class WaliKelasTest extends TestCase
         $this->actingAs($this->wali, 'web')->post($this->url('/finalkan'));
         Http::fake(['*' => Http::response(['data' => [['student_id' => 9000, 'sakit' => 9, 'izin' => 9, 'alpa' => 9]]])]);
 
-        $this->get($this->url('/segar'))->assertOk()->assertJsonPath('status', 'final');
-        Http::assertNothingSent();
+        $this->get($this->url('/segar'))->assertOk()->assertJsonPath('final', true)->assertJsonPath('data', []);
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), 'attendance-summary'));
+        $this->assertNotSame(9, $this->rapor(0)->sakit);
+    }
+
+    public function test_status_kenaikan_menunggu_diproses_dan_beda_dari_usulan_wali(): void
+    {
+        $this->isiNilaiLengkap();
+        $this->actingAs($this->wali, 'web');
+        $ids = [$this->siswa[0]->id, $this->siswa[1]->id, $this->siswa[2]->id];
+        $this->post($this->url(), ['rapor' => [$ids[0] => ['keputusan' => 'naik'], $ids[1] => ['keputusan' => 'naik']]]);
+
+        $kn = $this->get($this->url('/segar'))->assertOk()->json('kenaikan');
+        $this->assertSame(['draf', 'draf', 'kosong'], [$kn[$ids[0]]['kode'], $kn[$ids[1]]['kode'], $kn[$ids[2]]['kode']]);
+
+        $this->post($this->url('/finalkan'));
+        $this->assertSame('menunggu', $this->get($this->url('/segar'))->json('kenaikan.'.$ids[0].'.kode'));
+
+        // Admin EduWeb memproses: siswa 0 sesuai usulan, siswa 1 berbeda (tinggal kelas).
+        \DB::table('keanggotaan_kelas')->where('kelas_id', $this->kelas->id)->where('siswa_id', $ids[0])->update(['status' => 'naik']);
+        \DB::table('keanggotaan_kelas')->where('kelas_id', $this->kelas->id)->where('siswa_id', $ids[1])->update(['status' => 'tinggal']);
+        \Illuminate\Support\Facades\Cache::flush();
+
+        $kn = $this->get($this->url('/segar'))->json('kenaikan');
+        $this->assertSame(['diproses', false], [$kn[$ids[0]]['kode'], $kn[$ids[0]]['beda']]);
+        $this->assertSame(['diproses', true], [$kn[$ids[1]]['kode'], $kn[$ids[1]]['beda']]);
+        $this->assertStringContainsString('usulan wali: Naik kelas', $kn[$ids[1]]['label']);
+        $this->get($this->url())->assertOk()->assertSee('Status Kenaikan di EduWeb')->assertSee('Sudah diproses: Naik kelas');
     }
 
     // ── Finalisasi ──────────────────────────────────────────────────────────

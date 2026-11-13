@@ -35,6 +35,21 @@
         return berubah;
     }
 
+    function terapkanKenaikan(peta) {
+        Object.keys(peta || {}).forEach(function (id) {
+            var sel = document.querySelector('[data-kenaikan="' + id + '"] .kenaikan');
+            if (!sel) return;
+            var k = peta[id];
+            var kelas = 'kenaikan ' + k.kode + (k.beda ? ' beda' : '');
+            if (sel.textContent !== k.label || sel.className !== kelas) {
+                var berubah = sel.textContent !== k.label;
+                sel.textContent = k.label;
+                sel.className = kelas + (berubah ? ' baru' : '');
+                if (berubah) setTimeout(function () { sel.classList.remove('baru'); }, 2500);
+            }
+        });
+    }
+
     function periksa() {
         clearTimeout(timer);
         var lanjut = jeda;
@@ -44,7 +59,7 @@
                 return r.json();
             })
             .then(function (j) {
-                if (j.status === 'final') { tulis('Rapor final', false); lanjut = 0; return; }
+                terapkanKenaikan(j.kenaikan);
                 if (j.status === 'galat') {
                     tulis('EduWeb tidak terjangkau: ' + (j.pesan || ''), true);
                     lanjut = jedaGalat;

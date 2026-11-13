@@ -768,3 +768,10 @@ h1, h2, h3 { color: var(--teks); }
 .status-eduweb { margin-left: auto; margin-right: 12px; font-size: .78rem; font-weight: 600; color: rgba(255, 255, 255, .8); }
 .pita-info .status-eduweb.galat { color: var(--kuning); }
 .tabel-nilai td.sel-absen input.baru-eduweb { border-color: var(--kuning); background: var(--kuning-muda); }
+
+.sel-kenaikan { min-width: 190px; font-size: .84rem; text-align: left; padding: 0 10px !important; }
+.kenaikan { font-weight: 600; color: var(--teks-3); }
+.kenaikan.menunggu { color: var(--kuning-tua); }
+.kenaikan.diproses { color: var(--biru-tua); }
+.kenaikan.beda { color: var(--kuning-tua); }
+.kenaikan.baru { background: var(--kuning-muda); border-radius: 6px; padding: 2px 6px; }

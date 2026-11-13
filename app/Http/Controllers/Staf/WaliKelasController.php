@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Staf;
 
 use App\Eduweb\KesalahanEduweb;
+use App\Eduweb\SinkronOtomatis;
 use App\Http\Controllers\Controller;
 use App\Models\Kelas;
 use App\Models\Periode;
@@ -54,6 +55,7 @@ class WaliKelasController extends Controller
             'hambatan' => $this->wali->hambatanFinal($kelas, $periode),
             'admin' => $request->user('web')->role === 'admin',
             'keputusan' => LayananWaliKelas::KEPUTUSAN,
+            'kenaikan' => $this->wali->statusKenaikan($kelas, $periode),
         ]);
     }
 
@@ -94,34 +96,40 @@ class WaliKelasController extends Controller
     }
 
     /**
-     * Dipanggil berkala oleh halaman (tanpa klik): menyegarkan absensi/ekskul dari EduWeb paling sering sekali per 15 detik
-     * per kelas, lalu mengembalikan absensi terkini dari database (isian manual wali tidak disentuh).
+     * Dipanggil berkala oleh halaman (tanpa klik), paling sering sekali per 15 detik per kelas:
+     * menyegarkan absensi/ekskul dari EduWeb (bila rapor belum final), mengikuti kejadian EduWeb (kenaikan kelas),
+     * lalu mengembalikan absensi dan status kenaikan terkini dari database (isian manual wali tidak disentuh).
      */
-    public function segarkan(Request $request, Kelas $kelas): JsonResponse
+    public function segarkan(Request $request, Kelas $kelas, SinkronOtomatis $otomatis): JsonResponse
     {
         $periode = $this->izinkan($request, $kelas);
-        if ($this->wali->final($kelas, $periode)) {
-            return response()->json(['status' => 'final', 'pesan' => null, 'data' => []]);
-        }
+        $final = $this->wali->final($kelas, $periode);
 
         $kunci = "wali-segar:{$kelas->id}:{$periode->id}";
         $galat = Cache::get($kunci.':galat');
         $data = null;
 
         if (Cache::add($kunci, now()->timestamp, 15)) {
-            try {
-                $data = $this->wali->segarkan($request->user('web'), $kelas, $periode);
-                Cache::forget($kunci.':galat');
-                $galat = null;
-            } catch (DomainException|KesalahanEduweb $e) {
-                $galat = $e->getMessage();
-                Cache::put($kunci.':galat', $galat, 60);
+            $galat = null;
+            if (! $final) {
+                try {
+                    $data = $this->wali->segarkan($request->user('web'), $kelas, $periode);
+                } catch (DomainException|KesalahanEduweb $e) {
+                    $galat = $e->getMessage();
+                }
             }
+            try {
+                $otomatis->dariWebhook(); // ikuti kejadian EduWeb (kenaikan kelas); berhenti sendiri selama ujian berlangsung
+            } catch (\Throwable $e) {
+                report($e);
+            }
+            $galat ? Cache::put($kunci.':galat', $galat, 60) : Cache::forget($kunci.':galat');
         }
 
         return response()->json([
-            'status' => $galat ? 'galat' : 'ok', 'pesan' => $galat, 'waktu' => now()->format('H:i:s'),
-            'data' => $data ?? $this->wali->absensiTerkini($kelas, $periode),
+            'status' => $galat ? 'galat' : 'ok', 'final' => $final, 'pesan' => $galat, 'waktu' => now()->format('H:i:s'),
+            'data' => $final ? [] : ($data ?? $this->wali->absensiTerkini($kelas, $periode)),
+            'kenaikan' => $this->wali->statusKenaikan($kelas, $periode),
         ]);
     }
 
