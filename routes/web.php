@@ -93,6 +93,7 @@ Route::prefix('staf')->group(function () {
 
             Route::prefix('{bank}')->whereNumber('bank')->group(function () {
                 Route::get('/', [BankSoalController::class, 'show'])->name('staf.bank-soal.show');
+                Route::get('/kisi-kisi', [BankSoalController::class, 'kisi'])->middleware('throttle:30,1')->name('staf.bank-soal.kisi');
                 Route::get('/ubah', [BankSoalController::class, 'edit'])->name('staf.bank-soal.edit');
                 Route::put('/', [BankSoalController::class, 'update'])->name('staf.bank-soal.update');
                 Route::delete('/', [BankSoalController::class, 'destroy'])->name('staf.bank-soal.destroy');

@@ -56,6 +56,8 @@
             <a class="tombol kecil garis" href="{{ route('staf.bank-soal.otomatis', $bank) }}"><x-ikon nama="otomatis" :ukuran="16" />Susun otomatis</a>
         @endif
         <a class="tombol kecil garis" href="{{ route('staf.bank-soal.impor.form', $bank) }}"><x-ikon nama="unggah" :ukuran="16" />Impor Excel</a>
+        <a class="tombol kecil garis" href="{{ route('staf.bank-soal.kisi', $bank) }}" target="_blank" rel="noopener"><x-ikon nama="cetak" :ukuran="16" />Kisi-kisi</a>
+        <a class="tombol kecil garis" href="{{ route('staf.bank-soal.kisi', [$bank, 'format' => 'word']) }}"><x-ikon nama="berkas" :ukuran="16" />Kisi-kisi Word</a>
         @if ($ringkasan['draf'] > 0)
             <button class="tombol kecil garis" type="submit" form="formSiapSemua">Tandai {{ $ringkasan['draf'] }} draf siap</button>
         @endif

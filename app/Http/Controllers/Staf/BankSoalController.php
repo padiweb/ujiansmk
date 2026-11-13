@@ -141,6 +141,25 @@ class BankSoalController extends Controller
         return back()->with('berhasil', "{$jumlah} soal ditandai siap dipakai.");
     }
 
+    /** Kisi-kisi dari soal bank ini, siap cetak atau diunduh sebagai Word. */
+    public function kisi(Request $request, BankSoal $bank, \App\Services\LayananKisiKisi $kisi): \Illuminate\Http\Response
+    {
+        $this->izin($request, $bank);
+        $word = $request->query('format') === 'word';
+        $bank->load('mapel', 'pembuat');
+
+        $isi = view('staf.bank-soal.kisi', ['bank' => $bank, 'kisi' => $kisi->susun($bank), 'sekolah' => \App\Models\PengaturanSekolah::ambil(), 'word' => $word])->render();
+        AuditLog::catat('bank_soal.kisi', "bank {$bank->id}".($word ? ' (Word)' : ''), $request->user('web'));
+
+        $respons = response($isi);
+        if ($word) {
+            $respons->header('Content-Type', 'application/msword; charset=UTF-8')
+                ->header('Content-Disposition', 'attachment; filename="Kisi_kisi_'.\Illuminate\Support\Str::slug($bank->nama, '_').'.doc"');
+        }
+
+        return $respons;
+    }
+
     private function izin(Request $request, BankSoal $bank): void
     {
         abort_unless($bank->dapatDikelola($request->user('web')), 403, 'Anda tidak memiliki akses ke bank soal ini.');
