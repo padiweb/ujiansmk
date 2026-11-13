@@ -9,8 +9,10 @@ use App\Models\Periode;
 use App\Services\LayananCetakRapor;
 use App\Services\LayananWaliKelas;
 use DomainException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 /** Menu Wali Kelas: absensi, catatan, keputusan, dan finalisasi rapor kelas yang diwalikan. */
@@ -89,6 +91,38 @@ class WaliKelasController extends Controller
         }
 
         return back()->with($n > 0 ? 'berhasil' : 'catatan', $pesan);
+    }
+
+    /**
+     * Dipanggil berkala oleh halaman (tanpa klik): menyegarkan absensi/ekskul dari EduWeb paling sering sekali per 15 detik
+     * per kelas, lalu mengembalikan absensi terkini dari database (isian manual wali tidak disentuh).
+     */
+    public function segarkan(Request $request, Kelas $kelas): JsonResponse
+    {
+        $periode = $this->izinkan($request, $kelas);
+        if ($this->wali->final($kelas, $periode)) {
+            return response()->json(['status' => 'final', 'pesan' => null, 'data' => []]);
+        }
+
+        $kunci = "wali-segar:{$kelas->id}:{$periode->id}";
+        $galat = Cache::get($kunci.':galat');
+        $data = null;
+
+        if (Cache::add($kunci, now()->timestamp, 15)) {
+            try {
+                $data = $this->wali->segarkan($request->user('web'), $kelas, $periode);
+                Cache::forget($kunci.':galat');
+                $galat = null;
+            } catch (DomainException|KesalahanEduweb $e) {
+                $galat = $e->getMessage();
+                Cache::put($kunci.':galat', $galat, 60);
+            }
+        }
+
+        return response()->json([
+            'status' => $galat ? 'galat' : 'ok', 'pesan' => $galat, 'waktu' => now()->format('H:i:s'),
+            'data' => $data ?? $this->wali->absensiTerkini($kelas, $periode),
+        ]);
     }
 
     public function finalkan(Request $request, Kelas $kelas): RedirectResponse

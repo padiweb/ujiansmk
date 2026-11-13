@@ -227,6 +227,120 @@ class LayananWaliKelas
     }
 
     /**
+     * Penyegaran otomatis: ambil absensi dan ekskul dari EduWeb TANPA menimpa isian yang diubah wali (sumber 'manual')
+     * atau yang sudah final. Hanya menulis bila nilainya memang berbeda.
+     *
+     * @return array<int,array{sakit:int,izin:int,alpa:int,sumber:?string}> absensi terkini per siswa yang bukan isian manual
+     *
+     * @throws KesalahanEduweb
+     * @throws DomainException
+     */
+    public function segarkan(User $pelaku, Kelas $kelas, Periode $periode): array
+    {
+        if (! $kelas->eduweb_id) {
+            throw new DomainException('Kelas ini belum terhubung ke EduWeb.');
+        }
+        if (! $periode->mulai || ! $periode->selesai) {
+            throw new DomainException('Rentang tanggal semester belum ada. Jalankan Sinkron EduWeb agar tanggal semester terisi dari EduWeb.');
+        }
+
+        $jawab = $this->eduweb->get('attendance-summary', [
+            'classroom_id' => $kelas->eduweb_id,
+            'from' => $periode->mulai->format('Y-m-d'), 'to' => $periode->selesai->format('Y-m-d'),
+        ]);
+        $peta = Siswa::whereIn('id', $this->nilai->siswa($kelas)->pluck('id'))->whereNotNull('eduweb_id')->pluck('id', 'eduweb_id');
+
+        $berubah = 0;
+        DB::transaction(function () use ($jawab, $peta, $kelas, $periode, &$berubah) {
+            $ada = RaporSiswa::where('kelas_id', $kelas->id)->where('periode_id', $periode->id)->lockForUpdate()->get()->keyBy('siswa_id');
+
+            foreach ($jawab['data'] ?? [] as $baris) {
+                $id = $peta[(int) ($baris['student_id'] ?? 0)] ?? null;
+                $r = $id === null ? null : ($ada[$id] ?? null);
+                if ($id === null || $r?->status === 'final' || $r?->sumber_absensi === 'manual') {
+                    continue;
+                }
+                $hari = ['sakit' => $this->hari($baris['sakit'] ?? 0), 'izin' => $this->hari($baris['izin'] ?? 0), 'alpa' => $this->hari($baris['alpa'] ?? 0)];
+                if ($r === null) {
+                    if (array_sum($hari) === 0) {
+                        continue;
+                    }
+                    RaporSiswa::create($hari + ['sumber_absensi' => 'eduweb', 'siswa_id' => $id, 'periode_id' => $periode->id, 'kelas_id' => $kelas->id, 'kelas_nama' => $kelas->nama, 'status' => 'draf']);
+                    $berubah++;
+                } elseif ($hari !== ['sakit' => (int) $r->sakit, 'izin' => (int) $r->izin, 'alpa' => (int) $r->alpa] || $r->sumber_absensi !== 'eduweb') {
+                    $r->update($hari + ['sumber_absensi' => 'eduweb']);
+                    $berubah++;
+                }
+            }
+        });
+
+        // Ekskul ikut disegarkan; kegagalannya (mis. kunci belum punya lingkup nilai) tidak membatalkan absensi.
+        try {
+            $berubah += $this->segarkanEkskul($kelas, $periode);
+        } catch (DomainException|KesalahanEduweb) {
+        }
+
+        if ($berubah > 0) {
+            AuditLog::catat('wali_kelas.segar_eduweb', "kelas {$kelas->id} periode {$periode->id}: {$berubah} perubahan", $pelaku);
+        }
+
+        return $this->absensiTerkini($kelas, $periode);
+    }
+
+    /** @return array<int,array{sakit:int,izin:int,alpa:int,sumber:?string}> absensi per siswa selain isian manual wali */
+    public function absensiTerkini(Kelas $kelas, Periode $periode): array
+    {
+        return RaporSiswa::where('kelas_id', $kelas->id)->where('periode_id', $periode->id)
+            ->where(fn ($q) => $q->whereNull('sumber_absensi')->orWhere('sumber_absensi', '!=', 'manual'))
+            ->get(['siswa_id', 'sakit', 'izin', 'alpa', 'sumber_absensi'])
+            ->mapWithKeys(fn ($r) => [$r->siswa_id => ['sakit' => (int) $r->sakit, 'izin' => (int) $r->izin, 'alpa' => (int) $r->alpa, 'sumber' => $r->sumber_absensi]])
+            ->all();
+    }
+
+    /** Samakan ekskul rapor dengan EduWeb hanya bila berbeda; mengembalikan jumlah siswa yang berubah. */
+    private function segarkanEkskul(Kelas $kelas, Periode $periode): int
+    {
+        $jawab = $this->eduweb->get('extracurricular-grades', [
+            'classroom_id' => $kelas->eduweb_id,
+            'year_name' => $periode->tahunAjaran->nama,
+            'semester' => $periode->semester === 'genap' ? 2 : 1,
+        ]);
+        $peta = Siswa::whereIn('id', $this->nilai->siswa($kelas)->pluck('id'))->whereNotNull('eduweb_id')->pluck('id', 'eduweb_id');
+        $perSiswa = [];
+        foreach ($jawab['data'] ?? [] as $baris) {
+            $id = $peta[(int) ($baris['student_id'] ?? 0)] ?? null;
+            if ($id === null || trim((string) ($baris['extracurricular'] ?? '')) === '') {
+                continue;
+            }
+            $perSiswa[$id][] = [
+                'nama' => mb_substr(trim((string) ($baris['extracurricular'] ?? '')), 0, 100),
+                'nilai' => is_numeric($baris['score'] ?? null) ? (int) $baris['score'] : null,
+                'predikat' => mb_substr(trim((string) ($baris['predicate'] ?? '')), 0, 10),
+            ];
+        }
+
+        $n = 0;
+        DB::transaction(function () use ($peta, $perSiswa, $kelas, $periode, &$n) {
+            $ada = RaporSiswa::where('kelas_id', $kelas->id)->where('periode_id', $periode->id)->lockForUpdate()->get()->keyBy('siswa_id');
+            foreach ($peta as $id) {
+                $r = $ada[$id] ?? null;
+                $baru = $perSiswa[$id] ?? [];
+                if ($r?->status === 'final' || ($r === null && $baru === []) || ($r !== null && ($r->ekskul ?? []) == $baru)) {
+                    continue;
+                }
+                if ($r) {
+                    $r->update(['ekskul' => $baru]);
+                } else {
+                    RaporSiswa::create(['ekskul' => $baru, 'siswa_id' => $id, 'periode_id' => $periode->id, 'kelas_id' => $kelas->id, 'kelas_nama' => $kelas->nama, 'status' => 'draf']);
+                }
+                $n++;
+            }
+        });
+
+        return $n;
+    }
+
+    /**
      * Isi nama dan nilai ekskul dari EduWeb untuk semester ini (menimpa isian yang belum final).
      *
      * @return int jumlah siswa yang punya nilai ekskul

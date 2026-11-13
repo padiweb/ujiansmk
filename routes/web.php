@@ -141,6 +141,7 @@ Route::prefix('staf')->group(function () {
             Route::get('/', [WaliKelasController::class, 'show'])->name('show');
             Route::post('/', [WaliKelasController::class, 'simpan'])->middleware('throttle:30,1')->name('simpan');
             Route::post('/absensi', [WaliKelasController::class, 'absensi'])->middleware('throttle:10,1')->name('absensi');
+            Route::get('/segar', [WaliKelasController::class, 'segarkan'])->middleware('throttle:30,1')->name('segar');
             Route::get('/cetak', CetakRaporController::class)->middleware('throttle:30,1')->name('cetak');
             Route::post('/finalkan', [WaliKelasController::class, 'finalkan'])->middleware('throttle:10,1')->name('finalkan');
             Route::post('/buka-final', [WaliKelasController::class, 'bukaFinal'])->middleware(['peran:admin', 'throttle:10,1'])->name('buka-final');

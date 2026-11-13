@@ -764,3 +764,7 @@ h1, h2, h3 { color: var(--teks); }
 .db-panel .isi-panel { padding: 14px 18px 16px; }
 .db-panel .isi-panel .sub { margin: 0 0 10px; }
 .db-panel .isi-panel .aksi-form { margin-top: 0; }
+
+.status-eduweb { margin-left: auto; margin-right: 12px; font-size: .78rem; font-weight: 600; color: rgba(255, 255, 255, .8); }
+.pita-info .status-eduweb.galat { color: var(--kuning); }
+.tabel-nilai td.sel-absen input.baru-eduweb { border-color: var(--kuning); background: var(--kuning-muda); }

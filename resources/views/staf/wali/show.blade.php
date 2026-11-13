@@ -6,8 +6,9 @@
     <div class="pita-atas">
         <a class="tombol-pita" href="{{ route('staf.wali.index', ['periode' => $periode->id]) }}"><x-ikon nama="panah-kiri" :ukuran="16" />Kembali</a>
         @unless ($final)
+            <span id="statusEduweb" class="status-eduweb" data-url="{{ route('staf.wali.segar', [$kelas, 'periode' => $periode->id]) }}" role="status" aria-live="polite"></span>
             <form method="POST" action="{{ route('staf.wali.absensi', [$kelas, 'periode' => $periode->id]) }}" onsubmit="return confirm('Ambil absensi dan nilai ekskul semua siswa dari EduWeb? Isian sakit, izin, dan alpa yang sudah Anda ubah akan tertimpa.')">
-                @csrf <button class="tombol-pita" type="submit">Ambil absensi &amp; ekskul dari EduWeb</button>
+                @csrf <button class="tombol-pita" type="submit">Ambil ulang dari EduWeb</button>
             </form>
         @endunless
     </div>
@@ -23,6 +24,12 @@
 @if ($sudahPindah > 0)
     <div class="pesan-salah catatan" role="status"><x-ikon nama="info" :ukuran="18" /><span>{{ $sudahPindah }} siswa sudah dinaikkan, ditinggalkan, atau diluluskan dari kelas ini di EduWeb. Rapor kelas ini belum final; selesaikan dan finalkan segera.</span></div>
 @endif
+
+@unless ($final)
+    @push('skrip')
+        <script src="{{ asset('js/absensi-otomatis.js') }}?v={{ filemtime(public_path('js/absensi-otomatis.js')) }}" defer></script>
+    @endpush
+@endunless
 
 @if (count($baris) > 0)
     <form id="formCetakRapor" class="bar-saring bar-cetak" method="GET" action="{{ route('staf.wali.cetak', $kelas) }}" target="_blank">

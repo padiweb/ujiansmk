@@ -156,6 +156,54 @@ class WaliKelasTest extends TestCase
         $this->assertSame(5, $this->rapor(0)->sakit);
     }
 
+    public function test_penyegaran_otomatis_mengisi_absensi_tanpa_menimpa_isian_manual_atau_final(): void
+    {
+        $this->hubungkanEduweb();
+        $this->isiNilaiLengkap();
+        Http::fake(['*' => Http::response(['data' => [
+            ['student_id' => 9000, 'sakit' => 3, 'izin' => 1, 'alpa' => 2],
+            ['student_id' => 9001, 'sakit' => 7, 'izin' => 7, 'alpa' => 7],
+        ]])]);
+        // Siswa kedua sudah dikoreksi wali (manual), jadi tidak boleh tertimpa.
+        $this->actingAs($this->wali, 'web')->post($this->url(), ['rapor' => [$this->siswa[1]->id => ['sakit' => '1', 'izin' => '0', 'alpa' => '0']]]);
+
+        $j = $this->get($this->url('/segar'))->assertOk()->assertJsonPath('status', 'ok')->json('data');
+
+        $this->assertSame(3, $j[$this->siswa[0]->id]['sakit']);
+        $this->assertSame([3, 1, 2, 'eduweb'], [$this->rapor(0)->sakit, $this->rapor(0)->izin, $this->rapor(0)->alpa, $this->rapor(0)->sumber_absensi]);
+        $this->assertArrayNotHasKey($this->siswa[1]->id, $j);
+        $this->assertSame([1, 'manual'], [$this->rapor(1)->sakit, $this->rapor(1)->sumber_absensi]);
+
+        // Panggilan berikutnya dalam 15 detik tidak menghubungi EduWeb lagi tetapi tetap mengembalikan data terkini.
+        Http::fake(['*' => Http::response('', 500)]);
+        $this->get($this->url('/segar'))->assertOk()->assertJsonPath('status', 'ok')->assertJsonPath('data.'.$this->siswa[0]->id.'.sakit', 3);
+        Http::assertNothingSent();
+    }
+
+    public function test_penyegaran_otomatis_melaporkan_galat_eduweb_tanpa_mengubah_data_dan_ditolak_bagi_orang_lain(): void
+    {
+        $this->hubungkanEduweb();
+        $this->actingAs($this->wali, 'web')->post($this->url(), ['rapor' => [$this->siswa[0]->id => ['sakit' => '5']]]);
+        Http::fake(['*' => Http::response('', 500)]);
+
+        $this->get($this->url('/segar'))->assertOk()->assertJsonPath('status', 'galat');
+        $this->assertSame(5, $this->rapor(0)->sakit);
+
+        $this->actingAs($this->guruMapel, 'web')->get($this->url('/segar'))->assertNotFound();
+        $this->actingAs(User::factory()->pengawas()->create(), 'web')->get($this->url('/segar'))->assertForbidden();
+    }
+
+    public function test_penyegaran_otomatis_tidak_menyentuh_rapor_final(): void
+    {
+        $this->hubungkanEduweb();
+        $this->isiNilaiLengkap();
+        $this->actingAs($this->wali, 'web')->post($this->url('/finalkan'));
+        Http::fake(['*' => Http::response(['data' => [['student_id' => 9000, 'sakit' => 9, 'izin' => 9, 'alpa' => 9]]])]);
+
+        $this->get($this->url('/segar'))->assertOk()->assertJsonPath('status', 'final');
+        Http::assertNothingSent();
+    }
+
     // ── Finalisasi ──────────────────────────────────────────────────────────
 
     public function test_tidak_bisa_difinalkan_selama_nilai_belum_lengkap(): void
