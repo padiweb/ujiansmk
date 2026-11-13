@@ -15,6 +15,7 @@ use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
 use App\Http\Controllers\Staf\ArsipSiswaController;
+use App\Http\Controllers\Staf\StatistikController;
 use App\Http\Controllers\Staf\KelulusanController;
 use App\Http\Controllers\Staf\NilaiLampauController;
 use App\Http\Controllers\Staf\UjianSekolahController;
@@ -155,6 +156,12 @@ Route::prefix('staf')->group(function () {
 
     // Arsip siswa (lulus/keluar): hanya admin.
     Route::get('arsip-siswa', [ArsipSiswaController::class, 'index'])->middleware(['auth:web', 'peran:admin'])->name('staf.arsip.index');
+
+    // Statistik nilai rapor: hanya admin.
+    Route::middleware(['auth:web', 'peran:admin'])->prefix('statistik')->name('staf.statistik.')->group(function () {
+        Route::get('/', [StatistikController::class, 'index'])->name('index');
+        Route::get('/cetak/{kelas}', [StatistikController::class, 'cetak'])->whereNumber('kelas')->middleware('throttle:30,1')->name('cetak');
+    });
 
     // Transkrip US dan SKL: hanya admin.
     Route::middleware(['auth:web', 'peran:admin'])->prefix('kelulusan')->name('staf.kelulusan.')->whereIn('jenis', ['transkrip', 'skl', 'mutasi'])->group(function () {
