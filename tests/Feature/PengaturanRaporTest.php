@@ -181,6 +181,26 @@ class PengaturanRaporTest extends TestCase
         $this->get('/staf/pengaturan-rapor')->assertSee('mengikuti EduWeb');
     }
 
+    public function test_admin_menambah_semester_us_tanpa_mengubah_semester_aktif_walau_sinkron_menyala(): void
+    {
+        $this->actingAs(User::factory()->admin()->create(), 'web');
+        PengaturanSekolah::ambil()->update(['mode_sinkron_eduweb' => true]);
+        $tahun = TahunAjaran::create(['nama' => '2025/2026', 'aktif' => true]);
+        $aktif = Periode::create(['tahun_ajaran_id' => $tahun->id, 'semester' => 'ganjil', 'tipe' => 'reguler', 'aktif' => true]);
+
+        $this->get('/staf/pengaturan-rapor')->assertOk()->assertSee('Semester Ujian Sekolah');
+        $this->post('/staf/pengaturan-rapor/periode-us', ['tahun_ajaran_id' => $tahun->id, 'semester' => 'genap'])->assertSessionHas('berhasil');
+
+        $us = Periode::where('tipe', 'ujian_sekolah')->first();
+        $this->assertSame([false, false], [(bool) $us->aktif, (bool) $us->rapor_di_sini]);
+        $this->assertTrue($aktif->fresh()->aktif);
+        $this->assertSame($us->id, app(\App\Services\LayananUjianSekolah::class)->periodeUs()->id);
+
+        $this->post('/staf/pengaturan-rapor/periode-us', ['tahun_ajaran_id' => $tahun->id, 'semester' => 'genap'])->assertSessionHas('catatan');
+        $this->assertSame(1, Periode::where('tipe', 'ujian_sekolah')->count());
+        $this->post('/staf/pengaturan-rapor/periode-us', ['tahun_ajaran_id' => 9999, 'semester' => 'genap'])->assertSessionHasErrors('tahun_ajaran_id');
+    }
+
     public function test_pengaturan_baru_bernilai_bawaan(): void
     {
         $p = PengaturanSekolah::ambil()->fresh();

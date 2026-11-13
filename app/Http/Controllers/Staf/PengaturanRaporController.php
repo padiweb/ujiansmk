@@ -27,6 +27,7 @@ class PengaturanRaporController extends Controller
             'skala' => $this->rapor->skala(),
             'periode' => Periode::with('tahunAjaran')->orderByDesc('tahun_ajaran_id')->orderByDesc('semester')->get(),
             'klienApi' => KlienApi::orderByDesc('id')->get(),
+            'tahunAjaran' => \App\Models\TahunAjaran::orderByDesc('nama')->get(),
             'sinkron' => PengaturanSekolah::sinkronAktif(),
         ]);
     }
@@ -110,6 +111,24 @@ class PengaturanRaporController extends Controller
         AuditLog::catat('rapor.skala', $baris->count().' baris', $request->user('web'));
 
         return back()->with('berhasil', 'Skala predikat disimpan.');
+    }
+
+    /** Tambah semester Ujian Sekolah (kelas XII). Tidak berasal dari EduWeb, jadi dikelola di sini walau data semester dikunci. */
+    public function periodeUs(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'tahun_ajaran_id' => ['required', 'integer', 'exists:tahun_ajaran,id'], 'semester' => ['required', 'in:ganjil,genap'],
+        ], [], ['tahun_ajaran_id' => 'Tahun ajaran', 'semester' => 'Semester']);
+
+        if (Periode::where('tahun_ajaran_id', $data['tahun_ajaran_id'])->where('semester', $data['semester'])->where('tipe', 'ujian_sekolah')->exists()) {
+            return back()->with('catatan', 'Semester Ujian Sekolah itu sudah ada.');
+        }
+
+        // Tidak dijadikan aktif (agar semester reguler yang sedang berjalan tidak berubah) dan tidak dipakai untuk rapor.
+        $p = Periode::create(['tahun_ajaran_id' => $data['tahun_ajaran_id'], 'semester' => $data['semester'], 'tipe' => 'ujian_sekolah', 'aktif' => false, 'rapor_di_sini' => false]);
+        AuditLog::catat('rapor.periode_us', "periode {$p->id}", $request->user('web'));
+
+        return back()->with('berhasil', 'Semester Ujian Sekolah ditambahkan. Pilih semester ini saat membuat jadwal ujian US.');
     }
 
     public function periode(Request $request): RedirectResponse

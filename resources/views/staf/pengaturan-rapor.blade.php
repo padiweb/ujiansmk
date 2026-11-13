@@ -100,6 +100,31 @@
     <div class="aksi-form"><button class="tombol kecil" type="submit" @disabled($periode->isEmpty())>Simpan semester</button></div>
 </form>
 
+<form class="kartu formulir" method="POST" action="{{ route('staf.rapor.periode-us') }}" style="max-width:760px;margin-top:16px">
+    @csrf
+    <h2 class="judul-kartu">Semester Ujian Sekolah (kelas XII)</h2>
+    <small class="bantuan">Dipakai untuk jadwal ujian US dan nilai CBT di menu Input Nilai US. Semester ini dikelola di sini, tidak datang dari EduWeb.</small>
+    @php $us = $periode->where('tipe', 'ujian_sekolah'); @endphp
+    @if ($us->isNotEmpty())
+        <ul class="petunjuk" style="margin:8px 0">
+            @foreach ($us as $p) <li>{{ $p->label() }}</li> @endforeach
+        </ul>
+    @endif
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-top:8px">
+        <div class="bidang" style="margin:0;min-width:180px">
+            <label for="us-tahun">Tahun ajaran</label>
+            <select id="us-tahun" name="tahun_ajaran_id" required>
+                @foreach ($tahunAjaran as $t) <option value="{{ $t->id }}">{{ $t->nama }}</option> @endforeach
+            </select>
+        </div>
+        <div class="bidang" style="margin:0;min-width:140px">
+            <label for="us-sem">Semester</label>
+            <select id="us-sem" name="semester" required><option value="genap">Genap</option><option value="ganjil">Ganjil</option></select>
+        </div>
+        <button class="tombol kecil" type="submit" @disabled($tahunAjaran->isEmpty())>Tambah semester US</button>
+    </div>
+</form>
+
 <div class="kartu" style="max-width:760px;margin-top:16px">
     <h2 class="judul-kartu">Akses EduWeb ke status rapor</h2>
     <small class="bantuan">Kunci ini dipakai EduWeb untuk membaca status final rapor sebelum menaikkan atau meluluskan siswa. Hanya status dan keputusan wali kelas yang dapat dibaca.</small>

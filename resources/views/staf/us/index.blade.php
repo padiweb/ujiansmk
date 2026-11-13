@@ -10,7 +10,7 @@
 </div>
 
 @unless ($periodeUs)
-    <div class="pesan-salah catatan" role="status"><x-ikon nama="info" :ukuran="18" /><span>Belum ada semester bertipe Ujian Sekolah, jadi hasil ujian CBT belum bisa terisi otomatis. Nilai tetap bisa diketik manual.</span></div>
+    <div class="pesan-salah catatan" role="status"><x-ikon nama="info" :ukuran="18" /><span>Belum ada semester bertipe Ujian Sekolah, jadi hasil ujian CBT belum bisa terisi otomatis. Nilai tetap bisa diketik manual.@if ($admin) Tambahkan di <a href="{{ route('staf.rapor.pengaturan') }}">Pengaturan Rapor</a>, kartu "Semester Ujian Sekolah".@endif</span></div>
 @endunless
 
 <div class="db-panel">
