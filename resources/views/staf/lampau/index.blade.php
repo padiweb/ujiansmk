@@ -10,7 +10,7 @@
 </div>
 
 @if ($daftarPeriode->isEmpty())
-    <div class="pesan-salah catatan" role="status"><x-ikon nama="info" :ukuran="18" /><span>Belum ada semester untuk nilai lampau. Admin menandai semester lama di Pengaturan Rapor (matikan "Rapor diisi di aplikasi ini").</span></div>
+    <div class="pesan-salah catatan" role="status"><x-ikon nama="info" :ukuran="18" /><span>Belum ada semester untuk nilai lampau. Admin perlu membuka Pengaturan Rapor, bagian Semester, lalu mematikan centang "Rapor di sini" pada semester lama dan menyimpannya.</span></div>
 @else
 <form class="bar-saring" method="GET" action="{{ route('staf.lampau.index') }}">
     <div class="bar-isi">
