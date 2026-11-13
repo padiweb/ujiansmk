@@ -71,7 +71,7 @@
                 <thead>
                     <tr>
                         <th class="no">No</th><th class="nama">Nama Siswa</th><th class="tengah grup-np">NP</th><th class="tengah grup-nk">NK</th>
-                        <th class="tengah">NA</th><th class="tengah">Pred</th>
+                        <th class="tengah">NA</th><th class="tengah">Pred</th><th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -83,9 +83,10 @@
                             <td class="sel-nilai"><input type="text" inputmode="decimal" name="nilai[{{ $b['siswa']->id }}][nk]" value="{{ $b['nk'] }}" aria-label="NK {{ $b['siswa']->nama }}"></td>
                             <td class="sel-hasil na">{{ $b['na'] ?? '–' }}</td>
                             <td class="sel-hasil">{{ $b['predikat'] ?? '–' }}</td>
+                            <td class="sel-status"><span class="status-nilai {{ $b['status'] }}">{{ ['kosong' => 'Belum diisi', 'draf' => 'Draf lama', 'final' => 'Sudah final'][$b['status']] }}</span></td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="kosong">Belum ada siswa di kelas ini pada semester tersebut.</td></tr>
+                        <tr><td colspan="7" class="kosong">Belum ada siswa di kelas ini pada semester tersebut.</td></tr>
                     @endforelse
                 </tbody>
             </table>

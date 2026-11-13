@@ -66,7 +66,7 @@ class LayananNilaiLampau
         return ($n?->snapshot['lampau'] ?? false) ? ($n->snapshot['kelas_nama'] ?? null) : null;
     }
 
-    /** @return list<array{siswa:Siswa,np:?int,nk:?int,na:?int,predikat:?string,ada:bool}> */
+    /** @return list<array{siswa:Siswa,np:?int,nk:?int,na:?int,predikat:?string,ada:bool,status:string}> status: kosong | draf | final */
     public function tabel(Mapel $mapel, Kelas $kelas, Periode $periode): array
     {
         $ada = NilaiRapor::where('mapel_id', $mapel->id)->where('kelas_id', $kelas->id)->where('periode_id', $periode->id)->get()->keyBy('siswa_id');
@@ -75,7 +75,7 @@ class LayananNilaiLampau
             $n = $ada[$s->id] ?? null;
 
             return [
-                'siswa' => $s, 'ada' => $n !== null,
+                'siswa' => $s, 'ada' => $n !== null, 'status' => $n === null ? 'kosong' : ($n->status === 'final' ? 'final' : 'draf'),
                 'np' => $n?->np, 'nk' => $n?->nk, 'na' => $n?->na, 'predikat' => $n?->predikat,
             ];
         })->all();

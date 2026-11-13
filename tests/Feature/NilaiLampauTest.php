@@ -62,7 +62,11 @@ class NilaiLampauTest extends TestCase
         $this->assertSame([83, 0, 83, app(\App\Services\LayananRapor::class)->predikat(83)], [$m->np, $m->nk, $m->na, $m->predikat]); // NK kosong: NA = NP
         $this->assertNull(NilaiRapor::where('siswa_id', $this->siswa[2]->id)->first());
 
-        $this->get($this->url())->assertSee('85');
+        $this->get($this->url())->assertSee('85')->assertSee('Sudah final')->assertSee('Belum diisi');
+
+        // Nilai draf dari input biasa (bukan lampau) ditandai sebagai draf lama.
+        NilaiRapor::where('siswa_id', $this->siswa[0]->id)->update(['status' => 'draf', 'snapshot' => null]);
+        $this->get($this->url())->assertSee('Draf lama');
     }
 
     public function test_input_salah_dilewati_dan_nilai_lama_dapat_diubah(): void

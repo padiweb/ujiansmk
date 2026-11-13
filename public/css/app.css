@@ -775,3 +775,8 @@ h1, h2, h3 { color: var(--teks); }
 .kenaikan.diproses { color: var(--biru-tua); }
 .kenaikan.beda { color: var(--kuning-tua); }
 .kenaikan.baru { background: var(--kuning-muda); border-radius: 6px; padding: 2px 6px; }
+
+.sel-status { min-width: 110px; text-align: left; padding: 0 12px !important; font-size: .84rem; }
+.status-nilai { font-weight: 600; color: var(--teks-3); }
+.status-nilai.draf { color: var(--kuning-tua); }
+.status-nilai.final { color: var(--biru-tua); }
