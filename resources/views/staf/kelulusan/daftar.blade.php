@@ -33,6 +33,12 @@
         <label for="c-tgl">Tanggal terbit</label>
         <input id="c-tgl" type="date" name="tgl" value="{{ now()->format('Y-m-d') }}">
     </div>
+    @if ($jenis === 'mutasi')
+        <div class="bar-isi">
+            <label for="c-rapat">Tanggal rapat dewan guru</label>
+            <input id="c-rapat" type="date" name="tgl_rapat">
+        </div>
+    @endif
     @if ($jenis === 'skl')
         <div class="bar-isi">
             <label for="c-lulus">Tanggal kelulusan</label>

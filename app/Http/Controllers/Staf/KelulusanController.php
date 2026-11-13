@@ -18,7 +18,7 @@ use Illuminate\View\View;
 /** Transkrip nilai dan Surat Keterangan Lulus (SKL) siswa kelas XII. Hanya admin. */
 class KelulusanController extends Controller
 {
-    private const JENIS = ['transkrip' => 'Transkrip US', 'skl' => 'Cetak SKL'];
+    private const JENIS = ['transkrip' => 'Transkrip US', 'skl' => 'Cetak SKL', 'mutasi' => 'Surat Mutasi'];
 
     public function __construct(private LayananTranskrip $transkrip) {}
 
@@ -42,7 +42,7 @@ class KelulusanController extends Controller
         $in = $request->validate([
             'kelas' => ['required', 'integer'], 'siswa' => ['nullable', 'integer'],
             'no_surat' => ['nullable', 'string', 'max:80'], 'tgl' => ['nullable', 'date'], 'tgl_lulus' => ['nullable', 'date'],
-            'no_ijazah' => ['nullable', 'string', 'max:60'], 'format' => ['nullable', 'in:cetak,word'],
+            'no_ijazah' => ['nullable', 'string', 'max:60'], 'tgl_rapat' => ['nullable', 'date'], 'format' => ['nullable', 'in:cetak,word'],
         ], [], ['tgl' => 'Tanggal']);
 
         $kelas = Kelas::with('jurusan', 'tahunAjaran')->where('tingkat', 'XII')->findOrFail((int) $in['kelas']);
@@ -66,7 +66,7 @@ class KelulusanController extends Controller
             'lembar' => $lembar, 'kelas' => $kelas, 'sekolah' => $sekolah, 'word' => $word, 'slot' => LayananTranskrip::SLOT, 'namaKelompok' => LayananTranskrip::KELOMPOK,
             'noSurat' => $in['no_surat'] ?? '', 'noIjazah' => $in['no_ijazah'] ?? '',
             'kotaTanggal' => trim(($sekolah->kota ? $sekolah->kota.', ' : '').$tgl),
-            'tglLulus' => $tanggal($in['tgl_lulus'] ?? null) ?? $tgl,
+            'tglLulus' => $tanggal($in['tgl_lulus'] ?? null) ?? $tgl, 'tglRapat' => $tanggal($in['tgl_rapat'] ?? null),
             'judul' => self::JENIS[$jenis].' '.$kelas->nama,
         ])->render();
 

@@ -153,7 +153,7 @@ Route::prefix('staf')->group(function () {
     });
 
     // Transkrip US dan SKL: hanya admin.
-    Route::middleware(['auth:web', 'peran:admin'])->prefix('kelulusan')->name('staf.kelulusan.')->whereIn('jenis', ['transkrip', 'skl'])->group(function () {
+    Route::middleware(['auth:web', 'peran:admin'])->prefix('kelulusan')->name('staf.kelulusan.')->whereIn('jenis', ['transkrip', 'skl', 'mutasi'])->group(function () {
         Route::get('/{jenis}', [KelulusanController::class, 'daftar'])->name('daftar');
         Route::get('/{jenis}/cetak', [KelulusanController::class, 'cetak'])->middleware('throttle:30,1')->name('cetak');
     });

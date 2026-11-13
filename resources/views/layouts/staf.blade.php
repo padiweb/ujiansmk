@@ -96,6 +96,10 @@
                    class="sisi-a {{ request()->routeIs('staf.kelulusan.*') && request()->route('jenis') === 'transkrip' ? 'aktif' : '' }}">
                     <x-ikon nama="berkas" /><span class="sisi-lbl">Transkrip US</span>
                 </a>
+                <a href="{{ route('staf.kelulusan.daftar', 'mutasi') }}" data-tip="Surat Mutasi"
+                   class="sisi-a {{ request()->routeIs('staf.kelulusan.*') && request()->route('jenis') === 'mutasi' ? 'aktif' : '' }}">
+                    <x-ikon nama="berkas" /><span class="sisi-lbl">Surat Mutasi</span>
+                </a>
                 <a href="{{ route('staf.kelulusan.daftar', 'skl') }}" data-tip="Cetak SKL"
                    class="sisi-a {{ request()->routeIs('staf.kelulusan.*') && request()->route('jenis') === 'skl' ? 'aktif' : '' }}">
                     <x-ikon nama="berkas" /><span class="sisi-lbl">Cetak SKL</span>

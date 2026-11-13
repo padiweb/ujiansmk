@@ -154,6 +154,18 @@ class UjianSekolahTest extends TestCase
         $this->get("/staf/kelulusan/skl/cetak?kelas={$this->xii->id}")->assertForbidden();
     }
 
+    public function test_surat_mutasi_dicetak_dengan_tanggal_rapat(): void
+    {
+        $s = $this->lulusan[0];
+        $s->update(['nama_wali' => 'Bapak Contoh']);
+        $this->actingAs($this->admin, 'web');
+
+        $this->get('/staf/kelulusan/mutasi')->assertOk()->assertSee('Surat Mutasi')->assertSee('Tanggal rapat dewan guru');
+        $this->get("/staf/kelulusan/mutasi/cetak?kelas={$this->xii->id}&siswa={$s->id}&no_surat=M/01&tgl=2026-05-20&tgl_rapat=2026-05-10")->assertOk()
+            ->assertSee('SURAT KETERANGAN MUTASI')->assertSee(strtoupper($s->nama))->assertSee('BAPAK CONTOH')->assertSee('10 Mei 2026')->assertSee('M/01');
+        $this->actingAs($this->guru, 'web')->get('/staf/kelulusan/mutasi')->assertForbidden();
+    }
+
     public function test_cetak_menolak_kelas_bukan_xii_dan_jenis_tidak_dikenal(): void
     {
         $this->actingAs($this->admin, 'web');
