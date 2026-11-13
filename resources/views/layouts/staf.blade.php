@@ -87,6 +87,20 @@
                    class="sisi-a {{ request()->routeIs('staf.rekap.*') ? 'aktif' : '' }}">
                     <x-ikon nama="berkas" /><span class="sisi-lbl">Rekap Nilai</span>
                 </a>
+                <a href="{{ route('staf.us.index') }}" data-tip="Input Nilai US"
+                   class="sisi-a {{ request()->routeIs('staf.us.*') ? 'aktif' : '' }}">
+                    <x-ikon nama="berkas" /><span class="sisi-lbl">Input Nilai US</span>
+                </a>
+                @if ($admin)
+                <a href="{{ route('staf.kelulusan.daftar', 'transkrip') }}" data-tip="Transkrip US"
+                   class="sisi-a {{ request()->routeIs('staf.kelulusan.*') && request()->route('jenis') === 'transkrip' ? 'aktif' : '' }}">
+                    <x-ikon nama="berkas" /><span class="sisi-lbl">Transkrip US</span>
+                </a>
+                <a href="{{ route('staf.kelulusan.daftar', 'skl') }}" data-tip="Cetak SKL"
+                   class="sisi-a {{ request()->routeIs('staf.kelulusan.*') && request()->route('jenis') === 'skl' ? 'aktif' : '' }}">
+                    <x-ikon nama="berkas" /><span class="sisi-lbl">Cetak SKL</span>
+                </a>
+                @endif
                 <a href="{{ route('staf.bank-soal.index') }}" data-tip="Bank Soal"
                    class="sisi-a {{ request()->routeIs('staf.bank-soal.*', 'staf.soal.*') ? 'aktif' : '' }}">
                     <x-ikon nama="bank-soal" /><span class="sisi-lbl">Bank Soal</span>

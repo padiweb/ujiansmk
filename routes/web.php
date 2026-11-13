@@ -14,7 +14,9 @@ use App\Http\Controllers\Staf\ImporSoalController;
 use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
+use App\Http\Controllers\Staf\KelulusanController;
 use App\Http\Controllers\Staf\NilaiLampauController;
+use App\Http\Controllers\Staf\UjianSekolahController;
 use App\Http\Controllers\Staf\NilaiRaporController;
 use App\Http\Controllers\Staf\CetakRaporController;
 use App\Http\Controllers\Staf\WaliKelasController;
@@ -139,6 +141,21 @@ Route::prefix('staf')->group(function () {
     Route::middleware(['auth:web', 'peran:admin,guru'])->prefix('nilai-lampau')->name('staf.lampau.')->group(function () {
         Route::get('/', [NilaiLampauController::class, 'index'])->name('index');
         Route::post('/', [NilaiLampauController::class, 'simpan'])->middleware('throttle:30,1')->name('simpan');
+    });
+
+    // Nilai Ujian Sekolah kelas XII: admin semua, guru hanya mapel yang diampunya (dicek di layanan).
+    Route::middleware(['auth:web', 'peran:admin,guru'])->prefix('ujian-sekolah')->name('staf.us.')->group(function () {
+        Route::get('/', [UjianSekolahController::class, 'index'])->name('index');
+        Route::prefix('{mapel}/{kelas}')->whereNumber(['mapel', 'kelas'])->group(function () {
+            Route::get('/', [UjianSekolahController::class, 'show'])->name('tabel');
+            Route::post('/', [UjianSekolahController::class, 'simpan'])->middleware('throttle:30,1')->name('simpan');
+        });
+    });
+
+    // Transkrip US dan SKL: hanya admin.
+    Route::middleware(['auth:web', 'peran:admin'])->prefix('kelulusan')->name('staf.kelulusan.')->whereIn('jenis', ['transkrip', 'skl'])->group(function () {
+        Route::get('/{jenis}', [KelulusanController::class, 'daftar'])->name('daftar');
+        Route::get('/{jenis}/cetak', [KelulusanController::class, 'cetak'])->middleware('throttle:30,1')->name('cetak');
     });
 
     // Wali kelas: admin semua kelas, guru hanya kelas yang diwalikannya (dicek di layanan).
