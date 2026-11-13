@@ -22,6 +22,18 @@
     @if ($soal) @method('PUT') @endif
     <input type="hidden" name="tipe" value="{{ $tipe }}">
 
+    <div class="bidang @error('bacaan_id') salah @enderror">
+        <label for="bacaan_id">Bacaan / stimulus (opsional)</label>
+        <select id="bacaan_id" name="bacaan_id">
+            <option value="">Tanpa bacaan</option>
+            @foreach ($daftarBacaan as $b)
+                <option value="{{ $b->id }}" @selected((int) old('bacaan_id', $bacaanAwal) === $b->id)>{{ $b->label() }}</option>
+            @endforeach
+        </select>
+        <small class="bantuan">Satu bacaan bisa dipakai beberapa soal. <a href="{{ route('staf.bacaan.create', $bank) }}">Tambah bacaan baru</a> (simpan soal ini dulu bila sudah terisi).</small>
+        @error('bacaan_id') <small class="galat-bidang">{{ $message }}</small> @enderror
+    </div>
+
     <div class="bidang @error('pertanyaan') salah @enderror">
         <label for="pertanyaan">Pertanyaan <span class="wajib">*</span></label>
         <textarea id="pertanyaan" name="pertanyaan" rows="5" maxlength="5000" required>{{ old('pertanyaan', $soal?->pertanyaan) }}</textarea>

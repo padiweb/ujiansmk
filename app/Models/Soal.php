@@ -16,7 +16,7 @@ class Soal extends Model
     public const PG = 'pg';
     public const ESAI = 'esai';
 
-    protected $fillable = ['bank_soal_id', 'tipe', 'pertanyaan', 'gambar', 'bobot', 'rubrik_esai', 'status', 'sumber', 'urutan'];
+    protected $fillable = ['bank_soal_id', 'bacaan_id', 'tipe', 'pertanyaan', 'gambar', 'bobot', 'rubrik_esai', 'status', 'sumber', 'urutan'];
 
     protected function casts(): array
     {
@@ -26,6 +26,11 @@ class Soal extends Model
     public function bank(): BelongsTo
     {
         return $this->belongsTo(BankSoal::class, 'bank_soal_id');
+    }
+
+    public function bacaan(): BelongsTo
+    {
+        return $this->belongsTo(BacaanSoal::class, 'bacaan_id');
     }
 
     public function opsi(): HasMany

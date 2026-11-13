@@ -41,6 +41,7 @@ class UjianApiController extends Controller
                 'tipe' => $s['tipe'],
                 'pertanyaan' => $s['pertanyaan'],
                 'gambar' => $s['gambar'],
+                'bacaan' => $s['bacaan'] ?? null,
                 // Urutan opsi khusus siswa; "label" adalah label ASLI (dikirim balik saat menjawab),
                 // sedangkan huruf yang dilihat siswa ditentukan oleh posisinya.
                 'opsi' => $s['tipe'] === 'pg'

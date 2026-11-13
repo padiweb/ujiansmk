@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\MasukSiswaController;
 use App\Http\Controllers\Auth\MasukStafController;
 use App\Http\Controllers\BerandaController;
+use App\Http\Controllers\Staf\BacaanSoalController;
 use App\Http\Controllers\Staf\BankSoalController;
 use App\Http\Controllers\Staf\DenahController;
 use App\Http\Controllers\Staf\ImporController;
@@ -108,6 +109,12 @@ Route::prefix('staf')->group(function () {
 
                 Route::get('/otomatis', [OtomatisSoalController::class, 'form'])->name('staf.bank-soal.otomatis');
                 Route::post('/otomatis', [OtomatisSoalController::class, 'proses'])->name('staf.bank-soal.otomatis.proses');
+
+                Route::get('/bacaan/tambah', [BacaanSoalController::class, 'create'])->name('staf.bacaan.create');
+                Route::post('/bacaan', [BacaanSoalController::class, 'store'])->name('staf.bacaan.store');
+                Route::get('/bacaan/{bacaan}/ubah', [BacaanSoalController::class, 'edit'])->whereNumber('bacaan')->name('staf.bacaan.edit');
+                Route::put('/bacaan/{bacaan}', [BacaanSoalController::class, 'update'])->whereNumber('bacaan')->name('staf.bacaan.update');
+                Route::delete('/bacaan/{bacaan}', [BacaanSoalController::class, 'destroy'])->whereNumber('bacaan')->name('staf.bacaan.destroy');
 
                 Route::get('/soal/tambah', [SoalController::class, 'create'])->name('staf.soal.create');
                 Route::post('/soal', [SoalController::class, 'store'])->name('staf.soal.store');

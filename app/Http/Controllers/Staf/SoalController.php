@@ -25,16 +25,17 @@ class SoalController extends Controller
         $this->izin($request, $bank);
         $tipe = $request->query('tipe') === Soal::ESAI ? Soal::ESAI : Soal::PG;
 
-        return view('staf.soal.form', ['bank' => $bank, 'soal' => null, 'tipe' => $tipe]);
+        return view('staf.soal.form', ['bank' => $bank, 'soal' => null, 'tipe' => $tipe, 'daftarBacaan' => $bank->bacaan()->get(), 'bacaanAwal' => (int) $request->query('bacaan')]);
     }
 
     public function store(Request $request, BankSoal $bank): RedirectResponse
     {
         $this->izin($request, $bank);
-        $data = $this->validasi($request);
+        $data = $this->validasi($request, null, $bank);
 
         DB::transaction(function () use ($request, $bank, $data) {
             $soal = $bank->soal()->create([
+                'bacaan_id' => $data['bacaan_id'] ?? null,
                 'tipe' => $data['tipe'],
                 'pertanyaan' => $data['pertanyaan'],
                 'bobot' => $data['bobot'],
@@ -56,13 +57,13 @@ class SoalController extends Controller
     {
         $this->izin($request, $bank, $soal);
 
-        return view('staf.soal.form', ['bank' => $bank, 'soal' => $soal->load('opsi'), 'tipe' => $soal->tipe]);
+        return view('staf.soal.form', ['bank' => $bank, 'soal' => $soal->load('opsi'), 'tipe' => $soal->tipe, 'daftarBacaan' => $bank->bacaan()->get(), 'bacaanAwal' => $soal->bacaan_id]);
     }
 
     public function update(Request $request, BankSoal $bank, Soal $soal): RedirectResponse
     {
         $this->izin($request, $bank, $soal);
-        $data = $this->validasi($request, $soal->tipe);
+        $data = $this->validasi($request, $soal->tipe, $bank);
 
         DB::transaction(function () use ($request, $soal, $data) {
             $gambar = $soal->gambar;
@@ -75,6 +76,7 @@ class SoalController extends Controller
             }
 
             $soal->update([
+                'bacaan_id' => $data['bacaan_id'] ?? null,
                 'pertanyaan' => $data['pertanyaan'],
                 'bobot' => $data['bobot'],
                 'rubrik_esai' => $soal->tipe === Soal::ESAI ? ($data['rubrik_esai'] ?? null) : null,
@@ -128,7 +130,7 @@ class SoalController extends Controller
         abort_if($soal && $soal->bank_soal_id !== $bank->id, 404);
     }
 
-    private function validasi(Request $request, ?string $tipeTetap = null): array
+    private function validasi(Request $request, ?string $tipeTetap, \App\Models\BankSoal $bank): array
     {
         $tipe = $tipeTetap ?? $request->input('tipe');
         $jumlahOpsi = (int) $request->input('jumlah_opsi', 4);
@@ -136,6 +138,7 @@ class SoalController extends Controller
 
         $aturan = [
             'tipe' => ['required', Rule::in([Soal::PG, Soal::ESAI])],
+            'bacaan_id' => ['nullable', 'integer', Rule::exists('bacaan_soal', 'id')->where('bank_soal_id', $bank->id)],
             'pertanyaan' => ['required', 'string', 'max:5000'],
             'bobot' => ['required', 'numeric', 'between:0.01,100'],
             'status' => ['required', Rule::in(['draf', 'siap'])],
@@ -153,7 +156,7 @@ class SoalController extends Controller
         }
 
         $nama = [
-            'pertanyaan' => 'Pertanyaan', 'bobot' => 'Bobot', 'status' => 'Status', 'gambar' => 'Gambar',
+            'bacaan_id' => 'Bacaan', 'pertanyaan' => 'Pertanyaan', 'bobot' => 'Bobot', 'status' => 'Status', 'gambar' => 'Gambar',
             'kunci' => 'Kunci jawaban', 'rubrik_esai' => 'Jawaban acuan', 'jumlah_opsi' => 'Jumlah opsi',
         ] + collect(LayananSoal::LABEL)->mapWithKeys(fn ($h) => ["opsi.{$h}" => "Opsi {$h}"])->all();
 

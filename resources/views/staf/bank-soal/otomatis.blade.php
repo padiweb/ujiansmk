@@ -48,6 +48,17 @@
         </div>
 
         <div class="bidang">
+            <label for="soal_per_bacaan">Soal berbasis bacaan</label>
+            <select id="soal_per_bacaan" name="soal_per_bacaan">
+                <option value="0" @selected((int) old('soal_per_bacaan', 0) === 0)>Tanpa bacaan</option>
+                @foreach ([2, 3, 4, 5] as $n)
+                    <option value="{{ $n }}" @selected((int) old('soal_per_bacaan', 0) === $n)>Satu bacaan untuk {{ $n }} soal</option>
+                @endforeach
+            </select>
+            <small class="bantuan">Penyusun menulis cerita atau pernyataan sekali, lalu beberapa soal merujuknya.</small>
+        </div>
+
+        <div class="bidang">
             <label for="jumlah_opsi">Jumlah opsi pilihan ganda</label>
             <select id="jumlah_opsi" name="jumlah_opsi">
                 <option value="4" @selected((int) old('jumlah_opsi', $bank->jumlah_opsi_bawaan) === 4)>4 opsi (A–D)</option>

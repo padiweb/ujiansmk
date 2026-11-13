@@ -67,6 +67,41 @@
     <form id="formSiapSemua" method="POST" action="{{ route('staf.bank-soal.siapkan-semua', $bank) }}">@csrf</form>
 @endif
 
+<div class="db-panel" style="margin-bottom:16px">
+    <header>
+        <h3>Bacaan / Stimulus</h3>
+        <a href="{{ route('staf.bacaan.create', $bank) }}">+ Tambah bacaan</a>
+    </header>
+    @if ($daftarBacaan->isEmpty())
+        <p class="sub" style="padding:12px 18px;margin:0">Belum ada bacaan. Tambahkan bacaan agar satu cerita atau pernyataan dapat dipakai beberapa soal.</p>
+    @else
+        <div class="gulir">
+            <table class="tabel tabel-daftar">
+                <thead><tr><th class="no">No</th><th>Bacaan</th><th>Dipakai</th><th class="kanan">Aksi</th></tr></thead>
+                <tbody>
+                    @foreach ($daftarBacaan as $b)
+                        <tr>
+                            <td class="no">{{ $loop->iteration }}</td>
+                            <td><strong>{{ $b->label() }}</strong></td>
+                            <td>{{ $b->soal_count }} soal</td>
+                            <td class="kanan aksi-baris">
+                                <a href="{{ route('staf.soal.create', [$bank, 'tipe' => 'pg', 'bacaan' => $b->id]) }}">+ Soal PG</a>
+                                <a href="{{ route('staf.soal.create', [$bank, 'tipe' => 'esai', 'bacaan' => $b->id]) }}">+ Soal Esai</a>
+                                <a href="{{ route('staf.bacaan.edit', [$bank, $b]) }}">Ubah</a>
+                                <form method="POST" action="{{ route('staf.bacaan.destroy', [$bank, $b]) }}" onsubmit="return confirm('Hapus bacaan ini? Soal yang memakainya tetap ada tanpa bacaan.')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="tautan">Hapus</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+</div>
+
 @forelse ($soal as $i => $s)
     <article class="soal-kartu">
         <header class="soal-kepala">
@@ -76,6 +111,13 @@
             @if ($s->sumber !== 'manual') <span class="lencana pucat">{{ $s->sumber === 'otomatis' ? 'Otomatis' : 'Impor' }}</span> @endif
             <span class="soal-bobot">Bobot {{ rtrim(rtrim($s->bobot, '0'), '.') }}</span>
         </header>
+
+        @if ($s->bacaan)
+            <details class="soal-bacaan">
+                <summary>Bacaan: {{ $s->bacaan->label() }}</summary>
+                <div>{!! nl2br(e($s->bacaan->teks)) !!}</div>
+            </details>
+        @endif
 
         <div class="soal-teks">{!! nl2br(e($s->pertanyaan)) !!}</div>
 

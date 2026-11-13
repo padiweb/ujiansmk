@@ -29,17 +29,29 @@ class PenyaringHasil
             if ($tipe === 'pg' && $sisaPg > 0) {
                 $soal = $this->soalPg($item, $pertanyaan, $p->jumlahOpsi);
                 if ($soal) {
-                    $hasil[] = $soal;
+                    $hasil[] = $soal + $this->bacaan($item);
                     $sisaPg--;
                 }
             } elseif ($tipe === 'esai' && $sisaEsai > 0) {
                 $hasil[] = ['tipe' => 'esai', 'pertanyaan' => $pertanyaan, 'opsi' => [], 'kunci' => null,
-                    'rubrik' => $this->teks($item['rubrik'] ?? null, 5000)];
+                    'rubrik' => $this->teks($item['rubrik'] ?? null, 5000)] + $this->bacaan($item);
                 $sisaEsai--;
             }
         }
 
         return $hasil;
+    }
+
+    /** Data bacaan yang menempel pada butir soal (bila ada dan sah). @return array<string,mixed> */
+    private function bacaan(array $item): array
+    {
+        $kode = $this->teks($item['bacaan_kode'] ?? null, 30);
+        $teks = $this->teks($item['bacaan_data']['teks'] ?? null, 8000);
+        if ($kode === null || $teks === null) {
+            return [];
+        }
+
+        return ['bacaan_kode' => $kode, 'bacaan' => ['judul' => $this->teks($item['bacaan_data']['judul'] ?? null, 150), 'teks' => $teks]];
     }
 
     private function soalPg(array $item, string $pertanyaan, int $jumlahOpsi): ?array

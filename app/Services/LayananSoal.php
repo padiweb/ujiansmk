@@ -66,9 +66,15 @@ class LayananSoal
                 'dibuat_oleh' => $oleh->id,
             ]);
 
+            $petaBacaan = [];
+            foreach ($asal->bacaan()->get() as $b) {
+                $petaBacaan[$b->id] = \App\Models\BacaanSoal::create(['bank_soal_id' => $baru->id, 'judul' => $b->judul, 'teks' => $b->teks, 'sumber' => $b->sumber])->id;
+            }
+
             foreach ($asal->soal()->with('opsi')->get() as $s) {
-                $salinan = $s->replicate(['bank_soal_id', 'gambar']);
+                $salinan = $s->replicate(['bank_soal_id', 'gambar', 'bacaan_id']);
                 $salinan->bank_soal_id = $baru->id;
+                $salinan->bacaan_id = $petaBacaan[$s->bacaan_id] ?? null;
                 $salinan->gambar = GambarAman::salin($s->gambar);
                 $salinan->save();
 

@@ -123,10 +123,12 @@
     function buatSoal(daftar) {
         var form = $('formSoal'), nav = $('navSoal');
         var nomorPg = 0, nomorEsai = 0, bagianEsai = false;
+        var bacaanTerakhir = null;
 
         daftar.forEach(function (s, i) {
             if (s.tipe === 'esai' && !bagianEsai) {
                 bagianEsai = true;
+                bacaanTerakhir = null;
                 var judul = document.createElement('h2');
                 judul.className = 'judul-bagian';
                 judul.textContent = 'Soal esai';
@@ -137,6 +139,31 @@
             var kartu = document.createElement('section');
             kartu.className = 'soal-ujian';
             kartu.id = 'soal-' + s.id;
+
+            // Bacaan/stimulus: ditampilkan penuh pada soal pertama kelompoknya, soal berikutnya cukup tautan lipat.
+            if (s.bacaan && s.bacaan.teks) {
+                var sama = bacaanTerakhir === s.bacaan.id;
+                var blok = document.createElement(sama ? 'details' : 'div');
+                blok.className = 'bacaan-ujian' + (sama ? ' ulang' : '');
+                if (sama) {
+                    var ringkas = document.createElement('summary');
+                    ringkas.textContent = 'Bacaan yang sama (ketuk untuk membuka)';
+                    blok.appendChild(ringkas);
+                }
+                if (s.bacaan.judul) {
+                    var jb = document.createElement('strong');
+                    jb.className = 'bacaan-judul';
+                    jb.textContent = s.bacaan.judul;
+                    blok.appendChild(jb);
+                }
+                var tb = document.createElement('div');
+                tb.textContent = s.bacaan.teks; // textContent: tidak pernah dijalankan sebagai HTML
+                blok.appendChild(tb);
+                kartu.appendChild(blok);
+                bacaanTerakhir = s.bacaan.id;
+            } else {
+                bacaanTerakhir = null;
+            }
 
             var tanya = document.createElement('div');
             tanya.className = 'pertanyaan';

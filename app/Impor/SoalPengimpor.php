@@ -14,6 +14,9 @@ class SoalPengimpor extends Pengimpor
 {
     private int $urutan = 0;
 
+    /** @var array<string,int> kode bacaan di berkas => id bacaan yang dibuat */
+    private array $petaBacaan = [];
+
     public function __construct(private BankSoal $bank, private LayananSoal $layanan) {}
 
     public function slug(): string
@@ -39,6 +42,8 @@ class SoalPengimpor extends Pengimpor
             ['header' => 'Kunci', 'key' => 'kunci', 'wajib' => false, 'contoh' => 'B'],
             ['header' => 'Bobot', 'key' => 'bobot', 'wajib' => false, 'contoh' => '1'],
             ['header' => 'Jawaban Acuan', 'key' => 'rubrik', 'wajib' => false, 'contoh' => ''],
+            ['header' => 'Kode Bacaan', 'key' => 'kode_bacaan', 'wajib' => false, 'contoh' => 'B1'],
+            ['header' => 'Teks Bacaan', 'key' => 'teks_bacaan', 'wajib' => false, 'contoh' => ''],
         ];
     }
 
@@ -50,12 +55,14 @@ class SoalPengimpor extends Pengimpor
             'Esai: Opsi dan Kunci dikosongkan; Jawaban Acuan boleh diisi untuk membantu koreksi.',
             'Bobot kosong = 1. Soal yang diimpor langsung berstatus siap dipakai.',
             'Gambar tidak bisa diimpor; tambahkan lewat halaman ubah soal.',
+            'Soal berbasis bacaan: beri Kode Bacaan yang sama (mis. B1) pada beberapa soal dan isi Teks Bacaan sekali, pada soal pertama kelompok itu.',
         ];
     }
 
     protected function siapkan(): void
     {
         $this->urutan = (int) ($this->bank->soal()->withTrashed()->max('urutan') ?? 0);
+        $this->petaBacaan = [];
     }
 
     protected function aturan(array $b): array
@@ -71,6 +78,8 @@ class SoalPengimpor extends Pengimpor
             'kunci' => ['nullable', Rule::in(['A', 'B', 'C', 'D', 'E', 'a', 'b', 'c', 'd', 'e'])],
             'bobot' => ['nullable', 'numeric', 'between:0.01,100'],
             'rubrik' => ['nullable', 'string', 'max:5000'],
+            'kode_bacaan' => ['nullable', 'string', 'max:30'],
+            'teks_bacaan' => ['nullable', 'string', 'max:8000'],
         ];
     }
 
@@ -106,7 +115,20 @@ class SoalPengimpor extends Pengimpor
             }
         }
 
+        $bacaanId = null;
+        $kodeBacaan = filled($b['kode_bacaan'] ?? null) ? trim($b['kode_bacaan']) : null;
+        if ($kodeBacaan !== null) {
+            if (! isset($this->petaBacaan[$kodeBacaan])) {
+                if (! filled($b['teks_bacaan'] ?? null)) {
+                    throw new GalatBaris("Kode Bacaan \"{$kodeBacaan}\" belum punya Teks Bacaan. Isi Teks Bacaan pada soal pertama yang memakai kode itu.");
+                }
+                $this->petaBacaan[$kodeBacaan] = $this->bank->bacaan()->create(['teks' => trim($b['teks_bacaan']), 'sumber' => 'impor'])->id;
+            }
+            $bacaanId = $this->petaBacaan[$kodeBacaan];
+        }
+
         $soal = $this->bank->soal()->create([
+            'bacaan_id' => $bacaanId,
             'tipe' => $tipe,
             'pertanyaan' => $b['pertanyaan'],
             'bobot' => $b['bobot'] ?? 1,

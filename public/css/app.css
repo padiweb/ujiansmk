@@ -780,3 +780,12 @@ h1, h2, h3 { color: var(--teks); }
 .status-nilai { font-weight: 600; color: var(--teks-3); }
 .status-nilai.draf { color: var(--kuning-tua); }
 .status-nilai.final { color: var(--biru-tua); }
+
+/* ── Bacaan / stimulus ── */
+.soal-bacaan { margin: 12px 18px 0; padding: 10px 14px; background: var(--biru-muda); border: 1px solid var(--biru-garis); border-radius: var(--radius-kecil); font-size: .9rem; }
+.soal-bacaan summary { cursor: pointer; font-weight: 700; color: var(--biru-tua); }
+.soal-bacaan > div { margin-top: 8px; line-height: 1.65; word-break: break-word; }
+.bacaan-ujian { margin: 0 0 14px; padding: 14px 16px; background: #F8FAFF; border: 1px solid var(--biru-garis); border-left: 4px solid var(--biru); border-radius: 10px; line-height: 1.7; white-space: pre-line; word-break: break-word; }
+.bacaan-ujian .bacaan-judul { display: block; margin-bottom: 6px; font-weight: 700; color: var(--biru-tua); }
+.bacaan-ujian.ulang { padding: 8px 12px; }
+.bacaan-ujian.ulang summary { cursor: pointer; font-weight: 600; color: var(--biru-tua); }

@@ -77,8 +77,14 @@ class LayananOtomatis
 
         DB::transaction(function () use ($soal, $bank) {
             $urutan = (int) ($bank->soal()->withTrashed()->max('urutan') ?? 0);
+            $petaBacaan = [];
             foreach ($soal as $s) {
+                $bacaanId = null;
+                if (isset($s['bacaan_kode'], $s['bacaan'])) {
+                    $bacaanId = $petaBacaan[$s['bacaan_kode']] ??= $bank->bacaan()->create(['judul' => $s['bacaan']['judul'], 'teks' => $s['bacaan']['teks'], 'sumber' => 'otomatis'])->id;
+                }
                 $baru = $bank->soal()->create([
+                    'bacaan_id' => $bacaanId,
                     'tipe' => $s['tipe'],
                     'pertanyaan' => $s['pertanyaan'],
                     'bobot' => 1,

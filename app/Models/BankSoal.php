@@ -26,6 +26,11 @@ class BankSoal extends Model
         return $this->belongsTo(User::class, 'dibuat_oleh');
     }
 
+    public function bacaan(): HasMany
+    {
+        return $this->hasMany(BacaanSoal::class)->orderBy('id');
+    }
+
     public function soal(): HasMany
     {
         return $this->hasMany(Soal::class)->orderBy('urutan')->orderBy('id');

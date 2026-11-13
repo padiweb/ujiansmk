@@ -71,7 +71,7 @@ class BankSoalController extends Controller
     {
         $this->izin($request, $bank);
 
-        $kueri = $bank->soal()->with('opsi');
+        $kueri = $bank->soal()->with('opsi', 'bacaan');
         if (in_array($tipe = $request->query('tipe'), [Soal::PG, Soal::ESAI], true)) {
             $kueri->where('tipe', $tipe);
         }
@@ -81,6 +81,7 @@ class BankSoalController extends Controller
 
         return view('staf.bank-soal.show', [
             'bank' => $bank->load('mapel', 'pembuat'),
+            'daftarBacaan' => $bank->bacaan()->withCount('soal')->get(),
             'soal' => $kueri->paginate(25)->withQueryString(),
             'ringkasan' => [
                 'pg' => $bank->soal()->where('tipe', Soal::PG)->count(),

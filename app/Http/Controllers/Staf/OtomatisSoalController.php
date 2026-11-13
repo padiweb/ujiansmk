@@ -43,7 +43,8 @@ class OtomatisSoalController extends Controller
             'jumlah_opsi' => ['required', Rule::in([4, 5])],
             'kesulitan' => ['required', Rule::in(PermintaanSoal::KESULITAN)],
             'materi' => ['nullable', 'string', 'max:4000'],
-        ], [], ['topik' => 'Topik', 'jumlah' => 'Jumlah soal', 'tipe' => 'Jenis soal', 'jumlah_opsi' => 'Jumlah opsi',
+            'soal_per_bacaan' => ['nullable', 'integer', 'between:0,10'],
+        ], [], ['soal_per_bacaan' => 'Soal per bacaan', 'topik' => 'Topik', 'jumlah' => 'Jumlah soal', 'tipe' => 'Jenis soal', 'jumlah_opsi' => 'Jumlah opsi',
             'kesulitan' => 'Tingkat kesulitan', 'materi' => 'Materi acuan']);
 
         $permintaan = new PermintaanSoal(
@@ -55,6 +56,7 @@ class OtomatisSoalController extends Controller
             jumlahOpsi: (int) $data['jumlah_opsi'],
             kesulitan: $data['kesulitan'],
             materi: $data['materi'] ?? null,
+            soalPerBacaan: (int) ($data['soal_per_bacaan'] ?? 0),
         );
 
         try {

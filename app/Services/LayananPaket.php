@@ -22,9 +22,10 @@ class LayananPaket
     {
         return Cache::remember($this->kunciCache('paket', $jadwal), self::TTL, function () use ($jadwal) {
             $soal = [];
-            foreach ($jadwal->soalBeku()->with('soal.opsi')->get() as $beku) {
+            foreach ($jadwal->soalBeku()->with('soal.opsi', 'soal.bacaan')->get() as $beku) {
                 $s = $beku->soal;
                 $soal[] = [
+                    'bacaan' => $s->bacaan ? ['id' => $s->bacaan->id, 'judul' => $s->bacaan->judul, 'teks' => $s->bacaan->teks] : null,
                     'id' => $s->id,
                     'tipe' => $s->tipe,
                     'pertanyaan' => $s->pertanyaan,
@@ -79,8 +80,9 @@ class LayananPaket
         $esai = collect($paket)->where('tipe', Soal::ESAI)->values();
 
         if ($jadwal->acak_soal) {
-            $pg = $pg->shuffle()->values();
-            $esai = $esai->shuffle()->values();
+            // Soal yang memakai bacaan yang sama tetap berdampingan: yang diacak adalah urutan kelompoknya.
+            $pg = $this->acakKelompok($pg);
+            $esai = $this->acakKelompok($esai);
         }
 
         $opsi = [];
@@ -93,6 +95,17 @@ class LayananPaket
         }
 
         return ['soal' => $pg->concat($esai)->pluck('id')->all(), 'opsi' => $opsi];
+    }
+
+    /** Acak urutan satuan (soal tunggal atau kumpulan soal satu bacaan); urutan di dalam satu bacaan dipertahankan. */
+    private function acakKelompok(\Illuminate\Support\Collection $daftar): \Illuminate\Support\Collection
+    {
+        $satuan = [];
+        foreach ($daftar as $s) {
+            $satuan[($s['bacaan']['id'] ?? null) ? 'b'.$s['bacaan']['id'] : 's'.$s['id']][] = $s;
+        }
+
+        return collect($satuan)->shuffle()->flatten(1)->values();
     }
 
     private function kunciCache(string $jenis, JadwalUjian $jadwal): string

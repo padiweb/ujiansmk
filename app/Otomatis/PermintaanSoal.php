@@ -17,7 +17,14 @@ class PermintaanSoal
         public readonly int $jumlahOpsi,
         public readonly string $kesulitan,
         public readonly ?string $materi = null,
+        public readonly int $soalPerBacaan = 0, // 0 = tanpa bacaan; >0 = tiap bacaan dipakai sekian soal
     ) {}
+
+    /** Jumlah bacaan yang diminta (0 bila tanpa bacaan). */
+    public function jumlahBacaan(): int
+    {
+        return $this->soalPerBacaan > 0 ? (int) ceil($this->jumlah / $this->soalPerBacaan) : 0;
+    }
 
     /** Jumlah soal PG dan esai yang diminta. */
     public function pembagian(): array
