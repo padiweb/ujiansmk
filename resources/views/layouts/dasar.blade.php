@@ -8,7 +8,7 @@
     <title>@yield('judul', 'Ujian') — {{ config('ujian.merek') }}</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo_smk.png') }}">
     <link rel="preload" href="{{ asset('fonts/dm-sans-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
     @stack('kepala')
 </head>
 <body>

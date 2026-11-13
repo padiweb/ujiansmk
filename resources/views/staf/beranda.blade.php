@@ -109,5 +109,5 @@
 @endsection
 
 @push('skrip')
-<script src="{{ asset('js/beranda.js') }}" defer></script>
+<script src="{{ asset('js/beranda.js') }}?v={{ filemtime(public_path('js/beranda.js')) }}" defer></script>
 @endpush
