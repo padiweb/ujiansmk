@@ -11,7 +11,7 @@ class OpsiSoal extends Model
 
     protected $table = 'opsi_soal';
 
-    protected $fillable = ['soal_id', 'label', 'teks', 'benar'];
+    protected $fillable = ['soal_id', 'label', 'teks', 'gambar', 'benar'];
 
     protected function casts(): array
     {

@@ -22,6 +22,8 @@
     @if ($soal) @method('PUT') @endif
     <input type="hidden" name="tipe" value="{{ $tipe }}">
 
+    @include('staf.partials.alat-rumus')
+
     <div class="bidang @error('bacaan_id') salah @enderror">
         <label for="bacaan_id">Bacaan / stimulus (opsional)</label>
         <select id="bacaan_id" name="bacaan_id">
@@ -36,7 +38,7 @@
 
     <div class="bidang @error('pertanyaan') salah @enderror">
         <label for="pertanyaan">Pertanyaan <span class="wajib">*</span></label>
-        <textarea id="pertanyaan" name="pertanyaan" rows="5" maxlength="5000" required>{{ old('pertanyaan', $soal?->pertanyaan) }}</textarea>
+        <textarea id="pertanyaan" data-rumus name="pertanyaan" rows="5" maxlength="5000" required>{{ old('pertanyaan', $soal?->pertanyaan) }}</textarea>
         @error('pertanyaan') <small class="galat-bidang">{{ $message }}</small> @enderror
     </div>
 
@@ -46,7 +48,7 @@
             <img class="soal-gambar kecil" src="{{ route('staf.soal.gambar', $soal) }}" alt="Gambar soal saat ini">
             <label class="centang"><input type="checkbox" name="hapus_gambar" value="1"> Hapus gambar ini</label>
         @endif
-        <input id="gambar" name="gambar" type="file" accept=".jpg,.jpeg,.png,.webp">
+        <input id="gambar" name="gambar" type="file" accept=".jpg,.jpeg,.png,.webp" data-unggah>
         <small class="bantuan">JPG, PNG, atau WEBP, maksimal 2 MB. Mengunggah gambar baru menggantikan yang lama.</small>
         @error('gambar') <small class="galat-bidang">{{ $message }}</small> @enderror
     </div>
@@ -68,9 +70,19 @@
                         <input type="radio" name="kunci" value="{{ $h }}" @checked($kunciLama === $h)>
                         <span>{{ $h }}</span>
                     </label>
-                    <input type="text" name="opsi[{{ $h }}]" maxlength="1000" aria-label="Opsi {{ $h }}"
-                           value="{{ old("opsi.$h", $soal?->opsi->firstWhere('label', $h)?->teks) }}"
-                           @if ($h === 'E') data-opsi-e @endif>
+                    @php $opsiLama = $soal?->opsi->firstWhere('label', $h); @endphp
+                    <div class="opsi-isi">
+                        <input type="text" data-rumus name="opsi[{{ $h }}]" maxlength="1000" aria-label="Opsi {{ $h }}" placeholder="Teks opsi (boleh kosong bila memakai gambar)"
+                               value="{{ old("opsi.$h", $opsiLama?->teks) }}"
+                               @if ($h === 'E') data-opsi-e @endif>
+                        <div class="opsi-gambar">
+                            @if ($opsiLama?->gambar)
+                                <img src="{{ route('staf.soal.gambar-opsi', $opsiLama) }}" alt="Gambar opsi {{ $h }}" class="opsi-mini">
+                                <label class="centang"><input type="checkbox" name="hapus_gambar_opsi[{{ $h }}]" value="1"> Hapus gambar</label>
+                            @endif
+                            <input type="file" name="gambar_opsi[{{ $h }}]" accept=".jpg,.jpeg,.png,.webp" data-unggah aria-label="Gambar opsi {{ $h }}">
+                        </div>
+                    </div>
                 </div>
                 @error("opsi.$h") <small class="galat-bidang">{{ $message }}</small> @enderror
             @endforeach
@@ -79,7 +91,7 @@
     @else
         <div class="bidang @error('rubrik_esai') salah @enderror">
             <label for="rubrik_esai">Jawaban acuan (opsional)</label>
-            <textarea id="rubrik_esai" name="rubrik_esai" rows="4" maxlength="5000">{{ old('rubrik_esai', $soal?->rubrik_esai) }}</textarea>
+            <textarea id="rubrik_esai" data-rumus name="rubrik_esai" rows="4" maxlength="5000">{{ old('rubrik_esai', $soal?->rubrik_esai) }}</textarea>
             <small class="bantuan">Membantu guru saat mengoreksi. Tidak ditampilkan kepada siswa.</small>
             @error('rubrik_esai') <small class="galat-bidang">{{ $message }}</small> @enderror
         </div>
@@ -98,7 +110,7 @@
 
     <div class="bidang @error('pembahasan') salah @enderror">
         <label for="pembahasan">Pembahasan / keterangan (opsional)</label>
-        <textarea id="pembahasan" name="pembahasan" rows="3" maxlength="3000">{{ old('pembahasan', $soal?->pembahasan) }}</textarea>
+        <textarea id="pembahasan" data-rumus name="pembahasan" rows="3" maxlength="3000">{{ old('pembahasan', $soal?->pembahasan) }}</textarea>
         <small class="bantuan">Catatan Anda sendiri, misalnya alasan jawaban benar. Tidak ditampilkan kepada siswa.</small>
         @error('pembahasan') <small class="galat-bidang">{{ $message }}</small> @enderror
     </div>
@@ -142,4 +154,8 @@
     })();
 </script>
 @endif
+
+@push('skrip')
+<script src="{{ asset('js/unggah-gambar.js') }}?v={{ filemtime(public_path('js/unggah-gambar.js')) }}" defer></script>
+@endpush
 @endsection

@@ -11,7 +11,7 @@ class BacaanSoal extends Model
 {
     protected $table = 'bacaan_soal';
 
-    protected $fillable = ['bank_soal_id', 'judul', 'teks', 'sumber'];
+    protected $fillable = ['bank_soal_id', 'judul', 'teks', 'gambar', 'sumber'];
 
     public function bank(): BelongsTo
     {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\BacaanSoal;
 use App\Models\BankSoal;
+use App\Support\GambarAman;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -25,7 +26,8 @@ class BacaanSoalController extends Controller
         $this->izin($request, $bank);
         $data = $this->validasi($request);
 
-        $b = $bank->bacaan()->create($data + ['sumber' => 'manual']);
+        $gambar = $request->hasFile('gambar') ? GambarAman::simpan($request->file('gambar')) : null;
+        $b = $bank->bacaan()->create(['judul' => $data['judul'], 'teks' => $data['teks'], 'gambar' => $gambar, 'sumber' => 'manual']);
         AuditLog::catat('bacaan.tambah', "bank {$bank->id} bacaan {$b->id}", $request->user('web'));
 
         return redirect()->route('staf.bank-soal.show', $bank)->with('berhasil', 'Bacaan ditambahkan. Pilih bacaan ini saat membuat soal.');
@@ -41,7 +43,16 @@ class BacaanSoalController extends Controller
     public function update(Request $request, BankSoal $bank, BacaanSoal $bacaan): RedirectResponse
     {
         $this->izin($request, $bank, $bacaan);
-        $bacaan->update($this->validasi($request));
+        $data = $this->validasi($request);
+        $gambar = $bacaan->gambar;
+        if ($request->hasFile('gambar')) {
+            GambarAman::hapus($gambar);
+            $gambar = GambarAman::simpan($request->file('gambar'));
+        } elseif ($request->boolean('hapus_gambar')) {
+            GambarAman::hapus($gambar);
+            $gambar = null;
+        }
+        $bacaan->update(['judul' => $data['judul'], 'teks' => $data['teks'], 'gambar' => $gambar]);
         AuditLog::catat('bacaan.ubah', "bacaan {$bacaan->id}", $request->user('web'));
 
         return redirect()->route('staf.bank-soal.show', $bank)->with('berhasil', 'Bacaan diperbarui. Semua soal yang memakainya ikut berubah.');
@@ -52,6 +63,7 @@ class BacaanSoalController extends Controller
     {
         $this->izin($request, $bank, $bacaan);
         $dipakai = $bacaan->soal()->count();
+        GambarAman::hapus($bacaan->gambar);
         $bacaan->delete();
         AuditLog::catat('bacaan.hapus', "bacaan {$bacaan->id}", $request->user('web'));
 
@@ -69,7 +81,8 @@ class BacaanSoalController extends Controller
     {
         $d = $request->validate([
             'judul' => ['nullable', 'string', 'max:150'], 'teks' => ['required', 'string', 'max:8000'],
-        ], [], ['judul' => 'Judul', 'teks' => 'Teks bacaan']);
+            'gambar' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+        ], ['gambar.mimes' => 'Gambar harus berformat JPG, PNG, atau WEBP.', 'gambar.max' => 'Ukuran gambar maksimal 2 MB.'], ['judul' => 'Judul', 'teks' => 'Teks bacaan', 'gambar' => 'Gambar']);
 
         return ['judul' => filled($d['judul'] ?? null) ? trim($d['judul']) : null, 'teks' => trim($d['teks'])];
     }

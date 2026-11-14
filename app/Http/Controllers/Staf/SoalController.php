@@ -31,7 +31,7 @@ class SoalController extends Controller
     public function store(Request $request, BankSoal $bank): RedirectResponse
     {
         $this->izin($request, $bank);
-        $data = $this->validasi($request, null, $bank);
+        $data = $this->validasi($request, null, $bank, null);
 
         DB::transaction(function () use ($request, $bank, $data) {
             $soal = $bank->soal()->create([
@@ -47,7 +47,7 @@ class SoalController extends Controller
                 'urutan' => ($bank->soal()->max('urutan') ?? 0) + 1,
                 'gambar' => $request->hasFile('gambar') ? GambarAman::simpan($request->file('gambar')) : null,
             ]);
-            $this->simpanOpsi($soal, $data);
+            $this->simpanOpsi($request, $soal, $data);
         });
 
         AuditLog::catat('soal.tambah', "bank {$bank->id}", $request->user('web'));
@@ -65,7 +65,7 @@ class SoalController extends Controller
     public function update(Request $request, BankSoal $bank, Soal $soal): RedirectResponse
     {
         $this->izin($request, $bank, $soal);
-        $data = $this->validasi($request, $soal->tipe, $bank);
+        $data = $this->validasi($request, $soal->tipe, $bank, $soal);
 
         DB::transaction(function () use ($request, $soal, $data) {
             $gambar = $soal->gambar;
@@ -87,7 +87,7 @@ class SoalController extends Controller
                 'status' => $data['status'],
                 'gambar' => $gambar,
             ]);
-            $this->simpanOpsi($soal, $data);
+            $this->simpanOpsi($request, $soal, $data);
         });
 
         AuditLog::catat('soal.ubah', "ID {$soal->id}", $request->user('web'));
@@ -134,7 +134,7 @@ class SoalController extends Controller
         abort_if($soal && $soal->bank_soal_id !== $bank->id, 404);
     }
 
-    private function validasi(Request $request, ?string $tipeTetap, \App\Models\BankSoal $bank): array
+    private function validasi(Request $request, ?string $tipeTetap, \App\Models\BankSoal $bank, ?Soal $soal): array
     {
         $tipe = $tipeTetap ?? $request->input('tipe');
         $jumlahOpsi = (int) $request->input('jumlah_opsi', 4);
@@ -154,7 +154,8 @@ class SoalController extends Controller
         if ($tipe === Soal::PG) {
             $aturan['jumlah_opsi'] = ['required', Rule::in([4, 5])];
             foreach ($huruf as $h) {
-                $aturan["opsi.{$h}"] = ['required', 'string', 'max:1000'];
+                $aturan["opsi.{$h}"] = ['nullable', 'string', 'max:1000'];
+                $aturan["gambar_opsi.{$h}"] = ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:2048'];
             }
             $aturan['kunci'] = ['required', Rule::in($huruf)];
         } else {
@@ -168,16 +169,66 @@ class SoalController extends Controller
 
         $pesan = ['gambar.mimes' => 'Gambar harus berformat JPG, PNG, atau WEBP.', 'gambar.max' => 'Ukuran gambar maksimal 2 MB.'];
 
-        $data = Validator::make($request->merge(['tipe' => $tipe])->all(), $aturan, $pesan, $nama)->validate();
+        $validator = Validator::make($request->merge(['tipe' => $tipe])->all(), $aturan, $pesan, $nama);
+
+        // Setiap opsi PG harus berisi teks atau gambar (gambar lama yang tidak dihapus ikut dihitung).
+        if ($tipe === Soal::PG) {
+            $validator->after(function ($v) use ($request, $huruf, $soal) {
+                $lama = $soal ? $soal->opsi()->pluck('gambar', 'label')->all() : [];
+                foreach ($huruf as $h) {
+                    $adaTeks = trim((string) $request->input("opsi.{$h}")) !== '';
+                    $adaGambar = $request->hasFile("gambar_opsi.{$h}") || (! empty($lama[$h]) && ! $request->boolean("hapus_gambar_opsi.{$h}"));
+                    if (! $adaTeks && ! $adaGambar && ! $v->errors()->has("opsi.{$h}")) {
+                        $v->errors()->add("opsi.{$h}", "Opsi {$h} harus berisi teks atau gambar.");
+                    }
+                }
+            });
+        }
+
+        $data = $validator->validate();
         $data['tipe'] = $tipe;
 
         return $data;
     }
 
-    private function simpanOpsi(Soal $soal, array $data): void
+    private function simpanOpsi(Request $request, Soal $soal, array $data): void
     {
-        if ($soal->tipe === Soal::PG) {
-            $this->layanan->setOpsi($soal, $data['opsi'], $data['kunci']);
+        if ($soal->tipe !== Soal::PG) {
+            return;
         }
+
+        $lama = $soal->opsi()->pluck('gambar', 'label')->all();
+        $gambar = [];
+        foreach (array_keys($data['opsi']) as $label) {
+            $jalur = $lama[$label] ?? null;
+            if ($berkas = $request->file("gambar_opsi.{$label}")) {
+                $jalur = GambarAman::simpan($berkas, "gambar_opsi.{$label}", 'opsi');
+            } elseif ($request->boolean("hapus_gambar_opsi.{$label}")) {
+                $jalur = null;
+            }
+            $gambar[$label] = $jalur;
+        }
+
+        $opsi = array_map(fn ($t) => trim((string) $t), $data['opsi']);
+        $this->layanan->setOpsi($soal, $opsi, $data['kunci'], $gambar);
+    }
+
+    /** Gambar opsi disajikan lewat rute berizin. */
+    public function gambarOpsi(Request $request, \App\Models\OpsiSoal $opsi)
+    {
+        $soal = $opsi->soal()->withTrashed()->with('bank')->first();
+        abort_unless($soal && $soal->bank && $soal->bank->dapatDikelola($request->user('web')) && $opsi->gambar, 404);
+        abort_unless(Storage::disk('local')->exists($opsi->gambar), 404);
+
+        return Storage::disk('local')->response($opsi->gambar, null, ['Cache-Control' => 'private, max-age=3600', 'X-Content-Type-Options' => 'nosniff']);
+    }
+
+    public function gambarBacaan(Request $request, \App\Models\BacaanSoal $bacaan)
+    {
+        $bacaan->loadMissing('bank');
+        abort_unless($bacaan->bank && $bacaan->bank->dapatDikelola($request->user('web')) && $bacaan->gambar, 404);
+        abort_unless(Storage::disk('local')->exists($bacaan->gambar), 404);
+
+        return Storage::disk('local')->response($bacaan->gambar, null, ['Cache-Control' => 'private, max-age=3600', 'X-Content-Type-Options' => 'nosniff']);
     }
 }

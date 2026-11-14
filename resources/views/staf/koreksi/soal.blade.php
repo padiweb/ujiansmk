@@ -15,9 +15,9 @@
 <div class="kartu">
     <h2 class="judul-kartu">Pertanyaan</h2>
     @if ($soal->bacaan)
-        <div class="bacaan-ujian"><strong class="bacaan-judul">{{ $soal->bacaan->judul ?: 'Bacaan' }}</strong>{!! nl2br(e($soal->bacaan->teks)) !!}</div>
+        <div class="bacaan-ujian render-rumus"><strong class="bacaan-judul">{{ $soal->bacaan->judul ?: 'Bacaan' }}</strong>{!! nl2br(e($soal->bacaan->teks)) !!}</div>
     @endif
-    <div class="teks-soal">{!! nl2br(e($soal->pertanyaan)) !!}</div>
+    <div class="teks-soal render-rumus">{!! nl2br(e($soal->pertanyaan)) !!}</div>
     @if (filled($soal->rubrik_esai))
         <div class="rubrik"><strong>Jawaban acuan (rubrik)</strong><div>{!! nl2br(e($soal->rubrik_esai)) !!}</div></div>
     @else
@@ -90,5 +90,6 @@
 @endsection
 
 @push('skrip')
+@include('staf.partials.skrip-rumus')
 <script src="{{ asset('js/koreksi.js') }}?v={{ filemtime(public_path('js/koreksi.js')) }}" defer></script>
 @endpush

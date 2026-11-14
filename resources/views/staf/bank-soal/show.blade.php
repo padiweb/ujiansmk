@@ -1,6 +1,10 @@
 @extends('layouts.staf')
 @section('judul', $bank->nama)
 
+@push('skrip')
+    @include('staf.partials.skrip-rumus')
+@endpush
+
 @section('konten')
 <div class="pita-info">
     <div class="pita-atas">
@@ -118,11 +122,12 @@
         @if ($s->bacaan)
             <details class="soal-bacaan">
                 <summary>Bacaan: {{ $s->bacaan->label() }}</summary>
-                <div>{!! nl2br(e($s->bacaan->teks)) !!}</div>
+                <div class="render-rumus">{!! nl2br(e($s->bacaan->teks)) !!}</div>
+                @if ($s->bacaan->gambar)<img class="bacaan-gambar" src="{{ route('staf.bacaan.gambar', $s->bacaan) }}" alt="Gambar bacaan" loading="lazy">@endif
             </details>
         @endif
 
-        <div class="soal-teks">{!! nl2br(e($s->pertanyaan)) !!}</div>
+        <div class="soal-teks render-rumus">{!! nl2br(e($s->pertanyaan)) !!}</div>
 
         @if ($s->gambar)
             <img class="soal-gambar" src="{{ route('staf.soal.gambar', $s) }}" alt="Gambar soal" loading="lazy">
@@ -131,7 +136,7 @@
         @if ($s->tipe === 'pg')
             <ul class="opsi-daftar">
                 @foreach ($s->opsi as $o)
-                    <li class="{{ $o->benar ? 'benar' : '' }}"><b>{{ $o->label }}.</b> {{ $o->teks }}@if ($o->benar) <span class="tanda-kunci">kunci</span>@endif</li>
+                    <li class="{{ $o->benar ? 'benar' : '' }}"><b>{{ $o->label }}.</b> <span class="render-rumus">{{ $o->teks }}</span>@if ($o->benar) <span class="tanda-kunci">kunci</span>@endif @if ($o->gambar)<img class="opsi-gambar-tampil" src="{{ route('staf.soal.gambar-opsi', $o) }}" alt="Gambar opsi {{ $o->label }}" loading="lazy">@endif</li>
                 @endforeach
             </ul>
         @elseif ($s->rubrik_esai)

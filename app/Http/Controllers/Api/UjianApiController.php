@@ -45,7 +45,7 @@ class UjianApiController extends Controller
                 // Urutan opsi khusus siswa; "label" adalah label ASLI (dikirim balik saat menjawab),
                 // sedangkan huruf yang dilihat siswa ditentukan oleh posisinya.
                 'opsi' => $s['tipe'] === 'pg'
-                    ? collect($susunan['opsi'][$id] ?? array_keys((array) $s['opsi']))->map(fn ($l) => ['label' => $l, 'teks' => ((array) $s['opsi'])[$l] ?? ''])->all()
+                    ? collect($susunan['opsi'][$id] ?? array_keys((array) $s['opsi']))->map(fn ($l) => ['label' => $l, 'teks' => ((array) $s['opsi'])[$l] ?? '', 'gambar' => ($s['opsi_gambar'] ?? [])[$l] ?? null])->all()
                     : [],
             ];
         }

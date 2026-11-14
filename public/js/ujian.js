@@ -159,6 +159,12 @@
                 var tb = document.createElement('div');
                 tb.textContent = s.bacaan.teks; // textContent: tidak pernah dijalankan sebagai HTML
                 blok.appendChild(tb);
+                if (s.bacaan.gambar) {
+                    var gb = document.createElement('img');
+                    gb.className = 'bacaan-gambar';
+                    gb.loading = 'lazy'; gb.alt = 'Gambar bacaan'; gb.src = s.bacaan.gambar; gb.draggable = false;
+                    blok.appendChild(gb);
+                }
                 kartu.appendChild(blok);
                 bacaanTerakhir = s.bacaan.id;
             } else {
@@ -198,6 +204,12 @@
                     var isi = document.createElement('span');
                     isi.textContent = o.teks;
                     label.appendChild(radio); label.appendChild(huruf); label.appendChild(isi);
+                    if (o.gambar) {
+                        var gm = document.createElement('img');
+                        gm.className = 'opsi-gambar-tampil';
+                        gm.loading = 'lazy'; gm.alt = 'Gambar opsi'; gm.src = o.gambar; gm.draggable = false;
+                        label.appendChild(gm);
+                    }
                     grup.appendChild(label);
                 });
                 kartu.appendChild(grup);
@@ -422,6 +434,7 @@
             }
             terapkanKeadaan(p.keadaan);
 
+            if (window.Rumus) window.Rumus.render($('formSoal')); // rumus matematika dan furigana
             $('muat').hidden = true;
             $('formSoal').hidden = false;
             $('areaKirim').hidden = false;

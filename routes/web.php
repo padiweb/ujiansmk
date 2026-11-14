@@ -87,6 +87,8 @@ Route::prefix('staf')->group(function () {
     // Admin dan guru: bank soal (guru hanya bank miliknya sendiri; dicek di pengendali).
     Route::middleware(['auth:web', 'peran:admin,guru'])->group(function () {
         Route::get('/gambar/soal/{soal}', [SoalController::class, 'gambar'])->whereNumber('soal')->name('staf.soal.gambar');
+        Route::get('/gambar/opsi/{opsi}', [SoalController::class, 'gambarOpsi'])->whereNumber('opsi')->name('staf.soal.gambar-opsi');
+        Route::get('/gambar/bacaan/{bacaan}', [SoalController::class, 'gambarBacaan'])->whereNumber('bacaan')->name('staf.bacaan.gambar');
 
         Route::prefix('bank-soal')->group(function () {
             Route::get('/', [BankSoalController::class, 'index'])->name('staf.bank-soal.index');

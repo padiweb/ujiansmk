@@ -16,17 +16,27 @@ class LayananSoal
     /**
      * Ganti seluruh opsi soal PG. $opsi = ['A' => 'teks', ...] (hanya yang terisi), $kunci = 'A'..'E'.
      */
-    public function setOpsi(Soal $soal, array $opsi, string $kunci): void
+    public function setOpsi(Soal $soal, array $opsi, string $kunci, array $gambar = []): void
     {
+        $lama = $soal->opsi()->pluck('gambar', 'label')->all();
         $soal->opsi()->delete();
 
         foreach ($opsi as $label => $teks) {
             OpsiSoal::create([
                 'soal_id' => $soal->id,
                 'label' => $label,
-                'teks' => $teks,
+                'teks' => (string) $teks,
+                'gambar' => $gambar[$label] ?? null,
                 'benar' => $label === $kunci,
             ]);
+        }
+
+        // Berkas gambar opsi lama yang tidak dipakai lagi dihapus dari penyimpanan.
+        $dipakai = array_filter($gambar);
+        foreach ($lama as $berkas) {
+            if ($berkas && ! in_array($berkas, $dipakai, true)) {
+                GambarAman::hapus($berkas);
+            }
         }
     }
 
@@ -68,7 +78,7 @@ class LayananSoal
 
             $petaBacaan = [];
             foreach ($asal->bacaan()->get() as $b) {
-                $petaBacaan[$b->id] = \App\Models\BacaanSoal::create(['bank_soal_id' => $baru->id, 'judul' => $b->judul, 'teks' => $b->teks, 'sumber' => $b->sumber])->id;
+                $petaBacaan[$b->id] = \App\Models\BacaanSoal::create(['bank_soal_id' => $baru->id, 'judul' => $b->judul, 'teks' => $b->teks, 'gambar' => GambarAman::salin($b->gambar), 'sumber' => $b->sumber])->id;
             }
 
             foreach ($asal->soal()->with('opsi')->get() as $s) {
@@ -79,7 +89,7 @@ class LayananSoal
                 $salinan->save();
 
                 foreach ($s->opsi as $o) {
-                    OpsiSoal::create(['soal_id' => $salinan->id, 'label' => $o->label, 'teks' => $o->teks, 'benar' => $o->benar]);
+                    OpsiSoal::create(['soal_id' => $salinan->id, 'label' => $o->label, 'teks' => $o->teks, 'gambar' => GambarAman::salin($o->gambar), 'benar' => $o->benar]);
                 }
             }
 

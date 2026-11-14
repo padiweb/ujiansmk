@@ -115,7 +115,7 @@ class BacaanSoalTest extends TestCase
         $this->jadwal->update(['acak_soal' => true]);
 
         $paket = collect($layanan->paket($this->jadwal)['soal'])->keyBy('id');
-        $this->assertSame(['id' => $b->id, 'judul' => 'Cerita', 'teks' => 'Isi cerita.'], $paket[$this->soal['s1']->id]['bacaan']);
+        $this->assertSame(['id' => $b->id, 'judul' => 'Cerita', 'teks' => 'Isi cerita.', 'gambar' => null], $paket[$this->soal['s1']->id]['bacaan']);
         $this->assertNull($paket[$tambahan[0]]['bacaan']);
 
         for ($k = 0; $k < 25; $k++) {

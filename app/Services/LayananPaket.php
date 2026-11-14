@@ -25,7 +25,8 @@ class LayananPaket
             foreach ($jadwal->soalBeku()->with('soal.opsi', 'soal.bacaan')->get() as $beku) {
                 $s = $beku->soal;
                 $soal[] = [
-                    'bacaan' => $s->bacaan ? ['id' => $s->bacaan->id, 'judul' => $s->bacaan->judul, 'teks' => $s->bacaan->teks] : null,
+                    'bacaan' => $s->bacaan ? ['id' => $s->bacaan->id, 'judul' => $s->bacaan->judul, 'teks' => $s->bacaan->teks, 'gambar' => $this->gambar->urlKunci($jadwal, 'b'.$s->bacaan->id, $s->bacaan->gambar)] : null,
+                    'opsi_gambar' => $s->tipe === Soal::PG ? $s->opsi->filter(fn ($o) => $o->gambar)->mapWithKeys(fn ($o) => [$o->label => $this->gambar->urlKunci($jadwal, 'o'.$o->id, $o->gambar)])->all() : [],
                     'id' => $s->id,
                     'tipe' => $s->tipe,
                     'pertanyaan' => $s->pertanyaan,

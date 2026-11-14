@@ -82,6 +82,10 @@
 @endsection
 
 @push('skrip')
+<link rel="stylesheet" href="{{ asset('vendor/katex/katex.min.css') }}">
+<script src="{{ asset('vendor/katex/katex.min.js') }}" defer></script>
+<script src="{{ asset('vendor/katex/contrib/auto-render.min.js') }}" defer></script>
+<script src="{{ asset('js/rumus.js') }}?v={{ filemtime(public_path('js/rumus.js')) }}" defer></script>
 <script src="{{ asset('js/ujian.js') }}?v={{ filemtime(public_path('js/ujian.js')) }}" defer></script>
 <script src="{{ asset('js/ujian-pengaman.js') }}?v={{ filemtime(public_path('js/ujian-pengaman.js')) }}" defer></script>
 @endpush
