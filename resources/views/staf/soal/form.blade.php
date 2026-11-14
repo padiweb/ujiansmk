@@ -85,6 +85,24 @@
         </div>
     @endif
 
+    <div class="bidang @error('level') salah @enderror">
+        <label for="level">Level kognitif (opsional)</label>
+        <select id="level" name="level">
+            <option value="">Belum ditentukan</option>
+            @foreach (\App\Models\Soal::LEVEL as $k => $l)
+                <option value="{{ $k }}" @selected(old('level', $soal?->level) === $k)>{{ $l }}</option>
+            @endforeach
+        </select>
+        @error('level') <small class="galat-bidang">{{ $message }}</small> @enderror
+    </div>
+
+    <div class="bidang @error('pembahasan') salah @enderror">
+        <label for="pembahasan">Pembahasan / keterangan (opsional)</label>
+        <textarea id="pembahasan" name="pembahasan" rows="3" maxlength="3000">{{ old('pembahasan', $soal?->pembahasan) }}</textarea>
+        <small class="bantuan">Catatan Anda sendiri, misalnya alasan jawaban benar. Tidak ditampilkan kepada siswa.</small>
+        @error('pembahasan') <small class="galat-bidang">{{ $message }}</small> @enderror
+    </div>
+
     <div class="bidang @error('bobot') salah @enderror">
         <label for="bobot">Bobot <span class="wajib">*</span></label>
         <input id="bobot" name="bobot" type="number" step="0.01" min="0.01" max="100" required

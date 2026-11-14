@@ -29,17 +29,28 @@ class PenyaringHasil
             if ($tipe === 'pg' && $sisaPg > 0) {
                 $soal = $this->soalPg($item, $pertanyaan, $p->jumlahOpsi);
                 if ($soal) {
-                    $hasil[] = $soal + $this->bacaan($item);
+                    $hasil[] = $soal + $this->bacaan($item) + $this->tambahan($item);
                     $sisaPg--;
                 }
             } elseif ($tipe === 'esai' && $sisaEsai > 0) {
                 $hasil[] = ['tipe' => 'esai', 'pertanyaan' => $pertanyaan, 'opsi' => [], 'kunci' => null,
-                    'rubrik' => $this->teks($item['rubrik'] ?? null, 5000)] + $this->bacaan($item);
+                    'rubrik' => $this->teks($item['rubrik'] ?? null, 5000)] + $this->bacaan($item) + $this->tambahan($item);
                 $sisaEsai--;
             }
         }
 
         return $hasil;
+    }
+
+    /** Level kognitif (L1–L3) dan pembahasan bila sah. @return array<string,mixed> */
+    private function tambahan(array $item): array
+    {
+        $level = is_string($item['level'] ?? null) ? strtoupper(trim($item['level'])) : '';
+
+        return [
+            'level' => in_array($level, ['L1', 'L2', 'L3'], true) ? $level : null,
+            'pembahasan' => $this->teks($item['pembahasan'] ?? null, 3000),
+        ];
     }
 
     /** Data bacaan yang menempel pada butir soal (bila ada dan sah). @return array<string,mixed> */

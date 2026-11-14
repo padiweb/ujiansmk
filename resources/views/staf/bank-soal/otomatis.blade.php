@@ -48,6 +48,16 @@
         </div>
 
         <div class="bidang">
+            <label for="level">Level kognitif</label>
+            <select id="level" name="level">
+                <option value="campuran" @selected(old('level', 'campuran') === 'campuran')>Campuran (L1, L2, L3 tersebar)</option>
+                <option value="L1" @selected(old('level') === 'L1')>L1 — Pengetahuan/pemahaman</option>
+                <option value="L2" @selected(old('level') === 'L2')>L2 — Penerapan</option>
+                <option value="L3" @selected(old('level') === 'L3')>L3 — Penalaran (HOTS)</option>
+            </select>
+        </div>
+
+        <div class="bidang">
             <label for="soal_per_bacaan">Soal berbasis bacaan</label>
             <select id="soal_per_bacaan" name="soal_per_bacaan">
                 <option value="0" @selected((int) old('soal_per_bacaan', 0) === 0)>Tanpa bacaan</option>

@@ -85,6 +85,8 @@ class LayananOtomatis
                 }
                 $baru = $bank->soal()->create([
                     'bacaan_id' => $bacaanId,
+                    'level' => $s['level'] ?? null,
+                    'pembahasan' => $s['pembahasan'] ?? null,
                     'tipe' => $s['tipe'],
                     'pertanyaan' => $s['pertanyaan'],
                     'bobot' => 1,

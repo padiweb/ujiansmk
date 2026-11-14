@@ -8,6 +8,9 @@ class PermintaanSoal
 
     public const KESULITAN = ['mudah', 'sedang', 'sulit'];
 
+    /** Level kognitif yang diminta: campuran (tersebar) atau satu level. */
+    public const LEVEL = ['campuran', 'L1', 'L2', 'L3'];
+
     public function __construct(
         public readonly string $mapel,
         public readonly string $tingkat,
@@ -18,6 +21,7 @@ class PermintaanSoal
         public readonly string $kesulitan,
         public readonly ?string $materi = null,
         public readonly int $soalPerBacaan = 0, // 0 = tanpa bacaan; >0 = tiap bacaan dipakai sekian soal
+        public readonly string $level = 'campuran',
     ) {}
 
     /** Jumlah bacaan yang diminta (0 bila tanpa bacaan). */

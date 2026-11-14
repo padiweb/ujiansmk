@@ -42,6 +42,8 @@ class SoalPengimpor extends Pengimpor
             ['header' => 'Kunci', 'key' => 'kunci', 'wajib' => false, 'contoh' => 'B'],
             ['header' => 'Bobot', 'key' => 'bobot', 'wajib' => false, 'contoh' => '1'],
             ['header' => 'Jawaban Acuan', 'key' => 'rubrik', 'wajib' => false, 'contoh' => ''],
+            ['header' => 'Level', 'key' => 'level', 'wajib' => false, 'contoh' => 'L1'],
+            ['header' => 'Pembahasan', 'key' => 'pembahasan', 'wajib' => false, 'contoh' => ''],
             ['header' => 'Kode Bacaan', 'key' => 'kode_bacaan', 'wajib' => false, 'contoh' => 'B1'],
             ['header' => 'Teks Bacaan', 'key' => 'teks_bacaan', 'wajib' => false, 'contoh' => ''],
         ];
@@ -78,6 +80,8 @@ class SoalPengimpor extends Pengimpor
             'kunci' => ['nullable', Rule::in(['A', 'B', 'C', 'D', 'E', 'a', 'b', 'c', 'd', 'e'])],
             'bobot' => ['nullable', 'numeric', 'between:0.01,100'],
             'rubrik' => ['nullable', 'string', 'max:5000'],
+            'level' => ['nullable', Rule::in(['L1', 'L2', 'L3', 'l1', 'l2', 'l3'])],
+            'pembahasan' => ['nullable', 'string', 'max:3000'],
             'kode_bacaan' => ['nullable', 'string', 'max:30'],
             'teks_bacaan' => ['nullable', 'string', 'max:8000'],
         ];
@@ -129,6 +133,8 @@ class SoalPengimpor extends Pengimpor
 
         $soal = $this->bank->soal()->create([
             'bacaan_id' => $bacaanId,
+            'level' => filled($b['level'] ?? null) ? strtoupper($b['level']) : null,
+            'pembahasan' => $b['pembahasan'] ?? null,
             'tipe' => $tipe,
             'pertanyaan' => $b['pertanyaan'],
             'bobot' => $b['bobot'] ?? 1,

@@ -26,7 +26,7 @@ class LayananKisiKisi
         $sebaran = ['L1' => 0, 'L2' => 0, 'L3' => 0];
 
         foreach ($soal->sortBy(fn (Soal $s) => ($s->tipe === Soal::PG ? 0 : 1).sprintf('%08d', $s->urutan)) as $i => $s) {
-            $level = $this->level($s->pertanyaan, $s->tipe === Soal::ESAI);
+            $level = in_array($s->level, ['L1', 'L2', 'L3'], true) ? $s->level : $this->level($s->pertanyaan, $s->tipe === Soal::ESAI);
             $sebaran[$level]++;
             $baris[] = [
                 'no' => count($baris) + 1, 'jenis' => $s->tipe, 'indikator' => $this->indikator($s->pertanyaan), 'level' => $level,

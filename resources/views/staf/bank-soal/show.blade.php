@@ -54,6 +54,8 @@
         <a class="tombol kecil" href="{{ route('staf.soal.create', [$bank, 'tipe' => 'esai']) }}"><x-ikon nama="tambah" :ukuran="16" />Esai</a>
         @if (\App\Models\PenyediaOtomatis::tersedia())
             <a class="tombol kecil garis" href="{{ route('staf.bank-soal.otomatis', $bank) }}"><x-ikon nama="otomatis" :ukuran="16" />Susun otomatis</a>
+        @elseif (auth('web')->user()->role === 'admin')
+            <span class="tombol kecil garis" style="opacity:.6;cursor:help" title="Isi OTOMATIS_DRIVER, OTOMATIS_MODEL, dan OTOMATIS_KUNCI di .env server, lalu jalankan php artisan config:clear."><x-ikon nama="otomatis" :ukuran="16" />Susun otomatis (belum aktif)</span>
         @endif
         <a class="tombol kecil garis" href="{{ route('staf.bank-soal.impor.form', $bank) }}"><x-ikon nama="unggah" :ukuran="16" />Impor Excel</a>
         <a class="tombol kecil garis" href="{{ route('staf.bank-soal.kisi', $bank) }}" data-cetak><x-ikon nama="cetak" :ukuran="16" />Kisi-kisi</a>
@@ -107,6 +109,7 @@
         <header class="soal-kepala">
             <span class="soal-no">{{ ($soal->currentPage() - 1) * $soal->perPage() + $i + 1 }}</span>
             <span class="lencana">{{ $s->tipe === 'pg' ? 'Pilihan ganda' : 'Esai' }}</span>
+            @if ($s->level)<span class="lencana pucat">{{ $s->level }}</span>@endif
             @if ($s->status === 'draf') <span class="lencana kuning">Draf</span> @endif
             @if ($s->sumber !== 'manual') <span class="lencana pucat">{{ $s->sumber === 'otomatis' ? 'Otomatis' : 'Impor' }}</span> @endif
             <span class="soal-bobot">Bobot {{ rtrim(rtrim($s->bobot, '0'), '.') }}</span>
@@ -133,6 +136,10 @@
             </ul>
         @elseif ($s->rubrik_esai)
             <div class="rubrik"><b>Jawaban acuan:</b> {!! nl2br(e($s->rubrik_esai)) !!}</div>
+        @endif
+
+        @if ($s->pembahasan)
+            <div class="rubrik"><b>Pembahasan:</b> {!! nl2br(e($s->pembahasan)) !!}</div>
         @endif
 
         <footer class="soal-aksi">

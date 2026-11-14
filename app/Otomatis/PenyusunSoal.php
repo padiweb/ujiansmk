@@ -148,7 +148,9 @@ Anda adalah penyusun soal ujian untuk guru SMK di Indonesia. Tulis soal dalam Ba
 
 Aturan keluaran:
 - Balas HANYA dengan satu objek JSON, tanpa penjelasan dan tanpa pagar kode.
-- Bentuk: {"soal":[{"tipe":"pg","pertanyaan":"...","opsi":["...","..."],"kunci":"A"},{"tipe":"esai","pertanyaan":"...","rubrik":"..."}]}
+- Bentuk: {"soal":[{"tipe":"pg","level":"L1","pertanyaan":"...","opsi":["...","..."],"kunci":"A","pembahasan":"..."},{"tipe":"esai","level":"L2","pertanyaan":"...","rubrik":"...","pembahasan":"..."}]}
+- "level" adalah level kognitif: L1 = pengetahuan/pemahaman (mengingat, menyebutkan, menjelaskan), L2 = penerapan (menghitung, menerapkan, menggunakan dalam situasi), L3 = penalaran/HOTS (menganalisis, mengevaluasi, memecahkan masalah kontekstual). Isi "level" setiap soal sesuai levelnya.
+- "pembahasan" berisi penjelasan singkat (satu sampai dua kalimat) mengapa jawaban benar, untuk guru.
 - Soal "pg": isi "opsi" persis sejumlah yang diminta, tepat satu jawaban benar, "kunci" berupa huruf (A, B, C, ...). Jangan memakai opsi "semua benar", "semua salah", atau "tidak ada yang benar". Jangan menulis huruf opsi di dalam teks opsi.
 - Soal "esai": "rubrik" berisi jawaban acuan singkat untuk membantu guru mengoreksi.
 - Jangan membuat soal yang ambigu, ofensif, atau bergantung pada gambar yang tidak tersedia.
@@ -169,6 +171,7 @@ TEKS;
             .'Tingkat: Kelas '.$this->bersih($p->tingkat, 5)."\n"
             .'Topik: '.$this->bersih($p->topik, 300)."\n"
             ."Tingkat kesulitan: {$p->kesulitan}\n"
+            .($p->level === 'campuran' ? "Level kognitif: campuran, sebarkan kurang lebih merata antara L1, L2, dan L3." . "\n" : "Level kognitif: semua soal level {$p->level}." . "\n")
             ."Buat tepat {$pg} soal pg (opsi: {$huruf}, jumlah opsi {$p->jumlahOpsi}) dan {$esai} soal esai."
             .($p->soalPerBacaan > 0 ? "\nSoal berbasis bacaan: buat {$p->jumlahBacaan()} bacaan (kode B1, B2, ...), tiap bacaan dipakai oleh sampai {$p->soalPerBacaan} soal." : '')
             .$materi."\nDATA>>>";
