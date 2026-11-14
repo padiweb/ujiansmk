@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Tests\Concerns\KonfirmasiRancangan;
 use App\Models\BacaanSoal;
 use App\Models\BankSoal;
 use App\Models\Mapel;
@@ -17,7 +18,7 @@ use Tests\TestCase;
 
 class BacaanSoalTest extends TestCase
 {
-    use MenyiapkanUjian, RefreshDatabase;
+    use MenyiapkanUjian, RefreshDatabase, KonfirmasiRancangan;
 
     private BankSoal $bank;
 
@@ -143,9 +144,9 @@ class BacaanSoalTest extends TestCase
         Http::swap(new KlienHttp);
         Http::fake(['*' => Http::response(['candidates' => [['content' => ['parts' => [['text' => $json]]]]]])]);
 
-        $this->actingAs($this->admin, 'web')->post("/staf/bank-soal/{$this->bank->id}/otomatis", [
+        $this->lanjutkanBilaBerhasil($this->actingAs($this->admin, 'web')->post("/staf/bank-soal/{$this->bank->id}/otomatis", [
             'topik' => 'Cerita', 'jumlah' => 4, 'tipe' => 'pg', 'jumlah_opsi' => 4, 'kesulitan' => 'sedang', 'soal_per_bacaan' => 2,
-        ])->assertSessionHas('berhasil');
+        ]), $this->bank)->assertSessionHas('berhasil');
 
         $otomatis = Soal::where('sumber', 'otomatis')->get();
         $this->assertCount(4, $otomatis);
@@ -165,9 +166,9 @@ class BacaanSoalTest extends TestCase
         Http::swap(new KlienHttp);
         Http::fake(['*' => Http::response(['candidates' => [['content' => ['parts' => [['text' => $json]]]]]])]);
 
-        $this->actingAs($this->admin, 'web')->post("/staf/bank-soal/{$this->bank->id}/otomatis", [
+        $this->lanjutkanBilaBerhasil($this->actingAs($this->admin, 'web')->post("/staf/bank-soal/{$this->bank->id}/otomatis", [
             'topik' => 'Cerita', 'jumlah' => 1, 'tipe' => 'pg', 'jumlah_opsi' => 4, 'kesulitan' => 'sedang', 'soal_per_bacaan' => 3,
-        ])->assertSessionHas('berhasil');
+        ]), $this->bank)->assertSessionHas('berhasil');
 
         $this->assertSame(0, BacaanSoal::count());
         $this->assertNull(Soal::where('sumber', 'otomatis')->first()->bacaan_id);

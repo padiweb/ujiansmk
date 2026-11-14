@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Tests\Concerns\KonfirmasiRancangan;
 use App\Models\BankSoal;
 use App\Models\LogOtomatis;
 use App\Models\Soal;
@@ -19,7 +20,7 @@ use Tests\TestCase;
 
 class FotoSoalTest extends TestCase
 {
-    use MenyiapkanUjian, RefreshDatabase;
+    use MenyiapkanUjian, RefreshDatabase, KonfirmasiRancangan;
 
     private BankSoal $bank;
 
@@ -44,7 +45,9 @@ class FotoSoalTest extends TestCase
 
     private function kirim(array $timpa = [], ?UploadedFile $foto = null)
     {
-        return $this->post("/staf/bank-soal/{$this->bank->id}/foto", array_replace(['foto' => $foto ?? UploadedFile::fake()->image('soal.jpg', 800, 600), 'jumlah_opsi' => 4], $timpa));
+        $r = $this->post("/staf/bank-soal/{$this->bank->id}/foto", array_replace(['foto' => $foto ?? UploadedFile::fake()->image('soal.jpg', 800, 600), 'jumlah_opsi' => 4], $timpa));
+
+        return $this->lanjutkanBilaBerhasil($r, $this->bank);
     }
 
     public function test_halaman_foto_ada_tombolnya_dan_menyatakan_belum_tersedia_tanpa_penyedia(): void
@@ -53,8 +56,8 @@ class FotoSoalTest extends TestCase
         $this->get("/staf/bank-soal/{$this->bank->id}/foto")->assertOk()->assertSee('belum tersedia');
 
         $this->penyedia();
-        $this->get("/staf/bank-soal/{$this->bank->id}")->assertSee('Foto → soal');
-        $this->get("/staf/bank-soal/{$this->bank->id}/foto")->assertOk()->assertSee('Baca foto')->assertSee('capture="environment"', false);
+        $this->get("/staf/bank-soal/{$this->bank->id}")->assertSee('Pindai soal dari foto');
+        $this->get("/staf/bank-soal/{$this->bank->id}/foto")->assertOk()->assertSee('Pindai foto')->assertSee('capture="environment"', false);
     }
 
     public function test_foto_dibaca_menjadi_soal_draf_dengan_rumus_latex_opsi_berurutan_dan_kunci_ditandai(): void
@@ -69,7 +72,7 @@ class FotoSoalTest extends TestCase
             .']}';
         $this->fakeJawaban($mentah);
 
-        $this->kirim()->assertRedirect(route('staf.bank-soal.show', [$this->bank, 'status' => 'draf']))->assertSessionHas('berhasil');
+        $this->kirim()->assertSessionHas('berhasil');
 
         $soal = Soal::where('sumber', 'otomatis')->orderBy('id')->get();
         $this->assertCount(3, $soal);
@@ -132,7 +135,7 @@ class FotoSoalTest extends TestCase
         $this->actingAs($this->admin, 'web');
         Http::swap(new KlienHttp);
         Http::fake(['*' => Http::response('', 429)]);
-        $this->kirim()->assertSessionHas('gagal', fn ($m) => str_contains($m, 'Kuota'));
+        $this->kirim()->assertSessionHas('gagal', fn ($m) => str_contains($m, 'sibuk'));
         $this->assertSame(0, Soal::where('sumber', 'otomatis')->count());
         $this->assertSame('gagal', LogOtomatis::latest('id')->first()->status);
     }
@@ -142,7 +145,7 @@ class FotoSoalTest extends TestCase
         config(['ujian.otomatis' => ['driver' => 'openai', 'model' => 'm', 'kunci' => 'kunci-rahasia-ABCD1234']]);
         $this->actingAs($this->admin, 'web');
 
-        $this->kirim()->assertSessionHas('gagal', fn ($m) => str_contains($m, 'Gemini'));
+        $this->kirim()->assertSessionHas('gagal', fn ($m) => str_contains($m, 'belum tersedia'));
     }
 
     public function test_pemulihan_latex_tidak_merusak_json_yang_sudah_benar(): void

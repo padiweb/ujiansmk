@@ -34,7 +34,7 @@ abstract class PenyusunSoal
             'gemini' => new GeminiPenyusun($penyedia),
             'openai' => new OpenAiPenyusun($penyedia),
             'anthropic' => new AnthropicPenyusun($penyedia),
-            default => throw new KesalahanOtomatis('Jenis penyedia tidak dikenal.'),
+            default => throw new KesalahanOtomatis('Pengaturan layanan penyusun soal tidak dikenal. Hubungi pengelola aplikasi.'),
         };
     }
 
@@ -116,7 +116,7 @@ TEKS;
      */
     public function dariFoto(string $bytes, string $mime, PermintaanSoal $p): array
     {
-        throw new KesalahanOtomatis('Membaca soal dari foto baru didukung untuk penyedia Gemini. Pakai Gemini, atau ketik soalnya.');
+        throw new KesalahanOtomatis('Pindai soal dari foto belum tersedia pada pengaturan saat ini. Ketik soalnya secara manual.');
     }
 
     /** Kirim satu permintaan ke penyedia dan kembalikan teks jawaban model. */
@@ -134,10 +134,10 @@ TEKS;
         } catch (ConnectionException $e) {
             // Waktu habis berbeda dari tidak ada sambungan: model yang lambat atau permintaan besar.
             if (stripos($e->getMessage(), 'timed out') !== false || stripos($e->getMessage(), 'error 28') !== false) {
-                throw new KesalahanOtomatis('Penyedia terlalu lama menjawab (lebih dari 2 menit). Coba lagi, kurangi jumlah soal, atau minta pengelola memakai model yang lebih cepat.');
+                throw new KesalahanOtomatis('Penyusunan memakan waktu terlalu lama. Coba lagi atau kurangi jumlah soal.');
             }
 
-            throw new KesalahanOtomatis('Tidak dapat terhubung ke penyedia. Periksa koneksi internet server, lalu coba lagi.');
+            throw new KesalahanOtomatis('Layanan penyusun soal tidak dapat dihubungi. Coba lagi beberapa saat lagi.');
         }
 
         if (! $respons->successful()) {
@@ -146,7 +146,7 @@ TEKS;
 
         $teks = $this->teksJawaban($respons->json() ?? []);
         if ($teks === null || trim($teks) === '') {
-            throw new KesalahanOtomatis('Penyedia tidak mengembalikan jawaban. Coba lagi dengan topik yang lebih jelas.');
+            throw new KesalahanOtomatis('Soal belum dapat disusun. Coba lagi dengan topik yang lebih jelas.');
         }
 
         return $teks;
@@ -227,12 +227,12 @@ TEKS;
         $awal = strpos($teks, '{');
         $akhir = strrpos($teks, '}');
         if ($awal === false || $akhir === false || $akhir <= $awal) {
-            throw new KesalahanOtomatis('Jawaban penyedia tidak berbentuk JSON yang valid. Coba lagi.');
+            throw new KesalahanOtomatis('Hasil penyusunan tidak dapat dibaca. Coba lagi.');
         }
 
         $data = json_decode($this->perbaikiLatex(substr($teks, $awal, $akhir - $awal + 1)), true, 8, JSON_INVALID_UTF8_SUBSTITUTE);
         if (! is_array($data) || ! isset($data[$kunci]) || ! is_array($data[$kunci])) {
-            throw new KesalahanOtomatis('Jawaban penyedia tidak berbentuk JSON yang valid. Coba lagi.');
+            throw new KesalahanOtomatis('Hasil penyusunan tidak dapat dibaca. Coba lagi.');
         }
 
         return array_values(array_filter($data[$kunci], 'is_array'));
@@ -242,11 +242,11 @@ TEKS;
     protected function pesanGalat(Response $respons): string
     {
         return match (true) {
-            in_array($respons->status(), [401, 403], true) => 'Layanan otomatis menolak kunci akses. Hubungi pengelola aplikasi.',
-            $respons->status() === 404 => 'Model tidak ditemukan di penyedia. Minta admin memeriksa nama model.',
-            $respons->status() === 429 => 'Kuota penyedia sedang habis atau terlalu banyak permintaan. Coba lagi beberapa saat lagi.',
-            $respons->status() >= 500 => 'Penyedia sedang bermasalah. Coba lagi nanti.',
-            default => 'Permintaan ditolak penyedia (kode '.$respons->status().'). Periksa pengaturan penyedia.',
+            in_array($respons->status(), [401, 403], true) => 'Layanan penyusun soal tidak dapat diakses. Hubungi pengelola aplikasi.',
+            $respons->status() === 404 => 'Layanan penyusun soal belum diatur dengan benar. Hubungi pengelola aplikasi.',
+            $respons->status() === 429 => 'Layanan sedang sibuk. Coba lagi beberapa saat lagi.',
+            $respons->status() >= 500 => 'Layanan sedang bermasalah. Coba lagi nanti.',
+            default => 'Permintaan ditolak (kode '.$respons->status().'). Hubungi pengelola aplikasi.',
         };
     }
 }

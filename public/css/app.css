@@ -1023,3 +1023,18 @@ h1, h2, h3 { color: var(--teks); }
     .formulir:not(.dua-kolom):not(.form-soal) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; align-items: start; }
     .formulir:not(.dua-kolom):not(.form-soal) > :is(h2, h3, p, small, .pesan-salah, .pesan-info, .info, .aksi-form, fieldset, table, .gulir, .penuh, label.centang, .opsi-blok, .alat-rumus, dialog, ul, ol, details, [id], .bidang:has(textarea), .bidang:has(input[type=file])) { grid-column: 1 / -1; }
 }
+
+/* ── Rancangan soal (hasil susun otomatis / pindai foto) ── */
+.rancangan { margin-top: 18px; }
+.rancangan-kepala { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.rancangan-kepala h2 { margin: 0; font-size: 1.05rem; }
+.rancangan-aksi { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rancangan-aksi .centang, .soal-kepala .centang { margin: 0; }
+.rancangan .opsi-kotak { cursor: pointer; align-items: baseline; }
+.rancangan .opsi-kotak input[type=radio] { margin: 0 2px 0 0; accent-color: var(--biru); }
+.rancangan-edit { margin: 12px 18px 14px; border-top: 1px dashed var(--garis); padding-top: 10px; }
+.rancangan-edit summary { cursor: pointer; font-size: .86rem; font-weight: 600; color: var(--biru); display: inline-flex; align-items: center; gap: 6px; }
+.rancangan-ubah { display: grid; gap: 6px; margin-top: 10px; }
+.rancangan-ubah label { font-size: .74rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--teks-2, var(--teks)); }
+.rancangan-ubah input[type=text], .rancangan-ubah textarea, .rancangan-ubah select { width: 100%; font: inherit; padding: 8px 10px; border: 1px solid var(--garis); border-radius: 8px; background: var(--putih); }
+.rancangan-rujuk { padding: 8px 18px; font-size: .84rem; color: var(--teks-2, var(--teks)); }

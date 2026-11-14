@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Tests\Concerns\KonfirmasiRancangan;
 use App\Models\BankSoal;
 use App\Models\Soal;
 use App\Services\LayananKisiKisi;
@@ -13,7 +14,7 @@ use Tests\TestCase;
 
 class LevelSoalTest extends TestCase
 {
-    use MenyiapkanUjian, RefreshDatabase;
+    use MenyiapkanUjian, RefreshDatabase, KonfirmasiRancangan;
 
     private BankSoal $bank;
 
@@ -60,8 +61,7 @@ class LevelSoalTest extends TestCase
         Http::fake(['*' => Http::response(['candidates' => [['content' => ['parts' => [['text' => $json]]]]]])]);
 
         $this->actingAs($this->admin, 'web')->get("/staf/bank-soal/{$this->bank->id}/otomatis")->assertOk()->assertSee('Level kognitif')->assertSee('L3 — Penalaran');
-        $this->post("/staf/bank-soal/{$this->bank->id}/otomatis", ['topik' => 'Jaringan', 'jumlah' => 3, 'tipe' => 'pg', 'jumlah_opsi' => 4, 'kesulitan' => 'sedang', 'level' => 'L3'])
-            ->assertSessionHas('berhasil');
+        $this->lanjutkanBilaBerhasil($this->post("/staf/bank-soal/{$this->bank->id}/otomatis", ['topik' => 'Jaringan', 'jumlah' => 3, 'tipe' => 'pg', 'jumlah_opsi' => 4, 'kesulitan' => 'sedang', 'level' => 'L3']), $this->bank)->assertSessionHas('berhasil');
 
         $s = Soal::where('sumber', 'otomatis')->orderBy('id')->get();
         $this->assertSame(['L1', 'L3', null], $s->pluck('level')->all());

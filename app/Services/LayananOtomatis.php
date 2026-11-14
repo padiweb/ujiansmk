@@ -36,16 +36,16 @@ class LayananOtomatis
     }
 
     /**
-     * Susun soal dan simpan sebagai draf di $bank.
+     * Susun rancangan soal. TIDAK menyimpan apa pun ke bank: guru memeriksa dan mengubahnya dulu.
      *
-     * @return int jumlah soal yang tersimpan
+     * @return list<array<string,mixed>> butir soal hasil saringan
      *
      * @throws KesalahanOtomatis pesan aman ditampilkan ke pengguna
      */
-    public function susun(User $user, BankSoal $bank, PermintaanSoal $permintaan, ?array $foto = null): int
+    public function rancang(User $user, BankSoal $bank, PermintaanSoal $permintaan, ?array $foto = null): array
     {
         $penyedia = PenyediaOtomatis::aktif()
-            ?? throw new KesalahanOtomatis('Fitur otomatis belum tersedia di instalasi ini. Hubungi pengelola aplikasi.');
+            ?? throw new KesalahanOtomatis('Fitur ini belum tersedia di instalasi ini. Hubungi pengelola aplikasi.');
 
         if ($this->sisaHariIni($user) <= 0) {
             throw new KesalahanOtomatis("Batas {$this->batasHarian()} permintaan per hari sudah tercapai. Coba lagi besok.");
@@ -65,7 +65,7 @@ class LayananOtomatis
             $soal = $this->penyaring->saring($mentah, $permintaan);
 
             if ($soal === []) {
-                throw new KesalahanOtomatis('Tidak ada soal yang valid dari penyedia. Coba lagi, atau perjelas topiknya.');
+                throw new KesalahanOtomatis('Tidak ada soal yang dapat disusun. Coba lagi, atau perjelas topiknya.');
             }
         } catch (KesalahanOtomatis $e) {
             $this->catat($user, $penyedia, $bank, $permintaan, 0, 'gagal', $e->getMessage());
@@ -76,26 +76,41 @@ class LayananOtomatis
             throw new KesalahanOtomatis('Terjadi galat tak terduga saat menyusun soal. Coba lagi.');
         }
 
-        DB::transaction(function () use ($soal, $bank, $foto) {
+        $this->catat($user, $penyedia, $bank, $permintaan, count($soal), 'berhasil', null);
+
+        return array_values($soal);
+    }
+
+    /**
+     * Simpan butir rancangan yang sudah diperiksa guru ke bank sebagai draf.
+     *
+     * @param  list<array<string,mixed>>  $butir  tiap butir: tipe, pertanyaan, opsi, kunci, rubrik, level, pembahasan, bacaan_kode
+     * @param  array<string,array{judul:?string,teks:string}>  $bacaan  per kode
+     * @param  ?string  $gambar  jalur gambar (sudah tersimpan) untuk dilampirkan ke tiap soal
+     */
+    public function simpanRancangan(BankSoal $bank, array $butir, array $bacaan = [], ?string $gambar = null): int
+    {
+        DB::transaction(function () use ($butir, $bacaan, $bank, $gambar) {
             $urutan = (int) ($bank->soal()->withTrashed()->max('urutan') ?? 0);
             $petaBacaan = [];
-            foreach ($soal as $s) {
+            foreach ($butir as $s) {
                 $bacaanId = null;
-                if (isset($s['bacaan_kode'], $s['bacaan'])) {
-                    $bacaanId = $petaBacaan[$s['bacaan_kode']] ??= $bank->bacaan()->create(['judul' => $s['bacaan']['judul'], 'teks' => $s['bacaan']['teks'], 'sumber' => 'otomatis'])->id;
+                $kode = $s['bacaan_kode'] ?? null;
+                if ($kode && isset($bacaan[$kode])) {
+                    $bacaanId = $petaBacaan[$kode] ??= $bank->bacaan()->create(['judul' => $bacaan[$kode]['judul'], 'teks' => $bacaan[$kode]['teks'], 'sumber' => 'otomatis'])->id;
                 }
                 $baru = $bank->soal()->create([
                     'bacaan_id' => $bacaanId,
                     'level' => $s['level'] ?? null,
-                    'pembahasan' => ($s['pembahasan_foto'] ?? null) !== null ? ($s['pembahasan_foto'] ?: null) : ($s['pembahasan'] ?? null),
+                    'pembahasan' => $s['pembahasan'] ?? null,
                     'tipe' => $s['tipe'],
                     'pertanyaan' => $s['pertanyaan'],
                     'bobot' => 1,
-                    'rubrik_esai' => $s['rubrik'],
+                    'rubrik_esai' => $s['rubrik'] ?? null,
                     'status' => 'draf',
                     'sumber' => 'otomatis',
                     'urutan' => ++$urutan,
-                    'gambar' => ($foto['lampirkan'] ?? null) ? \App\Support\GambarAman::simpan($foto['lampirkan'], 'foto', 'soal') : null,
+                    'gambar' => $gambar !== null ? \App\Support\GambarAman::salin($gambar) : null,
                 ]);
                 if ($s['tipe'] === 'pg') {
                     $this->layananSoal->setOpsi($baru, $s['opsi'], $s['kunci']);
@@ -103,9 +118,7 @@ class LayananOtomatis
             }
         });
 
-        $this->catat($user, $penyedia, $bank, $permintaan, count($soal), 'berhasil', null);
-
-        return count($soal);
+        return count($butir);
     }
 
     /**
@@ -120,7 +133,7 @@ class LayananOtomatis
     public function sarankanNilai(User $user, Soal $soal, string $mapel, array $jawaban): array
     {
         $penyedia = PenyediaOtomatis::aktif()
-            ?? throw new KesalahanOtomatis('Fitur otomatis belum tersedia di instalasi ini. Hubungi pengelola aplikasi.');
+            ?? throw new KesalahanOtomatis('Fitur ini belum tersedia di instalasi ini. Hubungi pengelola aplikasi.');
 
         if ($jawaban === [] || count($jawaban) > self::MAKS_SARAN) {
             throw new KesalahanOtomatis('Pilih 1 sampai '.self::MAKS_SARAN.' jawaban untuk dimintakan saran.');
@@ -153,7 +166,7 @@ class LayananOtomatis
             }
 
             if ($saran === []) {
-                throw new KesalahanOtomatis('Tidak ada saran yang valid dari penyedia. Coba lagi.');
+                throw new KesalahanOtomatis('Tidak ada saran yang dapat disusun. Coba lagi.');
             }
         } catch (KesalahanOtomatis $e) {
             $this->catatSaran($user, $penyedia, $soal, count($jawaban), 0, 'gagal', $e->getMessage());

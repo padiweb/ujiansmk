@@ -157,10 +157,10 @@
 <div class="fab-grup" id="fabGrup">
     <div class="fab-daftar" id="fabDaftar" hidden>
         @if ($otomatis)
-            <a class="fab-butir" href="{{ route('staf.bank-soal.otomatis', $bank) }}"><span class="fab-teks">Buat soal dengan AI</span><span class="fab-ikon-butir ai"><x-ikon nama="otomatis" :ukuran="17" /></span></a>
-            <a class="fab-butir" href="{{ route('staf.bank-soal.foto', $bank) }}"><span class="fab-teks">Foto → soal</span><span class="fab-ikon-butir ai"><x-ikon nama="unggah" :ukuran="17" /></span></a>
+            <a class="fab-butir" href="{{ route('staf.bank-soal.otomatis', $bank) }}"><span class="fab-teks">Susun soal otomatis</span><span class="fab-ikon-butir ai"><x-ikon nama="otomatis" :ukuran="17" /></span></a>
+            <a class="fab-butir" href="{{ route('staf.bank-soal.foto', $bank) }}"><span class="fab-teks">Pindai soal dari foto</span><span class="fab-ikon-butir ai"><x-ikon nama="unggah" :ukuran="17" /></span></a>
         @elseif (auth('web')->user()->role === 'admin')
-            <span class="fab-butir mati" title="Isi OTOMATIS_DRIVER, OTOMATIS_MODEL, dan OTOMATIS_KUNCI di .env server, lalu jalankan php artisan config:clear."><span class="fab-teks">Buat soal dengan AI (belum aktif)</span><span class="fab-ikon-butir ai"><x-ikon nama="otomatis" :ukuran="17" /></span></span>
+            <span class="fab-butir mati" title="Fitur ini belum diaktifkan oleh pengelola aplikasi."><span class="fab-teks">Susun soal otomatis (belum aktif)</span><span class="fab-ikon-butir ai"><x-ikon nama="otomatis" :ukuran="17" /></span></span>
         @endif
         <a class="fab-butir" href="{{ route('staf.bank-soal.impor.form', $bank) }}"><span class="fab-teks">Impor Excel</span><span class="fab-ikon-butir xl"><x-ikon nama="unggah" :ukuran="17" /></span></a>
         <a class="fab-butir" href="{{ route('staf.bacaan.create', $bank) }}"><span class="fab-teks">+ Bacaan / Stimulus</span><span class="fab-ikon-butir bc"><x-ikon nama="info" :ukuran="17" /></span></a>

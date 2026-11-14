@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Tests\Concerns\KonfirmasiRancangan;
 use App\Models\BankSoal;
 use App\Models\Kelas;
 use App\Models\LogOtomatis;
@@ -22,6 +23,7 @@ use Tests\TestCase;
 class OtomatisSoalTest extends TestCase
 {
     use RefreshDatabase;
+    use KonfirmasiRancangan;
 
     private const KUNCI = 'kunci-rahasia-ABCD1234';
 
@@ -77,7 +79,9 @@ class OtomatisSoalTest extends TestCase
 
     private function kirim(array $timpa = [])
     {
-        return $this->actingAs($this->guru, 'web')->post("/staf/bank-soal/{$this->bank->id}/otomatis", $this->form($timpa));
+        $r = $this->actingAs($this->guru, 'web')->post("/staf/bank-soal/{$this->bank->id}/otomatis", $this->form($timpa));
+
+        return $this->lanjutkanBilaBerhasil($r, $this->bank);
     }
 
     // ── Penyedia: dibaca dari .env ──────────────────────────────────────────
@@ -149,7 +153,7 @@ class OtomatisSoalTest extends TestCase
             $this->soalPg('Ibu kota Indonesia?', ['Bandung', 'Medan', 'Jakarta', 'Surabaya'], 'C'),
         ]))]);
 
-        $this->kirim()->assertRedirect(route('staf.bank-soal.show', [$this->bank, 'status' => 'draf']))->assertSessionHas('berhasil');
+        $this->kirim()->assertSessionHas('berhasil');
 
         $soal = Soal::with('opsi')->get();
         $this->assertCount(2, $soal);
@@ -309,9 +313,9 @@ class OtomatisSoalTest extends TestCase
     {
         $this->penyedia();
         $kasus = [
-            [401, 'menolak kunci akses'],
-            [404, 'Model tidak ditemukan'],
-            [429, 'Kuota penyedia'],
+            [401, 'tidak dapat diakses'],
+            [404, 'belum diatur dengan benar'],
+            [429, 'Layanan sedang sibuk'],
             [503, 'sedang bermasalah'],
         ];
 
@@ -336,7 +340,7 @@ class OtomatisSoalTest extends TestCase
 
         $this->kirim(['jumlah' => 1])->assertSessionHas('gagal');
 
-        $this->assertStringContainsString('Tidak dapat terhubung', session('gagal'));
+        $this->assertStringContainsString('tidak dapat dihubungi', session('gagal'));
         $this->assertSame(0, Soal::count());
     }
 
@@ -368,7 +372,7 @@ class OtomatisSoalTest extends TestCase
 
         // Pengguna lain punya jatah sendiri.
         $lain = User::factory()->admin()->create();
-        $this->actingAs($lain, 'web')->post("/staf/bank-soal/{$this->bank->id}/otomatis", $this->form(['jumlah' => 1]))->assertSessionHas('berhasil');
+        $this->lanjutkanBilaBerhasil($this->actingAs($lain, 'web')->post("/staf/bank-soal/{$this->bank->id}/otomatis", $this->form(['jumlah' => 1])), $this->bank)->assertSessionHas('berhasil');
     }
 
     public function test_permintaan_gagal_juga_dihitung_agar_tidak_bisa_dipakai_menguras_kuota(): void
@@ -423,11 +427,11 @@ class OtomatisSoalTest extends TestCase
     {
         $this->actingAs($this->guru, 'web')->get("/staf/bank-soal/{$this->bank->id}/otomatis")
             ->assertOk()->assertSee('belum tersedia di instalasi ini');
-        $this->get("/staf/bank-soal/{$this->bank->id}")->assertOk()->assertDontSee('Buat soal dengan AI');
+        $this->get("/staf/bank-soal/{$this->bank->id}")->assertOk()->assertDontSee('Susun soal otomatis');
 
         $this->penyedia();
-        $this->get("/staf/bank-soal/{$this->bank->id}/otomatis")->assertOk()->assertSee('Susun');
-        $this->get("/staf/bank-soal/{$this->bank->id}")->assertOk()->assertSee('Buat soal dengan AI');
+        $this->get("/staf/bank-soal/{$this->bank->id}/otomatis")->assertOk()->assertSee('Susun soal');
+        $this->get("/staf/bank-soal/{$this->bank->id}")->assertOk()->assertSee('Susun soal otomatis');
     }
 
     public function test_soal_otomatis_berlabel_dan_berstatus_draf_di_halaman_bank(): void
@@ -440,7 +444,73 @@ class OtomatisSoalTest extends TestCase
 
         $this->assertStringContainsString('Otomatis', $html);
         $this->assertStringContainsString('Draf', $html);
-        // Di tampilan tidak boleh ada tulisan "AI"; fitur ini disebut "Otomatis".
+        // Di tampilan tidak boleh ada tulisan "AI".
         $this->assertDoesNotMatchRegularExpression('/AI/', strip_tags($html));
+    }
+
+    // ── Rancangan: diperiksa dulu, baru ditambahkan ─────────────────────────
+
+    public function test_hasil_susunan_hanya_rancangan_sampai_ditambahkan_dan_bisa_diubah(): void
+    {
+        $this->penyedia();
+        Http::fake(['*' => Http::response($this->jawabanGemini([
+            $this->soalPg('Berapa 2 + 2?', ['3', '4', '5', '6'], 'B'),
+            $this->soalPg('Ibu kota Indonesia?', ['Bandung', 'Medan', 'Jakarta', 'Surabaya'], 'C'),
+        ]))]);
+
+        $this->actingAs($this->guru, 'web')->post("/staf/bank-soal/{$this->bank->id}/otomatis", $this->form())
+            ->assertRedirect(route('staf.bank-soal.otomatis', $this->bank));
+        $this->assertSame(0, Soal::count());
+
+        $this->get("/staf/bank-soal/{$this->bank->id}/otomatis")->assertOk()
+            ->assertSee('2 soal menunggu')->assertSee('Berapa 2 + 2?')->assertSee('Tambahkan soal');
+        $this->get("/staf/bank-soal/{$this->bank->id}/foto")->assertOk()->assertDontSee('Berapa 2 + 2?');
+
+        // Soal pertama diubah lalu ditambahkan; yang kedua tetap menunggu.
+        $r = session("rancangan_soal.{$this->bank->id}");
+        $this->post("/staf/bank-soal/{$this->bank->id}/rancangan/tambah", [
+            'tambah' => '0',
+            'butir' => [0 => ['pertanyaan' => 'Berapa 3 + 3?', 'opsi' => ['A' => '5', 'B' => '6', 'C' => '7', 'D' => '8'], 'kunci' => 'B', 'level' => 'L2', 'pembahasan' => 'Tiga tambah tiga.']],
+        ])->assertRedirect(route('staf.bank-soal.otomatis', $this->bank))->assertSessionHas('berhasil');
+
+        $s = Soal::with('opsi')->sole();
+        $this->assertSame('Berapa 3 + 3?', $s->pertanyaan);
+        $this->assertSame('draf', $s->status);
+        $this->assertSame('L2', $s->level);
+        $this->assertSame('6', $s->opsi->firstWhere('benar', true)->teks);
+        $this->assertCount(1, session("rancangan_soal.{$this->bank->id}")['butir']);
+        $this->assertCount(2, $r['butir']);
+
+        $this->get("/staf/bank-soal/{$this->bank->id}/otomatis")->assertSee('1 soal menunggu')->assertSee('Ibu kota Indonesia?');
+        $this->post("/staf/bank-soal/{$this->bank->id}/rancangan/buang", ['buang' => 'semua'])->assertRedirect();
+        $this->assertNull(session("rancangan_soal.{$this->bank->id}"));
+        $this->assertSame(1, Soal::count());
+    }
+
+    public function test_perubahan_rancangan_divalidasi_dan_tidak_menyimpan_bila_salah(): void
+    {
+        $this->penyedia();
+        Http::fake(['*' => Http::response($this->jawabanGemini([$this->soalPg()]))]);
+        $this->actingAs($this->guru, 'web')->post("/staf/bank-soal/{$this->bank->id}/otomatis", $this->form(['jumlah' => 1]));
+
+        $this->post("/staf/bank-soal/{$this->bank->id}/rancangan/tambah", ['tambah' => '0', 'butir' => [0 => ['pertanyaan' => '  ', 'kunci' => 'Z']]])
+            ->assertSessionHas('gagal');
+        $this->assertSame(0, Soal::count());
+        $this->assertNotNull(session("rancangan_soal.{$this->bank->id}"));
+
+        $this->post("/staf/bank-soal/{$this->bank->id}/rancangan/tambah", ['tambah' => '9'])->assertSessionHas('gagal');
+        $this->assertSame(0, Soal::count());
+    }
+
+    public function test_rancangan_milik_bank_dan_pengguna_yang_berwenang_saja(): void
+    {
+        $this->penyedia();
+        Http::fake(['*' => Http::response($this->jawabanGemini([$this->soalPg()]))]);
+        $this->actingAs($this->guru, 'web')->post("/staf/bank-soal/{$this->bank->id}/otomatis", $this->form(['jumlah' => 1]));
+
+        $lain = User::factory()->create();
+        $this->actingAs($lain, 'web')->post("/staf/bank-soal/{$this->bank->id}/rancangan/tambah", ['tambah' => 'pilih', 'pilih' => [0]])->assertForbidden();
+        $this->post("/staf/bank-soal/{$this->bank->id}/rancangan/buang", ['buang' => 'semua'])->assertForbidden();
+        $this->assertSame(0, Soal::count());
     }
 }

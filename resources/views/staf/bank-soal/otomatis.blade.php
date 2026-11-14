@@ -1,8 +1,8 @@
 @extends('layouts.staf')
-@section('judul', 'Buat Soal dengan AI')
+@section('judul', 'Susun Soal Otomatis')
 
 @section('konten')
-<h1 class="judul-halaman">Buat soal dengan AI</h1>
+<h1 class="judul-halaman">Susun soal otomatis</h1>
 <p class="sub">{{ $bank->nama }} · {{ $bank->mapel->nama }} · Kelas {{ $bank->tingkat }}</p>
 
 @if (! $penyedia)
@@ -79,11 +79,15 @@
         </div>
 
         <div class="aksi-form">
-            <button class="tombol kecil" type="submit" id="tombolSusun" @disabled($sisa <= 0) @if ($sisa <= 0) title="Batas permintaan harian tercapai" @endif><x-ikon nama="otomatis" :ukuran="16" /><span>Susun</span></button>
+            <button class="tombol kecil" type="submit" id="tombolSusun" @disabled($sisa <= 0) @if ($sisa <= 0) title="Batas permintaan harian tercapai" @endif><x-ikon nama="otomatis" :ukuran="16" /><span>Susun soal</span></button>
             <a class="tombol kecil garis" href="{{ route('staf.bank-soal.show', $bank) }}">Batal</a>
         </div>
-        <small class="bantuan" id="infoTunggu" hidden>Sedang menyusun soal, bisa sampai beberapa menit tergantung model. Jangan tutup halaman ini.</small>
+        <small class="bantuan" id="infoTunggu" hidden>Sedang menyusun soal. Jangan tutup halaman ini.</small>
     </form>
+
+    @isset($rancangan)
+        @include('staf.bank-soal.partials.rancangan')
+    @endisset
 
     @push('skrip')
     <script>

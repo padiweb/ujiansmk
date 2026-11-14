@@ -50,7 +50,7 @@
         <div class="aksi-halaman">
             <a class="tombol kecil garis" href="{{ request()->fullUrlWithQuery(['saring' => $belum ? null : 'belum', 'page' => null]) }}">{{ $belum ? 'Tampilkan semua' : 'Hanya yang belum dinilai' }}</a>
             @if ($penyedia)
-                <button type="button" class="tombol kecil garis" id="korSaran" title="Sisa permintaan hari ini: {{ $sisa }}">Saran nilai Otomatis (halaman ini)</button>
+                <button type="button" class="tombol kecil garis" id="korSaran" title="Sisa permintaan hari ini: {{ $sisa }}">Saran nilai (halaman ini)</button>
             @endif
         </div>
     </div>
@@ -75,7 +75,7 @@
                 </div>
             </div>
             <div class="kor-saran" @if ($j2->saran_nilai === null) hidden @endif data-saran="{{ $j2->saran_nilai !== null ? rtrim(rtrim((string) $j2->saran_nilai, '0'), '.') : '' }}">
-                <span class="lencana pucat">Saran Otomatis</span>
+                <span class="lencana pucat">Saran nilai</span>
                 <strong class="kor-saran-nilai">{{ $j2->saran_nilai !== null ? rtrim(rtrim((string) $j2->saran_nilai, '0'), '.') : '' }}</strong>
                 <span class="kor-saran-catatan">{{ $j2->saran_catatan }}</span>
                 <button type="button" class="tombol kecil garis kor-pakai">Pakai saran</button>
