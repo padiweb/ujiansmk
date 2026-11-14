@@ -426,7 +426,7 @@ class OtomatisSoalTest extends TestCase
         $this->get("/staf/bank-soal/{$this->bank->id}")->assertOk()->assertDontSee('Susun otomatis');
 
         $this->penyedia();
-        $this->get("/staf/bank-soal/{$this->bank->id}/otomatis")->assertOk()->assertSee('Sisa permintaan hari ini')->assertSee('Susun');
+        $this->get("/staf/bank-soal/{$this->bank->id}/otomatis")->assertOk()->assertSee('Susun');
         $this->get("/staf/bank-soal/{$this->bank->id}")->assertOk()->assertSee('Susun otomatis');
     }
 

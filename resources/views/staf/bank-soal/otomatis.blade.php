@@ -11,24 +11,18 @@
             <span>Fitur susun soal otomatis belum tersedia di instalasi ini. Hubungi pengelola aplikasi.</span></div>
     </div>
 @else
-    <div class="info" style="margin-top:18px"><x-ikon nama="info" :ukuran="18" />
-        <span>Hasil selalu masuk sebagai <strong>draf</strong>. Baca setiap soal, perbaiki bila perlu, lalu tandai siap. Jangan memakai soal otomatis tanpa memeriksa kuncinya.
-        Sisa permintaan hari ini: <strong>{{ $sisa }}</strong> dari {{ $batas }}.</span></div>
-
     <form class="kartu formulir" method="POST" action="{{ route('staf.bank-soal.otomatis.proses', $bank) }}" id="formOtomatis">
         @csrf
 
         <div class="bidang @error('topik') salah @enderror">
             <label for="topik">Topik <span class="wajib">*</span></label>
-            <input id="topik" name="topik" type="text" maxlength="300" value="{{ old('topik') }}" required autofocus>
-            <small class="bantuan">Contoh: Persamaan linear satu variabel.</small>
+            <input id="topik" name="topik" type="text" maxlength="300" placeholder="Contoh: Persamaan linear satu variabel" value="{{ old('topik') }}" required autofocus>
             @error('topik') <small class="galat-bidang">{{ $message }}</small> @enderror
         </div>
 
         <div class="bidang @error('materi') salah @enderror">
             <label for="materi">Materi acuan (opsional)</label>
             <textarea id="materi" name="materi" rows="5" maxlength="4000">{{ old('materi') }}</textarea>
-            <small class="bantuan">Tempel ringkasan materi agar soal sesuai buku ajar Anda. Maksimal 4.000 karakter.</small>
             @error('materi') <small class="galat-bidang">{{ $message }}</small> @enderror
         </div>
 
@@ -65,7 +59,6 @@
                     <option value="{{ $n }}" @selected((int) old('soal_per_bacaan', 0) === $n)>Satu bacaan untuk {{ $n }} soal</option>
                 @endforeach
             </select>
-            <small class="bantuan">Penyusun menulis cerita atau pernyataan sekali, lalu beberapa soal merujuknya.</small>
         </div>
 
         <div class="bidang">
@@ -86,7 +79,7 @@
         </div>
 
         <div class="aksi-form">
-            <button class="tombol kecil" type="submit" id="tombolSusun" @disabled($sisa <= 0)><x-ikon nama="otomatis" :ukuran="16" /><span>Susun</span></button>
+            <button class="tombol kecil" type="submit" id="tombolSusun" @disabled($sisa <= 0) @if ($sisa <= 0) title="Batas permintaan harian tercapai" @endif><x-ikon nama="otomatis" :ukuran="16" /><span>Susun</span></button>
             <a class="tombol kecil garis" href="{{ route('staf.bank-soal.show', $bank) }}">Batal</a>
         </div>
         <small class="bantuan" id="infoTunggu" hidden>Sedang menyusun soal, biasanya 10–40 detik. Jangan tutup halaman ini.</small>

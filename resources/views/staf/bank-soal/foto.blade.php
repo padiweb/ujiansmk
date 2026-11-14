@@ -16,17 +16,12 @@
             <span>Fitur ini belum tersedia di instalasi ini. Hubungi pengelola aplikasi.</span></div>
     </div>
 @else
-    <div class="info"><x-ikon nama="info" :ukuran="18" />
-        <span>Foto satu halaman soal (satu atau beberapa soal). Hasil masuk sebagai <strong>draf</strong>: periksa rumus, pilihan, dan <strong>kunci jawaban</strong> sebelum ditandai siap.
-        Sisa permintaan hari ini: <strong>{{ $sisa }}</strong> dari {{ $batas }}.</span></div>
-
     <form class="kartu formulir" method="POST" enctype="multipart/form-data" action="{{ route('staf.bank-soal.foto.proses', $bank) }}" id="formFoto">
         @csrf
 
         <div class="bidang @error('foto') salah @enderror">
             <label for="foto">Foto soal <span class="wajib">*</span></label>
             <input id="foto" name="foto" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required data-unggah>
-            <small class="bantuan">Foto yang tegak, terang, dan tidak buram memberi hasil terbaik. Di HP, kamera bisa dipakai langsung.</small>
             @error('foto') <small class="galat-bidang">{{ $message }}</small> @enderror
         </div>
 
@@ -38,10 +33,10 @@
             </select>
         </div>
 
-        <label class="centang"><input type="checkbox" name="lampirkan" value="1" @checked(old('lampirkan'))> Lampirkan foto asli sebagai gambar pada setiap soal (berguna bila soal memuat grafik atau gambar)</label>
+        <label class="centang"><input type="checkbox" name="lampirkan" value="1" @checked(old('lampirkan'))> Lampirkan foto asli sebagai gambar soal</label>
 
         <div class="aksi-form">
-            <button class="tombol kecil" type="submit" id="tombolFoto" @disabled($sisa <= 0)><x-ikon nama="otomatis" :ukuran="16" /><span>Baca foto</span></button>
+            <button class="tombol kecil" type="submit" id="tombolFoto" @disabled($sisa <= 0) @if ($sisa <= 0) title="Batas permintaan harian tercapai" @endif><x-ikon nama="otomatis" :ukuran="16" /><span>Baca foto</span></button>
             <a class="tombol kecil garis" href="{{ route('staf.bank-soal.show', $bank) }}">Batal</a>
         </div>
     </form>
