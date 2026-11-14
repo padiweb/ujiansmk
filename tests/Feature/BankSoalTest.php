@@ -530,8 +530,8 @@ class BankSoalTest extends TestCase
         $this->get('/staf/bank-soal/tambah')->assertOk()->assertSee('Matematika');
         $this->get("/staf/bank-soal/{$bank->id}")->assertOk();
         $this->get("/staf/bank-soal/{$bank->id}/ubah")->assertOk();
-        $this->get("/staf/bank-soal/{$bank->id}/soal/tambah?tipe=pg")->assertOk()->assertSee('Opsi jawaban');
-        $this->get("/staf/bank-soal/{$bank->id}/soal/tambah?tipe=esai")->assertOk()->assertSee('Jawaban acuan');
+        $this->get("/staf/bank-soal/{$bank->id}/soal/tambah?tipe=pg")->assertOk()->assertSee('Pilihan Jawaban')->assertSee('Kunci Jawaban');
+        $this->get("/staf/bank-soal/{$bank->id}/soal/tambah?tipe=esai")->assertOk()->assertSee('Jawaban Acuan');
         $this->get("/staf/bank-soal/{$bank->id}/impor")->assertOk();
     }
 

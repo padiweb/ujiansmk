@@ -33,7 +33,7 @@ class LevelSoalTest extends TestCase
     public function test_soal_manual_menyimpan_level_dan_pembahasan_yang_bisa_diubah_lagi(): void
     {
         $this->actingAs($this->admin, 'web');
-        $this->get("/staf/bank-soal/{$this->bank->id}/soal/tambah?tipe=pg")->assertOk()->assertSee('Level kognitif')->assertSee('Pembahasan / keterangan');
+        $this->get("/staf/bank-soal/{$this->bank->id}/soal/tambah?tipe=pg")->assertOk()->assertSee('Level Kognitif')->assertSee('Pembahasan / Keterangan');
 
         $this->post("/staf/bank-soal/{$this->bank->id}/soal", $this->data(['level' => 'L3', 'pembahasan' => 'HTTP dipakai untuk web.']))->assertSessionHasNoErrors();
         $s = Soal::where('pertanyaan', 'Sebutkan nama protokol web.')->first();

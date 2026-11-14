@@ -423,11 +423,11 @@ class OtomatisSoalTest extends TestCase
     {
         $this->actingAs($this->guru, 'web')->get("/staf/bank-soal/{$this->bank->id}/otomatis")
             ->assertOk()->assertSee('belum tersedia di instalasi ini');
-        $this->get("/staf/bank-soal/{$this->bank->id}")->assertOk()->assertDontSee('Susun otomatis');
+        $this->get("/staf/bank-soal/{$this->bank->id}")->assertOk()->assertDontSee('Buat soal dengan AI');
 
         $this->penyedia();
         $this->get("/staf/bank-soal/{$this->bank->id}/otomatis")->assertOk()->assertSee('Susun');
-        $this->get("/staf/bank-soal/{$this->bank->id}")->assertOk()->assertSee('Susun otomatis');
+        $this->get("/staf/bank-soal/{$this->bank->id}")->assertOk()->assertSee('Buat soal dengan AI');
     }
 
     public function test_soal_otomatis_berlabel_dan_berstatus_draf_di_halaman_bank(): void

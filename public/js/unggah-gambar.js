@@ -61,3 +61,51 @@
         if (tanda) { tanda.style.outline = '2px solid #3960FB'; setTimeout(function () { tanda.style.outline = ''; }, 1200); }
     });
 })();
+
+/* Zona unggah gambar (klik atau seret) dengan pratinjau dan tombol buang, seperti aplikasi lama. */
+(function () {
+    'use strict';
+
+    function pasang(zona) {
+        var input = zona.querySelector('input[type=file]');
+        var isi = zona.querySelector('.zona-isi');
+        var pratinjau = zona.querySelector('.zona-pratinjau');
+        if (!input || !isi || !pratinjau) return;
+        var img = pratinjau.querySelector('img');
+        var nama = pratinjau.querySelector('.zona-nama');
+        var hapus = pratinjau.querySelector('.zona-hapus');
+
+        function tampil() {
+            var berkas = input.files && input.files[0];
+            if (!berkas) { pratinjau.hidden = true; isi.hidden = false; return; }
+            var url = URL.createObjectURL(berkas);
+            img.onload = function () { URL.revokeObjectURL(url); };
+            img.src = url;
+            nama.textContent = berkas.name + ' · ' + Math.max(1, Math.round(berkas.size / 1024)) + ' KB';
+            pratinjau.hidden = false;
+            isi.hidden = true;
+        }
+
+        input.addEventListener('change', function () { setTimeout(tampil, 30); /* tunggu pengecilan gambar selesai */ setTimeout(tampil, 600); });
+        hapus.addEventListener('click', function (e) {
+            e.preventDefault(); e.stopPropagation();
+            input.value = '';
+            tampil();
+        });
+        ['dragenter', 'dragover'].forEach(function (n) { zona.addEventListener(n, function (e) { e.preventDefault(); zona.classList.add('seret'); }); });
+        ['dragleave', 'drop'].forEach(function (n) { zona.addEventListener(n, function () { zona.classList.remove('seret'); }); });
+        zona.addEventListener('drop', function (e) {
+            e.preventDefault();
+            var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            if (!f || !/^image\//.test(f.type)) return;
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(f);
+                input.files = dt.files;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            } catch (err) { /* peramban lama: gunakan klik */ }
+        });
+    }
+
+    document.querySelectorAll('.zona-unggah').forEach(pasang);
+})();

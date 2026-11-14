@@ -48,7 +48,7 @@ class KisiKisiTest extends TestCase
         $this->actingAs($this->admin, 'web');
         $this->get("/staf/bank-soal/{$this->bank->id}/kisi-kisi")->assertOk()->assertSee('KISI-KISI SOAL')->assertSee('Matematika')->assertSee('Sebutkan ibu kota Indonesia.')->assertSee('Sebaran level kognitif');
         $this->get("/staf/bank-soal/{$this->bank->id}/kisi-kisi?format=word")->assertOk()->assertHeader('Content-Disposition');
-        $this->get("/staf/bank-soal/{$this->bank->id}")->assertSee('Kisi-kisi');
+        $this->get("/staf/bank-soal/{$this->bank->id}")->assertSee('Cetak Kisi-Kisi');
 
         $lain = User::factory()->create();
         $this->actingAs($lain, 'web')->get("/staf/bank-soal/{$this->bank->id}/kisi-kisi")->assertForbidden();

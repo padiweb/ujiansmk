@@ -3,168 +3,170 @@
 
 @push('skrip')
     @include('staf.partials.skrip-rumus')
+    <script src="{{ asset('js/editor-soal.js') }}?v={{ filemtime(public_path('js/editor-soal.js')) }}" defer></script>
 @endpush
 
+@php
+    $soalPg = $soal->where('tipe', 'pg')->values();
+    $soalEsai = $soal->where('tipe', 'esai')->values();
+    $tabAwal = request('tipe') === 'esai' ? 'esai' : (request('tab') === 'bacaan' ? 'bacaan' : 'pg');
+    $otomatis = \App\Models\PenyediaOtomatis::tersedia();
+@endphp
+
 @section('konten')
-<div class="pita-info">
-    <div class="pita-atas">
-        <a class="tombol-pita" href="{{ route('staf.bank-soal.index') }}"><x-ikon nama="panah-kiri" :ukuran="16" />Kembali</a>
-        <div class="aksi-halaman">
-            <a class="tombol-pita" href="{{ route('staf.bank-soal.edit', $bank) }}"><x-ikon nama="ubah" :ukuran="16" />Ubah</a>
-            <form method="POST" action="{{ route('staf.bank-soal.salin', $bank) }}">
-                @csrf
-                <button class="tombol-pita" type="submit"><x-ikon nama="salin" :ukuran="16" />Salin bank</button>
-            </form>
-            <form method="POST" action="{{ route('staf.bank-soal.destroy', $bank) }}" onsubmit="return confirm('Hapus bank soal ini beserta seluruh soalnya?')">
-                @csrf
-                @method('DELETE')
-                <button class="tombol-pita" type="submit"><x-ikon nama="hapus" :ukuran="16" />Hapus</button>
-            </form>
-        </div>
-    </div>
-    <div class="pita-isi">
-        <div><small>Nama bank</small><b>{{ $bank->nama }}</b></div>
-        <div><small>Mata pelajaran</small><b>{{ $bank->mapel->nama }}</b></div>
-        <div><small>Tingkat</small><b>Kelas {{ $bank->tingkat }}</b></div>
-        <div><small>Pembuat</small><b>{{ $bank->pembuat->nama }}</b></div>
+<div class="remah">
+    <a href="{{ route('staf.bank-soal.index') }}">Bank Soal</a><span>›</span><span>{{ $bank->mapel->nama }} — Kelas {{ $bank->tingkat }}</span>
+</div>
+
+<div class="kepala-halaman">
+    <div>
+        <h1 class="judul-halaman">Editor Soal: {{ $bank->nama }} <span class="judul-redup">(Kelas {{ $bank->tingkat }})</span></h1>
+        <a class="tautan-kembali" href="{{ route('staf.bank-soal.index') }}">← Kembali ke Bank Soal</a>
     </div>
 </div>
 
-<div class="db-angka rata">
-    <div class="db-kotak"><b>{{ $ringkasan['pg'] }}</b><span>Pilihan ganda</span></div>
-    <div class="db-kotak"><b>{{ $ringkasan['esai'] }}</b><span>Esai</span></div>
-    <div class="db-kotak"><b>{{ $ringkasan['draf'] }}</b><span>Masih draf</span></div>
+<div class="strip-bank">
+    <span><strong>Mapel:</strong> {{ $bank->mapel->nama }}</span>
+    <span><strong>Dibuat oleh:</strong> {{ $bank->pembuat->nama }}</span>
+    <span class="strip-aksi">
+        <a class="tombol kecil garis" href="{{ route('staf.bank-soal.edit', $bank) }}"><x-ikon nama="ubah" :ukuran="14" />Ubah</a>
+        <form method="POST" action="{{ route('staf.bank-soal.salin', $bank) }}">@csrf<button class="tombol kecil garis" type="submit"><x-ikon nama="salin" :ukuran="14" />Salin bank</button></form>
+        <form method="POST" action="{{ route('staf.bank-soal.destroy', $bank) }}" onsubmit="return confirm('Hapus bank soal ini beserta seluruh soalnya?')">@csrf @method('DELETE')<button class="tombol kecil bahaya" type="submit"><x-ikon nama="hapus" :ukuran="14" />Hapus</button></form>
+    </span>
 </div>
 
-<form class="bar-saring" method="GET" action="{{ route('staf.bank-soal.show', $bank) }}">
-    <div class="bar-isi">
-        <label for="f-tipe">Jenis soal</label>
-        <select id="f-tipe" name="tipe" onchange="this.form.submit()">
-            <option value="">Semua jenis</option>
-            <option value="pg" @selected(request('tipe') === 'pg')>Pilihan ganda</option>
-            <option value="esai" @selected(request('tipe') === 'esai')>Esai</option>
-        </select>
-    </div>
-    <div class="bar-isi">
-        <label for="f-status">Status</label>
-        <select id="f-status" name="status" onchange="this.form.submit()">
-            <option value="">Semua status</option>
-            <option value="siap" @selected(request('status') === 'siap')>Siap</option>
-            <option value="draf" @selected(request('status') === 'draf')>Draf</option>
-        </select>
-    </div>
-    <div class="bar-aksi">
-        <a class="tombol kecil" href="{{ route('staf.soal.create', [$bank, 'tipe' => 'pg']) }}"><x-ikon nama="tambah" :ukuran="16" />Pilihan ganda</a>
-        <a class="tombol kecil" href="{{ route('staf.soal.create', [$bank, 'tipe' => 'esai']) }}"><x-ikon nama="tambah" :ukuran="16" />Esai</a>
-        @if (\App\Models\PenyediaOtomatis::tersedia())
-            <a class="tombol kecil garis" href="{{ route('staf.bank-soal.otomatis', $bank) }}"><x-ikon nama="otomatis" :ukuran="16" />Susun otomatis</a>
-            <a class="tombol kecil garis" href="{{ route('staf.bank-soal.foto', $bank) }}"><x-ikon nama="unggah" :ukuran="16" />Foto → soal</a>
-        @elseif (auth('web')->user()->role === 'admin')
-            <span class="tombol kecil garis" style="opacity:.6;cursor:help" title="Isi OTOMATIS_DRIVER, OTOMATIS_MODEL, dan OTOMATIS_KUNCI di .env server, lalu jalankan php artisan config:clear."><x-ikon nama="otomatis" :ukuran="16" />Susun otomatis (belum aktif)</span>
-        @endif
-        <a class="tombol kecil garis" href="{{ route('staf.bank-soal.impor.form', $bank) }}"><x-ikon nama="unggah" :ukuran="16" />Impor Excel</a>
-        <a class="tombol kecil garis" href="{{ route('staf.bank-soal.kisi', $bank) }}" data-cetak><x-ikon nama="cetak" :ukuran="16" />Kisi-kisi</a>
-        <a class="tombol kecil garis" href="{{ route('staf.bank-soal.kisi', [$bank, 'format' => 'word']) }}"><x-ikon nama="berkas" :ukuran="16" />Kisi-kisi Word</a>
-        @if ($ringkasan['draf'] > 0)
-            <button class="tombol kecil garis" type="submit" form="formSiapSemua">Tandai {{ $ringkasan['draf'] }} draf siap</button>
-        @endif
-    </div>
-</form>
-@if ($ringkasan['draf'] > 0)
-    <form id="formSiapSemua" method="POST" action="{{ route('staf.bank-soal.siapkan-semua', $bank) }}">@csrf</form>
-@endif
-
-<div class="db-panel" style="margin-bottom:16px">
-    <header>
-        <h3>Bacaan / Stimulus</h3>
-        <a href="{{ route('staf.bacaan.create', $bank) }}">+ Tambah bacaan</a>
-    </header>
-    @if ($daftarBacaan->isEmpty())
-        <p class="sub" style="padding:12px 18px;margin:0">Belum ada bacaan. Tambahkan bacaan agar satu cerita atau pernyataan dapat dipakai beberapa soal.</p>
-    @else
-        <div class="gulir">
-            <table class="tabel tabel-daftar">
-                <thead><tr><th class="no">No</th><th>Bacaan</th><th>Dipakai</th><th class="kanan">Aksi</th></tr></thead>
-                <tbody>
-                    @foreach ($daftarBacaan as $b)
-                        <tr>
-                            <td class="no">{{ $loop->iteration }}</td>
-                            <td><strong>{{ $b->label() }}</strong></td>
-                            <td>{{ $b->soal_count }} soal</td>
-                            <td class="kanan aksi-baris">
-                                <a href="{{ route('staf.soal.create', [$bank, 'tipe' => 'pg', 'bacaan' => $b->id]) }}">+ Soal PG</a>
-                                <a href="{{ route('staf.soal.create', [$bank, 'tipe' => 'esai', 'bacaan' => $b->id]) }}">+ Soal Esai</a>
-                                <a href="{{ route('staf.bacaan.edit', [$bank, $b]) }}">Ubah</a>
-                                <form method="POST" action="{{ route('staf.bacaan.destroy', [$bank, $b]) }}" onsubmit="return confirm('Hapus bacaan ini? Soal yang memakainya tetap ada tanpa bacaan.')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="tautan">Hapus</button>
-                                </form>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+<div class="stat-editor">
+    <div class="stat-kotak"><span class="stat-ikon pg">PG</span><div><b>{{ $ringkasan['pg'] }}</b><small>Soal PG</small></div></div>
+    <div class="stat-kotak"><span class="stat-ikon es">Es</span><div><b>{{ $ringkasan['esai'] }}</b><small>Soal Esai</small></div></div>
+    <div class="stat-kotak"><span class="stat-ikon tot">∑</span><div><b>{{ $ringkasan['pg'] + $ringkasan['esai'] }}</b><small>Total Soal</small></div></div>
+    @if ($ringkasan['pg'] + $ringkasan['esai'] > 0)
+        <a class="stat-kotak stat-tautan" href="{{ route('staf.bank-soal.kisi', $bank) }}" data-cetak><x-ikon nama="cetak" :ukuran="18" />Cetak Kisi-Kisi</a>
+    @endif
+    @if ($ringkasan['draf'] > 0)
+        <form class="stat-kotak stat-draf" method="POST" action="{{ route('staf.bank-soal.siapkan-semua', $bank) }}">@csrf
+            <span><b>{{ $ringkasan['draf'] }}</b> <small>soal masih draf</small></span>
+            <button class="tombol kecil garis" type="submit">Tandai semua siap</button>
+        </form>
     @endif
 </div>
 
-@forelse ($soal as $i => $s)
-    <article class="soal-kartu">
-        <header class="soal-kepala">
-            <span class="soal-no">{{ ($soal->currentPage() - 1) * $soal->perPage() + $i + 1 }}</span>
-            <span class="lencana">{{ $s->tipe === 'pg' ? 'Pilihan ganda' : 'Esai' }}</span>
-            @if ($s->level)<span class="lencana pucat">{{ $s->level }}</span>@endif
-            @if ($s->status === 'draf') <span class="lencana kuning">Draf</span> @endif
-            @if ($s->sumber !== 'manual') <span class="lencana pucat">{{ $s->sumber === 'otomatis' ? 'Otomatis' : 'Impor' }}</span> @endif
-            <span class="soal-bobot">Bobot {{ rtrim(rtrim($s->bobot, '0'), '.') }}</span>
-        </header>
+<div class="tab-soal" role="tablist">
+    <button type="button" class="tab-soal-tombol" data-tab="pg" role="tab"><x-ikon nama="centang" :ukuran="13" />Pilihan Ganda <span class="tab-jumlah">{{ $ringkasan['pg'] }}</span></button>
+    <button type="button" class="tab-soal-tombol" data-tab="esai" role="tab"><x-ikon nama="berkas" :ukuran="13" />Esai <span class="tab-jumlah">{{ $ringkasan['esai'] }}</span></button>
+    <button type="button" class="tab-soal-tombol" data-tab="bacaan" role="tab"><x-ikon nama="info" :ukuran="13" />Bacaan <span class="tab-jumlah">{{ $daftarBacaan->count() }}</span></button>
+</div>
 
-        @if ($s->bacaan)
-            <details class="soal-bacaan">
-                <summary>Bacaan: {{ $s->bacaan->label() }}</summary>
-                <div class="render-rumus">{!! nl2br(e($s->bacaan->teks)) !!}</div>
-                @if ($s->bacaan->gambar)<img class="bacaan-gambar" src="{{ route('staf.bacaan.gambar', $s->bacaan) }}" alt="Gambar bacaan" loading="lazy">@endif
-            </details>
+<div id="editorSoal" data-awal="{{ $tabAwal }}">
+    @foreach (['pg' => [$soalPg, 'pilihan ganda', 'Soal Pilihan Ganda'], 'esai' => [$soalEsai, 'esai', 'Soal Esai']] as $kode => [$daftar, $nama, $tombol])
+        <section class="panel-soal" data-panel="{{ $kode }}" role="tabpanel">
+            @forelse ($daftar as $i => $s)
+                <article class="soal-kartu">
+                    <header class="soal-kepala">
+                        <span class="soal-no {{ $kode }}">{{ $i + 1 }}</span>
+                        <span class="soal-jenis">{{ $kode === 'pg' ? 'PILIHAN GANDA' : 'ESAI' }}</span>
+                        @if ($s->level)<span class="lencana pucat">{{ $s->level }}</span>@endif
+                        @if ($s->status === 'draf')<span class="lencana kuning">Draf</span>@endif
+                        @if ($s->sumber !== 'manual')<span class="lencana pucat">{{ $s->sumber === 'otomatis' ? 'Otomatis' : 'Impor' }}</span>@endif
+                        <span class="soal-aksi-kepala">
+                            <a class="tombol kecil garis" href="{{ route('staf.soal.edit', [$bank, $s]) }}"><x-ikon nama="ubah" :ukuran="13" />Edit</a>
+                            <form method="POST" action="{{ route('staf.soal.destroy', [$bank, $s]) }}" onsubmit="return confirm('Hapus soal {{ $kode === 'pg' ? 'PG' : 'esai' }} nomor {{ $i + 1 }}?')">@csrf @method('DELETE')<button class="tombol kecil bahaya" type="submit"><x-ikon nama="hapus" :ukuran="13" />Hapus</button></form>
+                        </span>
+                    </header>
+
+                    @if ($s->bacaan)
+                        <details class="soal-bacaan">
+                            <summary>Bacaan: {{ $s->bacaan->label() }}</summary>
+                            <div class="render-rumus">{!! nl2br(e($s->bacaan->teks)) !!}</div>
+                            @if ($s->bacaan->gambar)<img class="bacaan-gambar" src="{{ route('staf.bacaan.gambar', $s->bacaan) }}" alt="Gambar bacaan" loading="lazy">@endif
+                        </details>
+                    @endif
+
+                    <div class="soal-teks render-rumus">{!! nl2br(e($s->pertanyaan)) !!}</div>
+                    @if ($s->gambar)<img class="soal-gambar" src="{{ route('staf.soal.gambar', $s) }}" alt="Gambar soal" loading="lazy">@endif
+
+                    @if ($s->tipe === 'pg')
+                        <div class="opsi-grid">
+                            @foreach ($s->opsi as $o)
+                                <div class="opsi-kotak {{ $o->benar ? 'benar' : '' }}">
+                                    <b>{{ $o->label }}.</b>
+                                    <span><span class="render-rumus">{{ $o->teks }}</span>@if ($o->benar) ✓@endif
+                                        @if ($o->gambar)<img class="opsi-gambar-tampil" src="{{ route('staf.soal.gambar-opsi', $o) }}" alt="Gambar opsi {{ $o->label }}" loading="lazy">@endif</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    @elseif ($s->rubrik_esai)
+                        <div class="rubrik"><b>Jawaban acuan:</b> <span class="render-rumus">{!! nl2br(e($s->rubrik_esai)) !!}</span></div>
+                    @endif
+
+                    @if ($s->pembahasan)
+                        <div class="rubrik"><b>Pembahasan:</b> <span class="render-rumus">{!! nl2br(e($s->pembahasan)) !!}</span></div>
+                    @endif
+
+                    <footer class="soal-aksi">
+                        <span class="soal-bobot">Bobot {{ rtrim(rtrim($s->bobot, '0'), '.') }}</span>
+                        <form method="POST" action="{{ route('staf.soal.status', [$bank, $s]) }}">
+                            @csrf
+                            <input type="hidden" name="status" value="{{ $s->status === 'siap' ? 'draf' : 'siap' }}">
+                            <button type="submit" class="tautan">{{ $s->status === 'siap' ? 'Kembalikan ke draf' : 'Tandai siap' }}</button>
+                        </form>
+                    </footer>
+                </article>
+            @empty
+                <div class="soal-kosong">
+                    <p>Belum ada soal {{ $nama }}</p>
+                    <small>Klik tombol <strong>+</strong> di kanan bawah lalu pilih <strong>+ {{ $tombol }}</strong></small>
+                </div>
+            @endforelse
+        </section>
+    @endforeach
+
+    <section class="panel-soal" data-panel="bacaan" role="tabpanel">
+        @if ($daftarBacaan->isEmpty())
+            <div class="soal-kosong">
+                <p>Belum ada bacaan</p>
+                <small>Bacaan atau stimulus dipakai bersama oleh beberapa soal. Klik <strong>+</strong> lalu pilih <strong>+ Bacaan / Stimulus</strong></small>
+            </div>
+        @else
+            <div class="db-panel">
+                <div class="gulir">
+                    <table class="tabel tabel-daftar">
+                        <thead><tr><th class="no">No</th><th>Bacaan</th><th>Dipakai</th><th class="kanan">Aksi</th></tr></thead>
+                        <tbody>
+                            @foreach ($daftarBacaan as $b)
+                                <tr>
+                                    <td class="no">{{ $loop->iteration }}</td>
+                                    <td><strong class="render-rumus">{{ $b->label() }}</strong></td>
+                                    <td>{{ $b->soal_count }} soal</td>
+                                    <td class="kanan aksi-baris">
+                                        <a href="{{ route('staf.soal.create', [$bank, 'tipe' => 'pg', 'bacaan' => $b->id]) }}">+ Soal PG</a>
+                                        <a href="{{ route('staf.soal.create', [$bank, 'tipe' => 'esai', 'bacaan' => $b->id]) }}">+ Soal Esai</a>
+                                        <a href="{{ route('staf.bacaan.edit', [$bank, $b]) }}">Ubah</a>
+                                        <form method="POST" action="{{ route('staf.bacaan.destroy', [$bank, $b]) }}" onsubmit="return confirm('Hapus bacaan ini? Soal yang memakainya tetap ada tanpa bacaan.')">@csrf @method('DELETE')<button type="submit" class="tautan">Hapus</button></form>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         @endif
+    </section>
+</div>
 
-        <div class="soal-teks render-rumus">{!! nl2br(e($s->pertanyaan)) !!}</div>
-
-        @if ($s->gambar)
-            <img class="soal-gambar" src="{{ route('staf.soal.gambar', $s) }}" alt="Gambar soal" loading="lazy">
+<div class="fab-latar" id="fabLatar" hidden></div>
+<div class="fab-grup" id="fabGrup">
+    <div class="fab-daftar" id="fabDaftar" hidden>
+        @if ($otomatis)
+            <a class="fab-butir" href="{{ route('staf.bank-soal.otomatis', $bank) }}"><span class="fab-teks">Buat soal dengan AI</span><span class="fab-ikon-butir ai"><x-ikon nama="otomatis" :ukuran="17" /></span></a>
+            <a class="fab-butir" href="{{ route('staf.bank-soal.foto', $bank) }}"><span class="fab-teks">Foto → soal</span><span class="fab-ikon-butir ai"><x-ikon nama="unggah" :ukuran="17" /></span></a>
+        @elseif (auth('web')->user()->role === 'admin')
+            <span class="fab-butir mati" title="Isi OTOMATIS_DRIVER, OTOMATIS_MODEL, dan OTOMATIS_KUNCI di .env server, lalu jalankan php artisan config:clear."><span class="fab-teks">Buat soal dengan AI (belum aktif)</span><span class="fab-ikon-butir ai"><x-ikon nama="otomatis" :ukuran="17" /></span></span>
         @endif
-
-        @if ($s->tipe === 'pg')
-            <ul class="opsi-daftar">
-                @foreach ($s->opsi as $o)
-                    <li class="{{ $o->benar ? 'benar' : '' }}"><b>{{ $o->label }}.</b> <span class="render-rumus">{{ $o->teks }}</span>@if ($o->benar) <span class="tanda-kunci">kunci</span>@endif @if ($o->gambar)<img class="opsi-gambar-tampil" src="{{ route('staf.soal.gambar-opsi', $o) }}" alt="Gambar opsi {{ $o->label }}" loading="lazy">@endif</li>
-                @endforeach
-            </ul>
-        @elseif ($s->rubrik_esai)
-            <div class="rubrik"><b>Jawaban acuan:</b> {!! nl2br(e($s->rubrik_esai)) !!}</div>
-        @endif
-
-        @if ($s->pembahasan)
-            <div class="rubrik"><b>Pembahasan:</b> {!! nl2br(e($s->pembahasan)) !!}</div>
-        @endif
-
-        <footer class="soal-aksi">
-            <a href="{{ route('staf.soal.edit', [$bank, $s]) }}">Ubah</a>
-            <form method="POST" action="{{ route('staf.soal.status', [$bank, $s]) }}">
-                @csrf
-                <input type="hidden" name="status" value="{{ $s->status === 'siap' ? 'draf' : 'siap' }}">
-                <button type="submit" class="tautan">{{ $s->status === 'siap' ? 'Kembalikan ke draf' : 'Tandai siap' }}</button>
-            </form>
-            <form method="POST" action="{{ route('staf.soal.destroy', [$bank, $s]) }}" onsubmit="return confirm('Hapus soal ini?')">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="tautan">Hapus</button>
-            </form>
-        </footer>
-    </article>
-@empty
-    <div class="kartu kosong-kartu">Belum ada soal. Tambahkan lewat tombol di atas atau impor dari Excel.</div>
-@endforelse
-
-{{ $soal->links('pagination.ringkas') }}
+        <a class="fab-butir" href="{{ route('staf.bank-soal.impor.form', $bank) }}"><span class="fab-teks">Impor Excel</span><span class="fab-ikon-butir xl"><x-ikon nama="unggah" :ukuran="17" /></span></a>
+        <a class="fab-butir" href="{{ route('staf.bacaan.create', $bank) }}"><span class="fab-teks">+ Bacaan / Stimulus</span><span class="fab-ikon-butir bc"><x-ikon nama="info" :ukuran="17" /></span></a>
+        <a class="fab-butir" href="{{ route('staf.soal.create', [$bank, 'tipe' => 'esai']) }}"><span class="fab-teks">+ Soal Esai</span><span class="fab-ikon-butir es"><x-ikon nama="berkas" :ukuran="17" /></span></a>
+        <a class="fab-butir" href="{{ route('staf.soal.create', [$bank, 'tipe' => 'pg']) }}"><span class="fab-teks">+ Soal Pilihan Ganda</span><span class="fab-ikon-butir pg"><x-ikon nama="centang" :ukuran="17" /></span></a>
+    </div>
+    <button type="button" class="fab-utama" id="fabUtama" aria-label="Tambah" aria-expanded="false"><x-ikon nama="tambah" :ukuran="26" /></button>
+</div>
 @endsection

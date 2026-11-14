@@ -32,17 +32,15 @@ class BankSoalController extends Controller
             ->orderBy('nama');
 
         if (filled($q = trim((string) $request->query('q')))) {
-            $kueri->where('nama', 'like', '%'.addcslashes($q, '%_\\').'%');
-        }
-        if (filled($m = $request->query('mapel'))) {
-            $kueri->where('mapel_id', (int) $m);
-        }
-        if (in_array($t = $request->query('tingkat'), Kelas::TINGKAT, true)) {
-            $kueri->where('tingkat', $t);
+            $like = '%'.addcslashes($q, '%_\\').'%';
+            $kueri->where(fn ($w) => $w->where('nama', 'like', $like)->orWhereHas('mapel', fn ($m) => $m->where('nama', 'like', $like)));
         }
 
+        $banks = $kueri->get();
+
         return view('staf.bank-soal.index', [
-            'banks' => $kueri->paginate(20)->withQueryString(),
+            'banks' => $banks,
+            'perTingkat' => collect(Kelas::TINGKAT)->mapWithKeys(fn ($t) => [$t => $banks->where('tingkat', $t)->values()]),
             'daftarMapel' => Mapel::orderBy('nama')->pluck('nama', 'id'),
         ]);
     }
@@ -71,18 +69,11 @@ class BankSoalController extends Controller
     {
         $this->izin($request, $bank);
 
-        $kueri = $bank->soal()->with('opsi', 'bacaan');
-        if (in_array($tipe = $request->query('tipe'), [Soal::PG, Soal::ESAI], true)) {
-            $kueri->where('tipe', $tipe);
-        }
-        if (in_array($status = $request->query('status'), ['draf', 'siap'], true)) {
-            $kueri->where('status', $status);
-        }
 
         return view('staf.bank-soal.show', [
             'bank' => $bank->load('mapel', 'pembuat'),
             'daftarBacaan' => $bank->bacaan()->withCount('soal')->get(),
-            'soal' => $kueri->paginate(25)->withQueryString(),
+            'soal' => $bank->soal()->with('opsi', 'bacaan')->get(),
             'ringkasan' => [
                 'pg' => $bank->soal()->where('tipe', Soal::PG)->count(),
                 'esai' => $bank->soal()->where('tipe', Soal::ESAI)->count(),

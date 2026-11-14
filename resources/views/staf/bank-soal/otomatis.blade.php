@@ -1,8 +1,8 @@
 @extends('layouts.staf')
-@section('judul', 'Susun Soal Otomatis')
+@section('judul', 'Buat Soal dengan AI')
 
 @section('konten')
-<h1 class="judul-halaman">Susun soal otomatis</h1>
+<h1 class="judul-halaman">Buat soal dengan AI</h1>
 <p class="sub">{{ $bank->nama }} · {{ $bank->mapel->nama }} · Kelas {{ $bank->tingkat }}</p>
 
 @if (! $penyedia)
