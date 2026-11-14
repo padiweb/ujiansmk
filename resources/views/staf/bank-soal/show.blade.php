@@ -20,7 +20,7 @@
 
 <div class="kepala-halaman">
     <div>
-        <h1 class="judul-halaman">Editor Soal: {{ $bank->nama }} <span class="judul-redup">(Kelas {{ $bank->tingkat }})</span></h1>
+        <h1 class="judul-halaman judul-kecil">Editor Soal: {{ $bank->nama }} <span class="judul-redup">(Kelas {{ $bank->tingkat }})</span></h1>
         <a class="tautan-kembali" href="{{ route('staf.bank-soal.index') }}">← Kembali ke Bank Soal</a>
     </div>
 </div>

@@ -937,3 +937,76 @@ h1, h2, h3 { color: var(--teks); }
 .form-lanjut > summary { cursor: pointer; font-weight: 700; font-size: .88rem; color: var(--biru-tua); }
 .form-lanjut[open] > summary { margin-bottom: 14px; }
 .aksi-form-akhir { justify-content: flex-end; }
+
+/* ── Tampilan lebih padat (editor soal, daftar bank, formulir soal) ── */
+.judul-kecil { font-size: 1.1rem; }
+.bank-chip { padding: 5px 11px; font-size: .78rem; }
+.bank-cari-isi input { padding: 8px 0; font-size: .88rem; }
+.bank-cari .tombol { padding: 7px 14px; }
+.bank-bagian { margin: 18px 0 10px; }
+.bank-bagian-judul h3 { font-size: .95rem; }
+.bank-hitung { font-size: .68rem; }
+.bank-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.bank-kartu { padding: 12px 14px; gap: 5px; border-top-width: 3px; }
+.bank-lencana { font-size: .6rem; padding: 1px 8px; }
+.bank-judul { font-size: .92rem; }
+.bank-mapel { font-size: .76rem; }
+.bank-hitung-soal { margin: 4px 0; padding: 7px 0; gap: 6px; }
+.bank-hitung-soal b { font-size: 1.05rem; }
+.bank-hitung-soal span { font-size: .58rem; }
+.bank-aksi .tombol { padding: 6px 10px; font-size: .78rem; }
+.fab-bank { right: 22px; bottom: 20px; padding: 9px 16px; font-size: .8rem; }
+.fab-ikon { width: 20px; height: 20px; }
+.remah { font-size: .76rem; margin-bottom: 6px; }
+.tautan-kembali { font-size: .78rem; }
+.strip-bank { padding: 7px 12px; font-size: .8rem; gap: 14px; margin-bottom: 10px; }
+.strip-aksi .tombol { padding: 5px 10px; font-size: .76rem; }
+.stat-editor { gap: 8px; margin-bottom: 12px; }
+.stat-kotak { padding: 8px 12px; gap: 9px; border-radius: 10px; }
+.stat-kotak b { font-size: 1.1rem; }
+.stat-kotak small { font-size: .66rem; }
+.stat-ikon { width: 30px; height: 30px; font-size: .74rem; border-radius: 8px; }
+.stat-tautan { font-size: .78rem; }
+.stat-draf .tombol { padding: 4px 10px; font-size: .74rem; }
+.tab-soal { margin-bottom: 10px; }
+.tab-soal-tombol { padding: 7px 12px; font-size: .8rem; }
+.tab-jumlah { font-size: .66rem; padding: 0 7px; }
+.soal-kartu { margin-top: 10px; }
+.soal-kepala { padding: 8px 14px; gap: 6px; }
+.soal-no { font-size: .76rem; padding: 1px 8px; }
+.soal-jenis { font-size: .62rem; }
+.soal-aksi-kepala .tombol { padding: 4px 10px; font-size: .72rem; }
+.soal-kartu .soal-teks { font-size: .88rem; line-height: 1.6; padding-top: 10px; margin-left: 14px; margin-right: 14px; }
+.soal-kartu .soal-gambar, .soal-kartu .opsi-grid, .soal-kartu .rubrik { margin-left: 14px; margin-right: 14px; }
+.soal-kartu .rubrik { font-size: .82rem; padding: 8px 12px; }
+.opsi-grid { gap: 6px; margin-top: 8px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.opsi-kotak { padding: 6px 11px; font-size: .82rem; border-radius: 8px; }
+.soal-aksi { padding: 7px 14px; font-size: .78rem; margin-top: 10px; }
+.soal-bacaan { font-size: .84rem; margin: 8px 14px 0; padding: 7px 11px; }
+.soal-kosong { padding: 28px 16px; font-size: .86rem; }
+.fab-grup { right: 22px; bottom: 20px; gap: 9px; }
+.fab-daftar { gap: 8px; }
+.fab-teks { padding: 5px 11px; font-size: .78rem; }
+.fab-ikon-butir { width: 34px; height: 34px; }
+.fab-ikon-butir svg { width: 15px; height: 15px; }
+.fab-utama { width: 46px; height: 46px; }
+.fab-utama svg { width: 20px; height: 20px; }
+.form-soal { max-width: 760px; padding: 16px 20px; }
+.form-soal .bidang { margin-bottom: 12px; }
+.form-soal .bidang label, .form-soal .opsi-form-label { font-size: .72rem; }
+.form-soal .bidang input:not([type=checkbox]):not([type=radio]):not([type=file]), .form-soal .bidang select, .form-soal .bidang textarea, .opsi-form input[type=text] { font-size: .86rem; padding: 7px 11px; }
+.form-soal .bidang textarea { line-height: 1.5; }
+.form-soal .bantuan { font-size: .72rem; margin-top: 3px; }
+.zona-unggah { padding: 12px; }
+.zona-isi span { font-size: .82rem; }
+.zona-isi small { font-size: .7rem; }
+.opsi-form-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px 14px; }
+.opsi-lencana { width: 20px; height: 20px; font-size: .66rem; }
+.alat-rumus { padding: 8px 10px; margin-bottom: 12px; }
+.alat-rumus-judul { font-size: .66rem; margin-bottom: 6px; }
+.alat-rumus-baris { gap: 5px; }
+.alat-rumus-baris .tombol { padding: 4px 8px; font-size: .78rem; min-width: 30px; }
+.form-lanjut { padding: 9px 12px; }
+.form-lanjut > summary { font-size: .82rem; }
+.aksi-form-akhir .tombol { padding: 7px 14px; font-size: .82rem; }
+.pratinjau-rumus { font-size: .88rem; padding: 6px 10px; }

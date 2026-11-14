@@ -4,7 +4,7 @@
 @section('konten')
 <div class="kepala-halaman">
     <div>
-        <h1 class="judul-halaman">Bank Soal</h1>
+        <h1 class="judul-halaman judul-kecil">Bank Soal</h1>
         <p class="sub">Kelola repositori soal ujian · {{ number_format($banks->count(), 0, ',', '.') }} bank soal tersedia</p>
     </div>
 </div>

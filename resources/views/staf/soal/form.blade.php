@@ -16,7 +16,7 @@
 
 <div class="kepala-halaman">
     <div>
-        <h1 class="judul-halaman">{{ $judulForm }}</h1>
+        <h1 class="judul-halaman judul-kecil">{{ $judulForm }}</h1>
         <a class="tautan-kembali" href="{{ route('staf.bank-soal.show', $bank) }}#{{ $pg ? 'pg' : 'esai' }}">← Kembali ke Editor Soal</a>
     </div>
 </div>
