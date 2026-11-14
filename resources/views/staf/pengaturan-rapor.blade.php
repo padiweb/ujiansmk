@@ -15,7 +15,7 @@
     <p>Bobot nilai, predikat, dan rentang semester.</p>
 </div>
 
-<form class="kartu formulir" method="POST" action="{{ route('staf.rapor.bobot') }}" id="formBobot" style="max-width:760px">
+<form class="kartu formulir" method="POST" action="{{ route('staf.rapor.bobot') }}" id="formBobot">
     @csrf
     @method('PUT')
     <h2 class="judul-kartu">Bobot nilai (%)</h2>
@@ -50,7 +50,7 @@
     <div class="aksi-form"><button class="tombol kecil" type="submit">Simpan bobot</button></div>
 </form>
 
-<form class="kartu formulir" method="POST" action="{{ route('staf.rapor.skala') }}" style="max-width:760px">
+<form class="kartu formulir" method="POST" action="{{ route('staf.rapor.skala') }}">
     @csrf
     @method('PUT')
     <h2 class="judul-kartu">Skala predikat</h2>
@@ -71,7 +71,7 @@
     <div class="aksi-form"><button class="tombol kecil" type="submit">Simpan skala</button></div>
 </form>
 
-<form class="kartu formulir" method="POST" action="{{ route('staf.rapor.periode') }}" style="max-width:760px">
+<form class="kartu formulir" method="POST" action="{{ route('staf.rapor.periode') }}">
     @csrf
     @method('PUT')
     <h2 class="judul-kartu">Semester</h2>
@@ -97,7 +97,7 @@
     <div class="aksi-form"><button class="tombol kecil" type="submit" @disabled($periode->isEmpty())>Simpan semester</button></div>
 </form>
 
-<form class="kartu formulir" method="POST" action="{{ route('staf.rapor.periode-us') }}" style="max-width:760px;margin-top:16px">
+<form class="kartu formulir" method="POST" action="{{ route('staf.rapor.periode-us') }}" style="margin-top:16px">
     @csrf
     <h2 class="judul-kartu">Semester Ujian Sekolah (kelas XII)</h2>
     @php $us = $periode->where('tipe', 'ujian_sekolah'); @endphp
@@ -121,7 +121,7 @@
     </div>
 </form>
 
-<div class="kartu" style="max-width:760px;margin-top:16px">
+<div class="kartu" style="margin-top:16px">
     <h2 class="judul-kartu">Akses EduWeb ke status rapor</h2>
     @if (session('kunci_api_baru'))
         <div class="pesan-salah catatan" role="status"><x-ikon nama="info" :ukuran="18" /><span>Kunci baru: <code>{{ session('kunci_api_baru') }}</code></span></div>
@@ -150,7 +150,7 @@
     </table>
     <form method="POST" action="{{ route('staf.rapor.klien-baru') }}" class="aksi-form" style="margin-top:10px">
         @csrf
-        <input type="text" name="nama" required maxlength="80" placeholder="Nama (mis. EduWeb)" aria-label="Nama kunci" style="max-width:260px">
+        <input type="text" name="nama" required maxlength="80" placeholder="Nama (mis. EduWeb)" aria-label="Nama kunci">
         <button class="tombol kecil" type="submit">Buat kunci</button>
     </form>
     @error('nama') <div class="pesan-salah" role="alert">{{ $message }}</div> @enderror

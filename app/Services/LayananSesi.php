@@ -117,7 +117,7 @@ class LayananSesi
                 'info_peramban' => mb_substr($ua, 0, 300),
                 'ip' => $request->ip(),
                 'terakhir_aktif' => $mulai,
-                'susunan' => $this->paket->susunan($jadwal),
+                'susunan' => $this->paket->susunan($jadwal, $sesi->siswa->kelas()->whereIn('kelas.id', $jadwal->kelas()->select('kelas.id'))->value('kelas.id')),
             ]);
 
             return $token;

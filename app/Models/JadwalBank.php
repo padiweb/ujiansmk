@@ -11,7 +11,12 @@ class JadwalBank extends Model
 
     protected $table = 'jadwal_bank';
 
-    protected $fillable = ['jadwal_id', 'bank_soal_id', 'jumlah_pg', 'jumlah_esai'];
+    protected $fillable = ['jadwal_id', 'bank_soal_id', 'jumlah_pg', 'jumlah_esai', 'kelas_ids'];
+
+    protected function casts(): array
+    {
+        return ['kelas_ids' => 'array'];
+    }
 
     public function bankSoal(): BelongsTo
     {

@@ -18,6 +18,11 @@ class LayananPenilaian
         $sesi->loadMissing('jadwal.mapel', 'siswa');
         $jadwal = $sesi->jadwal;
         $peta = $this->paket->kunci($jadwal);
+        if ($ids = $sesi->susunan['soal'] ?? null) { // hanya soal yang memang disusun untuk siswa ini (soal per kelas)
+            $ada = array_flip($ids);
+            $peta['pg'] = array_intersect_key($peta['pg'], $ada);
+            $peta['esai'] = array_intersect_key($peta['esai'], $ada);
+        }
         $jawaban = $sesi->jawaban()->pluck('opsi_label', 'soal_id');
 
         $benar = $salah = $kosong = 0;
@@ -65,6 +70,9 @@ class LayananPenilaian
         $hasil ??= HasilUjian::where('sesi_id', $sesi->id)->firstOrFail();
         $jadwal = $sesi->jadwal;
         $esai = $this->paket->kunci($jadwal)['esai']; // soal_id => bobot
+        if ($ids = $sesi->susunan['soal'] ?? null) {
+            $esai = array_intersect_key($esai, array_flip($ids));
+        }
 
         if ($esai === []) {
             $hasil->update(['skor_esai' => null, 'skor_akhir' => $hasil->skor_pg, 'status_koreksi' => 'tanpa_esai']);

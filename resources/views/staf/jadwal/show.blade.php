@@ -76,7 +76,8 @@
     <ul class="petunjuk" style="margin-top:6px">
         @foreach ($j->bank as $jb)
             <li><strong>{{ $jb->bankSoal?->nama ?? '(bank dihapus)' }}</strong> —
-                PG: {{ $jb->jumlah_pg ?? 'semua yang siap' }}, esai: {{ $jb->jumlah_esai ?? 'semua yang siap' }}</li>
+                PG: {{ $jb->jumlah_pg ?? 'semua yang siap' }}, esai: {{ $jb->jumlah_esai ?? 'semua yang siap' }}
+                @if ($jb->kelas_ids !== null) · <span class="lencana">hanya {{ app(\App\Services\LayananBankPerKelas::class)->namaKelas($jb->kelas_ids) }}</span>@endif</li>
         @endforeach
     </ul>
     @if ($j->status !== 'draf')

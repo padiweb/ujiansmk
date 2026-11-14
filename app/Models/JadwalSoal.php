@@ -11,11 +11,11 @@ class JadwalSoal extends Model
 
     protected $table = 'jadwal_soal';
 
-    protected $fillable = ['jadwal_id', 'soal_id', 'urutan', 'bobot'];
+    protected $fillable = ['jadwal_id', 'soal_id', 'urutan', 'bobot', 'untuk_kelas'];
 
     protected function casts(): array
     {
-        return ['bobot' => 'decimal:2'];
+        return ['bobot' => 'decimal:2', 'untuk_kelas' => 'array'];
     }
 
     public function soal(): BelongsTo

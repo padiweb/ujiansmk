@@ -82,7 +82,7 @@
             <button class="tombol kecil" type="submit" id="tombolSusun" @disabled($sisa <= 0) @if ($sisa <= 0) title="Batas permintaan harian tercapai" @endif><x-ikon nama="otomatis" :ukuran="16" /><span>Susun</span></button>
             <a class="tombol kecil garis" href="{{ route('staf.bank-soal.show', $bank) }}">Batal</a>
         </div>
-        <small class="bantuan" id="infoTunggu" hidden>Sedang menyusun soal, biasanya 10–40 detik. Jangan tutup halaman ini.</small>
+        <small class="bantuan" id="infoTunggu" hidden>Sedang menyusun soal, bisa sampai beberapa menit tergantung model. Jangan tutup halaman ini.</small>
     </form>
 
     @push('skrip')

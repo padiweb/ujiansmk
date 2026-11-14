@@ -62,6 +62,9 @@ class LayananJadwal
                     $siap = $siap->shuffle()->take($diminta)->sortBy([['urutan', 'asc'], ['id', 'asc']])->values();
                 }
 
+                foreach ($siap as $s) {
+                    $s->setAttribute('untuk_kelas', $jb->kelas_ids); // null = semua kelas jadwal
+                }
                 $hasil[$kunci] = $hasil[$kunci]->concat($siap);
             }
         }
@@ -108,6 +111,7 @@ class LayananJadwal
             // PG dulu, lalu esai. Nomor urut dari indeks (fungsi panah menangkap variabel dengan salinan).
             $baris = $soal['pg']->concat($soal['esai'])->values()->map(fn (Soal $s, int $i) => [
                 'jadwal_id' => $jadwal->id, 'soal_id' => $s->id, 'urutan' => $i + 1, 'bobot' => $s->bobot,
+                'untuk_kelas' => $s->untuk_kelas ? json_encode(array_values($s->untuk_kelas)) : null,
             ]);
             foreach ($baris->chunk(500) as $potong) {
                 JadwalSoal::insert($potong->all());

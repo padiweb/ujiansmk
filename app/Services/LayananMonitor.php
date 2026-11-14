@@ -204,7 +204,9 @@ class LayananMonitor
             ->where(fn ($q) => $q->whereNotNull('opsi_label')->orWhere(fn ($q2) => $q2->whereNotNull('teks_esai')->where('teks_esai', '!=', '')))
             ->selectRaw('sesi_id, count(*) as jumlah')->groupBy('sesi_id')->pluck('jumlah', 'sesi_id');
 
-        $baris = $sesi->map(function (SesiUjian $s) use ($terakhir, $dijawab, $sekarang, $ambangSenyap, $kelasJadwal) {
+        $perKelas = JadwalSoal::where('jadwal_id', $jadwal->id)->whereNotNull('untuk_kelas')->exists();
+        $totalSemua = JadwalSoal::where('jadwal_id', $jadwal->id)->count();
+        $baris = $sesi->map(function (SesiUjian $s) use ($terakhir, $dijawab, $sekarang, $ambangSenyap, $kelasJadwal, $perKelas, $totalSemua) {
             $kabar = $s->terakhir_aktif ? (int) $s->terakhir_aktif->diffInSeconds($sekarang, true) : null;
             $berjalan = in_array($s->status, [SesiUjian::BERLANGSUNG, SesiUjian::DIBLOKIR], true);
             $p = $terakhir[$s->id] ?? null;
@@ -230,7 +232,7 @@ class LayananMonitor
                 'tambahan' => (int) $s->tambahan_menit,
                 'batas' => $s->batas_selesai?->format('H:i'),
                 'alasan' => $s->alasan_selesai,
-            ];
+            ] + ($perKelas ? ['total_soal' => count($s->susunan['soal'] ?? []) ?: $totalSemua] : []);
         })->sortBy([['nama', 'asc']])->values()->all();
 
         return [

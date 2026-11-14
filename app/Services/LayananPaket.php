@@ -28,6 +28,7 @@ class LayananPaket
                     'bacaan' => $s->bacaan ? ['id' => $s->bacaan->id, 'judul' => $s->bacaan->judul, 'teks' => $s->bacaan->teks, 'gambar' => $this->gambar->urlKunci($jadwal, 'b'.$s->bacaan->id, $s->bacaan->gambar)] : null,
                     'opsi_gambar' => $s->tipe === Soal::PG ? $s->opsi->filter(fn ($o) => $o->gambar)->mapWithKeys(fn ($o) => [$o->label => $this->gambar->urlKunci($jadwal, 'o'.$o->id, $o->gambar)])->all() : [],
                     'id' => $s->id,
+                    'untuk_kelas' => $beku->untuk_kelas,
                     'tipe' => $s->tipe,
                     'pertanyaan' => $s->pertanyaan,
                     'gambar' => $this->gambar->url($jadwal, $s),
@@ -74,9 +75,13 @@ class LayananPaket
      *
      * @return array{soal: list<int>, opsi: array<int,list<string>>}
      */
-    public function susunan(JadwalUjian $jadwal): array
+    public function susunan(JadwalUjian $jadwal, ?int $kelasId = null): array
     {
         $paket = $this->paket($jadwal)['soal'];
+        if ($kelasId !== null) {
+            // Soal khusus kelas lain (bank guru pengampu lain) tidak ikut disusun untuk siswa ini.
+            $paket = array_values(array_filter($paket, fn ($s) => empty($s['untuk_kelas']) || in_array($kelasId, array_map('intval', $s['untuk_kelas']), true)));
+        }
         $pg = collect($paket)->where('tipe', Soal::PG)->values();
         $esai = collect($paket)->where('tipe', Soal::ESAI)->values();
 

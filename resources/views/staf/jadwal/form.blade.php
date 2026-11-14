@@ -17,7 +17,7 @@
     <div class="info" style="margin-top:12px"><x-ikon nama="info" :ukuran="18" /><span>Jadwal aktif: hanya waktu tutup, batas pelanggaran, dan tampilan hasil yang bisa diubah.</span></div>
 @endif
 
-<form class="kartu formulir" method="POST" action="{{ $j ? route('staf.jadwal.update', $j) : route('staf.jadwal.store') }}" id="formJadwal" style="max-width:760px">
+<form class="kartu formulir" method="POST" action="{{ $j ? route('staf.jadwal.update', $j) : route('staf.jadwal.store') }}" id="formJadwal">
     @csrf
     @if ($j) @method('PUT') @endif
 
@@ -88,7 +88,7 @@
 
         <fieldset class="opsi-blok @error('bank_ids') salah @enderror">
             <legend>Bank soal <span class="wajib">*</span></legend>
-            <small class="bantuan" style="margin:0 0 8px">Hanya bank untuk mata pelajaran yang dipilih. Kosongkan jumlah untuk memakai semua soal yang siap.</small>
+            <small class="bantuan" style="margin:0 0 8px">Hanya bank untuk mata pelajaran yang dipilih. Bila ada beberapa guru pengampu, pilih bank tiap guru: soal masing-masing otomatis hanya untuk kelas yang diajarnya.</small>
             @foreach ($daftarBank as $b)
                 <div class="baris-bank" data-mapel="{{ $b->mapel_id }}" data-bank>
                     <label class="centang">

@@ -29,6 +29,8 @@
 
     @include('staf.partials.alat-rumus')
 
+    <div class="form-dua">
+    <div class="kolom">
     <div class="bidang @error('pertanyaan') salah @enderror">
         <label for="pertanyaan">Pertanyaan <span class="wajib">*</span></label>
         <textarea id="pertanyaan" data-rumus name="pertanyaan" rows="5" maxlength="5000" required placeholder="Tulis pertanyaan di sini...">{{ old('pertanyaan', $soal?->pertanyaan) }}</textarea>
@@ -51,9 +53,9 @@
         @error('gambar') <small class="galat-bidang">{{ $message }}</small> @enderror
     </div>
 
+    </div>
+    <div class="kolom">
     @if ($pg)
-        <div class="bidang-garis"></div>
-
         <div class="bidang">
             <label>Pilihan Jawaban</label>
             <div class="opsi-form-grid">
@@ -102,6 +104,9 @@
             @error('rubrik_esai') <small class="galat-bidang">{{ $message }}</small> @enderror
         </div>
     @endif
+
+    </div>
+    </div>
 
     <details class="form-lanjut" @if ($errors->hasAny(['bacaan_id', 'level', 'pembahasan', 'bobot', 'status']) || $soal || $bacaanAwal) open @endif>
         <summary>Pengaturan lain: bacaan, level, bobot, status, pembahasan</summary>

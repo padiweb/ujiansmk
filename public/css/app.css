@@ -1010,3 +1010,16 @@ h1, h2, h3 { color: var(--teks); }
 .form-lanjut > summary { font-size: .82rem; }
 .aksi-form-akhir .tombol { padding: 7px 14px; font-size: .82rem; }
 .pratinjau-rumus { font-size: .88rem; padding: 6px 10px; }
+
+/* ── Isi halaman selebar layar (tidak ada ruang kosong di desktop) ── */
+.utama-isi { max-width: none; }
+.formulir, .form-soal, .pita-form { max-width: none; }
+.form-dua { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 28px; }
+@media (min-width: 1000px) { .form-dua { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.form-dua .kolom { min-width: 0; }
+.form-soal textarea#pertanyaan { min-height: 150px; }
+@media (min-width: 1100px) {
+    /* Formulir umum: dua kolom; judul, tabel, kelompok isian, dan tombol tetap selebar kartu. */
+    .formulir:not(.dua-kolom):not(.form-soal) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; align-items: start; }
+    .formulir:not(.dua-kolom):not(.form-soal) > :is(h2, h3, p, small, .pesan-salah, .pesan-info, .info, .aksi-form, fieldset, table, .gulir, .penuh, label.centang, .opsi-blok, .alat-rumus, dialog, ul, ol, details, [id], .bidang:has(textarea), .bidang:has(input[type=file])) { grid-column: 1 / -1; }
+}

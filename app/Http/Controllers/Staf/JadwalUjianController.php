@@ -266,6 +266,14 @@ class JadwalUjianController extends Controller
                     $v->errors()->add('bank_ids', "Bank \"{$bank->nama}\" untuk kelas {$bank->tingkat}, sedangkan kelas peserta tidak ada yang tingkat itu.");
                 }
             }
+
+            if ($v->errors()->isEmpty()) {
+                try {
+                    app(\App\Services\LayananBankPerKelas::class)->petakan((int) $request->input('mapel_id'), $request->input('kelas_ids'), $request->input('bank_ids'));
+                } catch (\App\Services\KesalahanJadwal $e) {
+                    $v->errors()->add('bank_ids', $e->getMessage());
+                }
+            }
         });
 
         $data = $v->validate();
@@ -324,10 +332,13 @@ class JadwalUjianController extends Controller
     {
         $jadwal->kelas()->sync($data['kelas_ids']);
 
+        $peta = app(\App\Services\LayananBankPerKelas::class)->petakan((int) $data['mapel_id'], $data['kelas_ids'], $data['bank_ids']);
+
         $jadwal->bank()->delete();
         foreach ($data['bank_ids'] as $idBank) {
             $jadwal->bank()->create([
                 'bank_soal_id' => $idBank,
+                'kelas_ids' => $peta[(int) $idBank] ?? null,
                 'jumlah_pg' => filled($data['jumlah_pg'][$idBank] ?? null) ? (int) $data['jumlah_pg'][$idBank] : null,
                 'jumlah_esai' => filled($data['jumlah_esai'][$idBank] ?? null) ? (int) $data['jumlah_esai'][$idBank] : null,
             ]);

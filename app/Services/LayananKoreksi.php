@@ -134,6 +134,11 @@ class LayananKoreksi
         $this->sesi->sapuKedaluwarsa();
 
         $bobot = $this->paket->kunci($jadwal)['esai'];
+        $untuk = \App\Models\JadwalSoal::where('jadwal_id', $jadwal->id)->whereIn('soal_id', array_keys($bobot) ?: [0])->pluck('untuk_kelas', 'soal_id');
+        if ($kelas !== null) {
+            // Soal khusus kelas lain (bank guru pengampu lain) tidak ditampilkan untuk kelas ini.
+            $bobot = array_filter($bobot, fn ($b, $id) => empty($untuk[$id]) || array_intersect($kelas, array_map('intval', (array) $untuk[$id])) !== [], ARRAY_FILTER_USE_BOTH);
+        }
         if ($bobot === []) {
             return [];
         }
@@ -153,7 +158,7 @@ class LayananKoreksi
                 'bobot' => $b,
                 'total' => $total,
                 'dinilai' => (int) ($row->dinilai ?? 0),
-                'kosong' => $selesai->count() - $total,
+                'kosong' => (empty($untuk[$soalId]) ? $selesai->count() : $this->sesiLingkup($jadwal, array_values(array_intersect($kelas ?? array_map('intval', (array) $untuk[$soalId]), array_map('intval', (array) $untuk[$soalId]))))->where('status', SesiUjian::SELESAI)->count()) - $total,
             ];
         }
 

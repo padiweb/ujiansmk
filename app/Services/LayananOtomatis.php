@@ -57,7 +57,7 @@ class LayananOtomatis
         }
         RateLimiter::hit($kunciLaju, 60);
 
-        set_time_limit(180);
+        set_time_limit(300);
 
         try {
             $penyusun = PenyusunSoal::untuk($penyedia);
