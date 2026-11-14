@@ -42,7 +42,7 @@ class LayananOtomatis
      *
      * @throws KesalahanOtomatis pesan aman ditampilkan ke pengguna
      */
-    public function susun(User $user, BankSoal $bank, PermintaanSoal $permintaan): int
+    public function susun(User $user, BankSoal $bank, PermintaanSoal $permintaan, ?array $foto = null): int
     {
         $penyedia = PenyediaOtomatis::aktif()
             ?? throw new KesalahanOtomatis('Fitur otomatis belum tersedia di instalasi ini. Hubungi pengelola aplikasi.');
@@ -60,7 +60,8 @@ class LayananOtomatis
         set_time_limit(180);
 
         try {
-            $mentah = PenyusunSoal::untuk($penyedia)->susun($permintaan);
+            $penyusun = PenyusunSoal::untuk($penyedia);
+            $mentah = $foto ? $penyusun->dariFoto($foto['bytes'], $foto['mime'], $permintaan) : $penyusun->susun($permintaan);
             $soal = $this->penyaring->saring($mentah, $permintaan);
 
             if ($soal === []) {
@@ -75,7 +76,7 @@ class LayananOtomatis
             throw new KesalahanOtomatis('Terjadi galat tak terduga saat menyusun soal. Coba lagi.');
         }
 
-        DB::transaction(function () use ($soal, $bank) {
+        DB::transaction(function () use ($soal, $bank, $foto) {
             $urutan = (int) ($bank->soal()->withTrashed()->max('urutan') ?? 0);
             $petaBacaan = [];
             foreach ($soal as $s) {
@@ -86,7 +87,7 @@ class LayananOtomatis
                 $baru = $bank->soal()->create([
                     'bacaan_id' => $bacaanId,
                     'level' => $s['level'] ?? null,
-                    'pembahasan' => $s['pembahasan'] ?? null,
+                    'pembahasan' => ($s['pembahasan_foto'] ?? null) !== null ? ($s['pembahasan_foto'] ?: null) : ($s['pembahasan'] ?? null),
                     'tipe' => $s['tipe'],
                     'pertanyaan' => $s['pertanyaan'],
                     'bobot' => 1,
@@ -94,6 +95,7 @@ class LayananOtomatis
                     'status' => 'draf',
                     'sumber' => 'otomatis',
                     'urutan' => ++$urutan,
+                    'gambar' => ($foto['lampirkan'] ?? null) ? \App\Support\GambarAman::simpan($foto['lampirkan'], 'foto', 'soal') : null,
                 ]);
                 if ($s['tipe'] === 'pg') {
                     $this->layananSoal->setOpsi($baru, $s['opsi'], $s['kunci']);

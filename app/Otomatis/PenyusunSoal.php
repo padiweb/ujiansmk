@@ -109,12 +109,28 @@ TEKS;
         return $this->bacaJson($this->tanya($instruksi, $badan), 'nilai');
     }
 
+    /**
+     * Baca soal dari FOTO (rumus ditulis LaTeX \( ... \)). Hanya penyedia yang mendukung gambar (Gemini) yang menimpa metode ini.
+     *
+     * @return list<array<string,mixed>> daftar soal mentah (belum disaring)
+     */
+    public function dariFoto(string $bytes, string $mime, PermintaanSoal $p): array
+    {
+        throw new KesalahanOtomatis('Membaca soal dari foto baru didukung untuk penyedia Gemini. Pakai Gemini, atau ketik soalnya.');
+    }
+
     /** Kirim satu permintaan ke penyedia dan kembalikan teks jawaban model. */
     protected function tanya(string $instruksi, string $permintaan): string
     {
+        return $this->kirimBadan($this->badan($instruksi, $permintaan));
+    }
+
+    /** Kirim badan permintaan yang sudah jadi dan kembalikan teks jawaban model. */
+    protected function kirimBadan(array $badan): string
+    {
         try {
             /** @var Response $respons */
-            $respons = $this->klien()->post($this->alamat(), $this->badan($instruksi, $permintaan));
+            $respons = $this->klien()->post($this->alamat(), $badan);
         } catch (ConnectionException) {
             throw new KesalahanOtomatis('Tidak dapat terhubung ke penyedia. Periksa koneksi internet server, lalu coba lagi.');
         }
@@ -186,6 +202,20 @@ TEKS;
         return mb_substr(trim($teks), 0, $maks);
     }
 
+    /**
+     * Model sering menulis LaTeX dengan satu garis miring (\frac) di dalam JSON; \f, \t, \b, \r, \n akan dibaca sebagai karakter
+     * kontrol dan merusak rumus. Perintah LaTeX yang umum digandakan garis miringnya; yang sudah ganda dibiarkan.
+     */
+    protected function perbaikiLatex(string $json): string
+    {
+        $perintah = 'frac|dfrac|sqrt|times|theta|beta|alpha|gamma|delta|Delta|lambda|mu|pi|phi|omega|Omega|sigma|Sigma|neq|ne|leq|geq|le|ge|infty|rightarrow|Rightarrow|leftarrow|Leftrightarrow|left|right|text|textbf|bar|vec|overline|underline|degree|circ|pm|mp|div|cdot|approx|sim|log|ln|sin|cos|tan|lim|sum|prod|int|binom|begin|end|angle|triangle|perp|parallel|ldots|dots|cdots|subset|subseteq|cup|cap|in|notin|to|therefore|because|mathbb|mathrm|boxed|quad|qquad';
+
+        // \( \) \[ \] bukan escape JSON yang sah: gandakan garis miringnya bila hanya satu.
+        $json = preg_replace('/(?<!\\\\)\\\\(?=[()\[\]])/', '\\\\\\\\', $json) ?? $json;
+
+        return preg_replace('/(?<!\\\\)\\\\(?=('.$perintah.')(?![A-Za-z]))/', '\\\\\\\\', $json) ?? $json;
+    }
+
     /** Terima JSON polos atau yang terbungkus pagar kode / teks pembuka. */
     protected function bacaJson(string $teks, string $kunci = 'soal'): array
     {
@@ -195,7 +225,7 @@ TEKS;
             throw new KesalahanOtomatis('Jawaban penyedia tidak berbentuk JSON yang valid. Coba lagi.');
         }
 
-        $data = json_decode(substr($teks, $awal, $akhir - $awal + 1), true, 8, JSON_INVALID_UTF8_SUBSTITUTE);
+        $data = json_decode($this->perbaikiLatex(substr($teks, $awal, $akhir - $awal + 1)), true, 8, JSON_INVALID_UTF8_SUBSTITUTE);
         if (! is_array($data) || ! isset($data[$kunci]) || ! is_array($data[$kunci])) {
             throw new KesalahanOtomatis('Jawaban penyedia tidak berbentuk JSON yang valid. Coba lagi.');
         }

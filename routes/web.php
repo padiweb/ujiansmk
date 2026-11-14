@@ -111,6 +111,8 @@ Route::prefix('staf')->group(function () {
 
                 Route::get('/otomatis', [OtomatisSoalController::class, 'form'])->name('staf.bank-soal.otomatis');
                 Route::post('/otomatis', [OtomatisSoalController::class, 'proses'])->name('staf.bank-soal.otomatis.proses');
+                Route::get('/foto', [OtomatisSoalController::class, 'formFoto'])->name('staf.bank-soal.foto');
+                Route::post('/foto', [OtomatisSoalController::class, 'prosesFoto'])->middleware('throttle:10,1')->name('staf.bank-soal.foto.proses');
 
                 Route::get('/bacaan/tambah', [BacaanSoalController::class, 'create'])->name('staf.bacaan.create');
                 Route::post('/bacaan', [BacaanSoalController::class, 'store'])->name('staf.bacaan.store');

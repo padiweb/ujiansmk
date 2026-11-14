@@ -57,6 +57,36 @@ class GambarAman
         return $nama;
     }
 
+    /**
+     * Foto yang akan dikirim ke penyedia AI: diperiksa sebagai gambar sungguhan, diperkecil, dibuat ulang sebagai JPEG
+     * (metadata dibuang), dan TIDAK disimpan. @return array{0:string,1:string} [isi, tipe mime]
+     */
+    public static function bytesUntukAi(UploadedFile $berkas, string $bidang = 'foto'): array
+    {
+        $jalur = $berkas->getRealPath();
+        $info = $jalur ? @getimagesize($jalur) : false;
+        if (! $info || ! in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
+            throw ValidationException::withMessages([$bidang => 'Berkas bukan gambar JPG, PNG, atau WEBP yang valid.']);
+        }
+        if ($info[0] * $info[1] > self::MAKS_PIKSEL) {
+            throw ValidationException::withMessages([$bidang => 'Dimensi gambar terlalu besar.']);
+        }
+        $gambar = @imagecreatefromstring((string) file_get_contents($jalur));
+        if (! $gambar) {
+            throw ValidationException::withMessages([$bidang => 'Gambar tidak dapat diproses.']);
+        }
+        if (max(imagesx($gambar), imagesy($gambar)) > 2000) {
+            $kecil = imagescale($gambar, imagesx($gambar) >= imagesy($gambar) ? 2000 : (int) round(imagesx($gambar) * 2000 / imagesy($gambar)));
+            if ($kecil) {
+                $gambar = $kecil;
+            }
+        }
+        ob_start();
+        imagejpeg(self::latarPutih($gambar), null, 88);
+
+        return [(string) ob_get_clean(), 'image/jpeg'];
+    }
+
     public static function hapus(?string $jalur): void
     {
         if ($jalur) {

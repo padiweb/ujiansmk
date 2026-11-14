@@ -31,6 +31,49 @@ class OtomatisSoalController extends Controller
         ]);
     }
 
+    public function formFoto(Request $request, BankSoal $bank): View
+    {
+        $this->izin($request, $bank);
+
+        return view('staf.bank-soal.foto', [
+            'bank' => $bank->load('mapel'),
+            'penyedia' => PenyediaOtomatis::aktif(),
+            'sisa' => $this->layanan->sisaHariIni($request->user('web')),
+            'batas' => $this->layanan->batasHarian(),
+        ]);
+    }
+
+    /** Baca soal dari foto. Hasil selalu draf untuk diperiksa guru. */
+    public function prosesFoto(Request $request, BankSoal $bank): RedirectResponse
+    {
+        $this->izin($request, $bank);
+        $data = $request->validate([
+            'foto' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:6144'],
+            'jumlah_opsi' => ['required', Rule::in([4, 5])],
+            'lampirkan' => ['nullable', 'boolean'],
+        ], ['foto.required' => 'Pilih foto soal terlebih dahulu.', 'foto.mimes' => 'Foto harus berformat JPG, PNG, atau WEBP.', 'foto.max' => 'Ukuran foto maksimal 6 MB.'],
+            ['foto' => 'Foto', 'jumlah_opsi' => 'Jumlah opsi']);
+
+        [$isi, $mime] = \App\Support\GambarAman::bytesUntukAi($request->file('foto'));
+        $permintaan = new PermintaanSoal(
+            mapel: $bank->mapel->nama, tingkat: $bank->tingkat, topik: 'foto soal', jumlah: 20, tipe: 'campuran',
+            jumlahOpsi: (int) $data['jumlah_opsi'], kesulitan: 'sedang', dariFoto: true,
+        );
+
+        try {
+            $jumlah = $this->layanan->susun($request->user('web'), $bank, $permintaan, [
+                'bytes' => $isi, 'mime' => $mime, 'lampirkan' => $request->boolean('lampirkan') ? $request->file('foto') : null,
+            ]);
+        } catch (KesalahanOtomatis $e) {
+            return back()->with('gagal', $e->getMessage());
+        }
+
+        AuditLog::catat('soal.foto', "bank {$bank->id}: {$jumlah} soal draf", $request->user('web'));
+
+        return redirect()->route('staf.bank-soal.show', [$bank, 'status' => 'draf'])
+            ->with('berhasil', "{$jumlah} soal dari foto masuk sebagai draf. Periksa rumus, pilihan, dan kunci jawaban setiap soal, lalu tandai siap.");
+    }
+
     public function proses(Request $request, BankSoal $bank): RedirectResponse
     {
         $this->izin($request, $bank);

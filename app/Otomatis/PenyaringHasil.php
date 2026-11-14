@@ -27,7 +27,7 @@ class PenyaringHasil
             }
 
             if ($tipe === 'pg' && $sisaPg > 0) {
-                $soal = $this->soalPg($item, $pertanyaan, $p->jumlahOpsi);
+                $soal = $p->dariFoto ? $this->soalPgFoto($item, $pertanyaan) : $this->soalPg($item, $pertanyaan, $p->jumlahOpsi);
                 if ($soal) {
                     $hasil[] = $soal + $this->bacaan($item) + $this->tambahan($item);
                     $sisaPg--;
@@ -40,6 +40,37 @@ class PenyaringHasil
         }
 
         return $hasil;
+    }
+
+    /**
+     * Soal PG dari foto: urutan opsi dipertahankan (jangan diacak, mis. "semua benar" tetap di tempatnya), 4 atau 5 opsi.
+     * Kunci yang tidak pasti diganti A dan ditandai pada pembahasan agar guru memeriksanya.
+     */
+    private function soalPgFoto(array $item, string $pertanyaan): ?array
+    {
+        $opsi = $item['opsi'] ?? null;
+        if (! is_array($opsi) || ! array_is_list($opsi) || ! in_array(count($opsi), [4, 5], true)) {
+            return null;
+        }
+
+        $susunan = [];
+        foreach ($opsi as $i => $o) {
+            $t = $this->teks($o, 1000);
+            if ($t === null) {
+                return null;
+            }
+            $susunan[self::LABEL[$i]] = trim(preg_replace('/^\s*[A-Ea-e][\.\)]\s+/u', '', $t) ?? $t);
+        }
+
+        $kunci = is_string($item['kunci'] ?? null) ? strtoupper(trim($item['kunci'])) : '';
+        $pasti = isset($susunan[$kunci]);
+        $pembahasan = $this->teks($item['pembahasan'] ?? null, 3000);
+        if (! $pasti) {
+            $kunci = 'A';
+            $pembahasan = '⚠ Kunci jawaban BELUM DIPASTIKAN: periksa lalu pilih kunci yang benar. '.($pembahasan ?? '');
+        }
+
+        return ['tipe' => 'pg', 'pertanyaan' => $pertanyaan, 'opsi' => $susunan, 'kunci' => $kunci, 'rubrik' => null, 'pembahasan_foto' => trim($pembahasan ?? ''), 'kunci_pasti' => $pasti];
     }
 
     /** Level kognitif (L1–L3) dan pembahasan bila sah. @return array<string,mixed> */

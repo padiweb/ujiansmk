@@ -22,6 +22,7 @@ class PermintaanSoal
         public readonly ?string $materi = null,
         public readonly int $soalPerBacaan = 0, // 0 = tanpa bacaan; >0 = tiap bacaan dipakai sekian soal
         public readonly string $level = 'campuran',
+        public readonly bool $dariFoto = false, // soal dibaca dari foto: urutan opsi dipertahankan, kunci boleh belum pasti
     ) {}
 
     /** Jumlah bacaan yang diminta (0 bila tanpa bacaan). */

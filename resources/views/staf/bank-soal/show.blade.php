@@ -58,6 +58,7 @@
         <a class="tombol kecil" href="{{ route('staf.soal.create', [$bank, 'tipe' => 'esai']) }}"><x-ikon nama="tambah" :ukuran="16" />Esai</a>
         @if (\App\Models\PenyediaOtomatis::tersedia())
             <a class="tombol kecil garis" href="{{ route('staf.bank-soal.otomatis', $bank) }}"><x-ikon nama="otomatis" :ukuran="16" />Susun otomatis</a>
+            <a class="tombol kecil garis" href="{{ route('staf.bank-soal.foto', $bank) }}"><x-ikon nama="unggah" :ukuran="16" />Foto → soal</a>
         @elseif (auth('web')->user()->role === 'admin')
             <span class="tombol kecil garis" style="opacity:.6;cursor:help" title="Isi OTOMATIS_DRIVER, OTOMATIS_MODEL, dan OTOMATIS_KUNCI di .env server, lalu jalankan php artisan config:clear."><x-ikon nama="otomatis" :ukuran="16" />Susun otomatis (belum aktif)</span>
         @endif
