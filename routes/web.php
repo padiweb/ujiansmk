@@ -34,6 +34,14 @@ use App\Http\Controllers\Siswa\UjianController;
 use App\Http\Controllers\Staf\SoalController;
 use Illuminate\Support\Facades\Route;
 
+// ── Alamat aplikasi lama (penanda halaman dan aplikasi terpasang di HP) diarahkan ke halaman yang setara ──
+Route::redirect('/mulai.php', '/');
+Route::redirect('/login.php', '/');
+Route::redirect('/index.php', '/');
+Route::redirect('/admin', '/staf/masuk');
+Route::redirect('/admin/login.php', '/staf/masuk');
+Route::redirect('/admin/index.php', '/staf/masuk');
+
 // ── Siswa (login: NISN + kata sandi) ─────────────────────────────────────────
 Route::middleware('guest:siswa')->group(function () {
     Route::get('/', [MasukSiswaController::class, 'tampil'])->name('siswa.masuk');

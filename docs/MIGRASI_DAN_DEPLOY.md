@@ -100,11 +100,20 @@ Webhook EduWeb diarahkan ke alamat di halaman Sistem (hanya tampil bila `MODE_PE
 - [ ] Susun soal otomatis dan pindai foto berfungsi dengan kunci produksi.
 - [ ] Cadangan database harian (hPanel > Backups, atau `mysqldump` terjadwal) dan satu kali pulihkan sebagai uji.
 
-### B6. Peralihan domain (di luar masa ujian)
-1. Ekspor database aplikasi lama dan simpan salinannya di tempat aman (data nilai lama tidak boleh hilang).
-2. Pindahkan aplikasi lama ke `arsip.smkaltan.sch.id` (baca-saja; jangan dimatikan).
-3. Arahkan `ujian.smkaltan.sch.id` ke aplikasi baru; ubah `APP_URL`, jalankan `php artisan optimize`, ubah alamat webhook di EduWeb.
-4. Aplikasi lama baru boleh dimatikan setelah aplikasi baru lancar **dan** seluruh data yang dibutuhkan terbukti sudah ada di aplikasi baru.
+### B6. Peralihan ke ujian.smkaltan.sch.id (di luar masa ujian)
+Aplikasi baru akhirnya berada di `ujian.smkaltan.sch.id` (alamat yang sama dengan aplikasi lama, supaya siswa dan guru tidak perlu alamat baru).
+1. **Cadangan penuh**: ekspor database aplikasi lama (phpMyAdmin) dan unduh folder `uploads` aplikasi lama. Simpan di komputer dan satu tempat lain.
+2. **Aplikasi lama jadi arsip**: buat subdomain `arsip.smkaltan.sch.id` dengan document root ke folder aplikasi lama (folder yang sama; file tidak disalin atau dihapus). Pastikan `https://arsip.smkaltan.sch.id` membuka aplikasi lama dan login berhasil.
+3. **Pasang aplikasi baru di folder alamat utama**: JANGAN menghapus subdomain `ujian` di hPanel. Lewat SSH, pindahkan folder lama dan arahkan alamat itu ke `public` aplikasi baru:
+   `mv <root-ujian> <root-ujian>_lama` lalu `ln -s <folder-aplikasi-baru>/public <root-ujian>`
+   (bila symlink tidak diizinkan: ubah document root lewat hPanel atau minta dukungan Hostinger).
+   Perhatikan: bila langkah 2 memakai folder yang sama dengan `<root-ujian>`, ubah dulu document root arsip ke `<root-ujian>_lama`.
+4. Ubah `.env`: `APP_URL=https://ujian.smkaltan.sch.id`, lalu `php artisan config:clear && php artisan optimize`. Ubah alamat webhook di EduWeb.
+5. Periksa: `https://ujian.smkaltan.sch.id` membuka halaman masuk siswa; alamat lama (`/mulai.php`, `/admin`) dialihkan; masuk admin, guru, siswa uji.
+6. Pengguna yang sudah memasang aplikasi lama di HP otomatis dibersihkan (service worker pengganti di `public/pwa/sw.js`); bila masih tampak lama, minta tutup lalu buka ulang, atau hapus data situs.
+7. Aplikasi lama (arsip) baru boleh dimatikan setelah aplikasi baru lancar **dan** seluruh data yang dibutuhkan terbukti sudah ada di aplikasi baru.
+
+Cara mundur bila bermasalah: hapus symlink, kembalikan `<root-ujian>_lama` ke nama semula; aplikasi lama hidup kembali tanpa perubahan data.
 
 ### B7. Pembaruan berikutnya
 ```
