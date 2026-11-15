@@ -3,11 +3,13 @@
 namespace App\Migrasi;
 
 use App\Models\BankSoal;
+use App\Models\HasilUjianLama;
 use App\Models\Kelas;
 use App\Models\Mapel;
 use App\Models\NilaiRapor;
 use App\Models\NilaiUs;
 use App\Models\Periode;
+use App\Models\RaporSiswa;
 use App\Models\Siswa;
 use App\Models\Soal;
 use App\Models\TahunAjaran;
@@ -75,6 +77,135 @@ class PemindahDataLama
         }
 
         return $this->petaMapel[$idLama];
+    }
+
+    /** Kelas terbaru siswa (bila ada), untuk menautkan data rapor ke kelas. */
+    private function kelasTerbaru(Siswa $siswa): ?Kelas
+    {
+        return $siswa->kelas()->get()->sortByDesc(fn ($k) => $k->tahun_ajaran_id.'-'.$k->id)->first();
+    }
+
+    // ── Absensi, catatan wali, keputusan ────────────────────────────────────
+
+    /** Ubah tulisan bebas aplikasi lama ("Naik Kelas XII TSM", "Tidak Naik", "LULUS") menjadi kode baru. */
+    public static function kodeKeputusan(?string $teks): ?string
+    {
+        $t = mb_strtolower(trim((string) $teks));
+
+        return match (true) {
+            $t === '' => null,
+            str_contains($t, 'tidak naik') || str_contains($t, 'tinggal') => 'tinggal',
+            str_contains($t, 'naik') => 'naik',
+            str_contains($t, 'lulus') => 'lulus',
+            default => null,
+        };
+    }
+
+    public function dataRapor(): void
+    {
+        $tahun = $this->lama()->table('tbl_tahun_akademik')->where(fn ($q) => $q->whereNull('tipe')->orWhere('tipe', '!=', 'US'))->get()->keyBy('id_tahun');
+
+        foreach ($this->lama()->table('tbl_rapor_data')->orderBy('id_siswa')->cursor() as $r) {
+            $t = $tahun[$r->id_tahun] ?? null;
+            if (! $t) {
+                $this->tambah('data_rapor_semester_us_dilewati');
+
+                continue;
+            }
+            $siswa = $this->siswa((int) $r->id_siswa);
+            if (! $siswa) {
+                $this->tambah('data_rapor_siswa_tak_ditemukan');
+
+                continue;
+            }
+            $periode = $this->periode($t);
+            $kelas = $this->kelasTerbaru($siswa);
+            if (! $periode || ! $kelas) {
+                $this->tambah('data_rapor_siswa_tanpa_kelas');
+
+                continue;
+            }
+            if ($periode->rapor_di_sini) {
+                $this->tambah('data_rapor_semester_diisi_di_sini_dilewati');
+
+                continue;
+            }
+
+            $catatan = trim((string) ($r->catatan_wali_kelas ?? ''));
+            $kelasLama = trim((string) ($this->lama()->table('tbl_siswa')->where('id_siswa', $r->id_siswa)->value('kelas') ?? '')) ?: $kelas->nama;
+            $ada = RaporSiswa::where('siswa_id', $siswa->id)->where('periode_id', $periode->id)->first();
+            RaporSiswa::updateOrCreate(
+                ['siswa_id' => $siswa->id, 'periode_id' => $periode->id],
+                [
+                    'kelas_id' => $ada?->kelas_id ?? $kelas->id,
+                    'kelas_nama' => $ada?->kelas_nama ?? $kelasLama,
+                    'sakit' => max(0, (int) $r->sakit), 'izin' => max(0, (int) $r->izin), 'alpa' => max(0, (int) $r->alpa),
+                    'sumber_absensi' => 'impor',
+                    'catatan_wali' => $catatan !== '' ? $catatan : null,
+                    'keputusan' => self::kodeKeputusan($r->keputusan ?? null),
+                    'status' => 'final',
+                    'difinalkan_pada' => $ada?->difinalkan_pada ?? now(),
+                ],
+            );
+            $this->tambah($ada ? 'data_rapor_diperbarui' : 'data_rapor_baru');
+        }
+    }
+
+    // ── Hasil ujian CBT (arsip) ─────────────────────────────────────────────
+
+    public function hasilCbt(): void
+    {
+        $tahun = $this->lama()->table('tbl_tahun_akademik')->get()->keyBy('id_tahun');
+
+        foreach ($this->lama()->table('tbl_nilai')->orderBy('id_nilai')->cursor() as $n) {
+            $t = $tahun[$n->id_tahun] ?? null;
+            if (! $t) {
+                $this->tambah('cbt_semester_tak_dikenal');
+
+                continue;
+            }
+            $siswa = $this->siswa((int) $n->id_siswa);
+            if (! $siswa) {
+                $this->tambah('cbt_siswa_tak_ditemukan');
+
+                continue;
+            }
+            $periode = $this->periodeArsip($t);
+            if (! $periode) {
+                $this->tambah('cbt_semester_tak_dikenal');
+
+                continue;
+            }
+            $kelas = trim((string) ($this->lama()->table('tbl_siswa')->where('id_siswa', $n->id_siswa)->value('kelas') ?? '')) ?: null;
+            $ada = HasilUjianLama::where('id_lama', $n->id_nilai)->exists();
+            HasilUjianLama::updateOrCreate(['id_lama' => $n->id_nilai], [
+                'siswa_id' => $siswa->id, 'periode_id' => $periode->id,
+                'mapel_nama' => mb_substr(trim((string) $n->mapel), 0, 150), 'kelas_nama' => $kelas,
+                'benar' => max(0, (int) $n->jumlah_benar_pg), 'salah' => max(0, (int) $n->jumlah_salah_pg),
+                'skor_pg' => $n->skor_pg, 'skor_esai' => $n->skor_es, 'skor_akhir' => $n->skor_akhir_komposit,
+                'sudah_dikoreksi' => stripos((string) $n->status_koreksi, 'sudah') !== false,
+                'selesai_pada' => $n->waktu_selesai,
+            ]);
+            $this->tambah($ada ? 'cbt_diperbarui' : 'cbt_baru');
+        }
+    }
+
+    /** Semester untuk arsip: semester US lama menjadi semester bertipe Ujian Sekolah. */
+    private function periodeArsip(object $t): ?Periode
+    {
+        if (strcasecmp((string) $t->tipe, 'US') !== 0) {
+            return $this->periode($t);
+        }
+        $tahun = trim((string) $t->nama_tahun);
+        if ($tahun === '') {
+            return null;
+        }
+        $ta = TahunAjaran::firstOrCreate(['nama' => $tahun], ['aktif' => false]);
+
+        return Periode::firstOrCreate(
+            ['tahun_ajaran_id' => $ta->id, 'semester' => stripos((string) $t->semester, 'enap') !== false ? 'genap' : 'ganjil', 'tipe' => 'ujian_sekolah'],
+            ['aktif' => false, 'rapor_di_sini' => false],
+        );
     }
 
     /** Semester lampau yang setara dengan semester lama (dibuat bila belum ada). */

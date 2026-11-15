@@ -2,11 +2,13 @@
 
 ## A. Memindahkan data dari aplikasi lama
 
-Yang dipindahkan: **nilai rapor semester lama**, **nilai Ujian Sekolah (US)**, dan **bank soal**. Data induk (siswa, guru, kelas, mapel) tidak
+Yang dipindahkan: **nilai rapor semester lama** (NP dan NK akhir), **absensi, catatan wali kelas, dan keputusan naik/tinggal** (rapor final), **hasil ujian CBT** (arsip baca-saja, menu Arsip Hasil Ujian), **nilai Ujian Sekolah (US)**, dan **bank soal**.
+Tidak dipindahkan: jawaban esai per siswa, nilai ekstrakurikuler, dan gambar soal. Data induk (siswa, guru, kelas, mapel) tidak
 dipindahkan: datang dari EduWeb. Siswa dicocokkan lewat **NISN**, mapel lewat **nama** (tanpa membedakan huruf besar/kecil).
 
 Aplikasi lama tidak disentuh sama sekali (hanya dibaca dari salinan).
 
+0. Impor ekspor SQL dari MariaDB baru ke MariaDB lama bisa gagal pada collation `utf8mb4_uca1400_ai_ci`; ganti dengan `utf8mb4_unicode_ci` pada salinan berkas SQL (bukan berkas asli).
 1. **Cadangkan** database aplikasi baru (`ujian_baru`) dan jalankan `php artisan migrate` bila ada migrasi baru.
 2. Di aplikasi lama (phpMyAdmin Hostinger) **ekspor** database lama (format SQL). Impor ke database **salinan** di MySQL lokal, misalnya `ujian_lama_salinan`.
    Jangan mengarahkan perintah ini ke database produksi aplikasi lama.
@@ -18,7 +20,7 @@ Aplikasi lama tidak disentuh sama sekali (hanya dibaca dari salinan).
    Baca tabel hasil dan peringatannya (siswa/mapel yang tidak ditemukan, soal yang dilewati).
 6. Bila sudah sesuai, jalankan **simpan**:
    `php artisan migrasi:lama --simpan`
-   Bisa per bagian: `--bagian=nilai`, `--bagian=us`, `--bagian=soal`. Aman diulang (nilai ditimpa pada siswa+semester+mapel yang sama; soal yang sama persis dilewati).
+   Bisa per bagian: `--bagian=nilai`, `--bagian=rapor`, `--bagian=cbt`, `--bagian=us`, `--bagian=soal`. Aman diulang (nilai ditimpa pada siswa+semester+mapel yang sama; soal yang sama persis dilewati).
 7. Kosongkan lagi `LAMA_DB_*` di `.env`.
 
 Catatan:

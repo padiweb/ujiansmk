@@ -16,6 +16,7 @@ use App\Http\Controllers\Staf\MasterDataController;
 use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
 use App\Http\Controllers\Staf\ArsipSiswaController;
+use App\Http\Controllers\Staf\HasilLamaController;
 use App\Http\Controllers\Staf\StatistikController;
 use App\Http\Controllers\Staf\ImporNilaiLampauController;
 use App\Http\Controllers\Staf\KelulusanController;
@@ -187,6 +188,9 @@ Route::prefix('staf')->group(function () {
 
     // Arsip siswa (lulus/keluar): hanya admin.
     Route::get('arsip-siswa', [ArsipSiswaController::class, 'index'])->middleware(['auth:web', 'peran:admin'])->name('staf.arsip.index');
+
+    // Arsip hasil ujian CBT aplikasi lama: hanya admin, hanya baca.
+    Route::get('arsip-hasil-ujian', [HasilLamaController::class, 'index'])->middleware(['auth:web', 'peran:admin'])->name('staf.hasil-lama.index');
 
     // Statistik nilai rapor: hanya admin.
     Route::middleware(['auth:web', 'peran:admin'])->prefix('statistik')->name('staf.statistik.')->group(function () {

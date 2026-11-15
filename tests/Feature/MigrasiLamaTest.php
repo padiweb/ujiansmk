@@ -4,10 +4,13 @@ namespace Tests\Feature;
 
 use App\Migrasi\PemindahDataLama;
 use App\Models\BankSoal;
+use App\Models\HasilUjianLama;
 use App\Models\NilaiRapor;
 use App\Models\NilaiUs;
 use App\Models\Periode;
+use App\Models\RaporSiswa;
 use App\Models\Soal;
+use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -58,6 +61,28 @@ class MigrasiLamaTest extends TestCase
             $t->double('nilai_cbt')->nullable();
             $t->string('keterangan')->nullable();
         });
+        $s->create('tbl_rapor_data', function (Blueprint $t) {
+            $t->integer('id_siswa');
+            $t->integer('id_tahun');
+            $t->integer('sakit')->default(0);
+            $t->integer('izin')->default(0);
+            $t->integer('alpa')->default(0);
+            $t->text('catatan_wali_kelas')->nullable();
+            $t->string('keputusan')->nullable();
+        });
+        $s->create('tbl_nilai', function (Blueprint $t) {
+            $t->integer('id_nilai')->primary();
+            $t->integer('id_siswa');
+            $t->string('mapel');
+            $t->integer('id_tahun');
+            $t->integer('jumlah_benar_pg')->default(0);
+            $t->integer('jumlah_salah_pg')->default(0);
+            $t->double('skor_pg')->nullable();
+            $t->double('skor_es')->nullable();
+            $t->double('skor_akhir_komposit')->nullable();
+            $t->string('status_koreksi')->nullable();
+            $t->string('waktu_selesai')->nullable();
+        });
         $s->create('tbl_soal_pg', function (Blueprint $t) {
             $t->integer('id_soal')->primary();
             $t->string('mapel');
@@ -103,6 +128,16 @@ class MigrasiLamaTest extends TestCase
             ['id_siswa' => 1, 'id_mapel' => 1, 'id_tahun' => 2, 'nilai_ujian' => 99, 'nilai_harian' => 99, 'nilai_tugas_akhir' => 99],   // semester US: bukan rapor
         ]);
         $lama->table('tbl_nilai_us')->insert([['id_siswa' => 1, 'id_mapel' => 1, 'id_tahun' => 2, 'nilai_us' => 92, 'nilai_cbt' => 88, 'keterangan' => 'Ok']]);
+        $this->isi('tbl_rapor_data', [
+            ['id_siswa' => 1, 'id_tahun' => 1, 'sakit' => 1, 'izin' => 2, 'alpa' => 3, 'catatan_wali_kelas' => 'Tingkatkan lagi.', 'keputusan' => 'Naik Kelas XII TSM'],
+            ['id_siswa' => 2, 'id_tahun' => 1, 'sakit' => 9, 'izin' => 9, 'alpa' => 9],   // NISN tak dikenal
+            ['id_siswa' => 1, 'id_tahun' => 2, 'sakit' => 5, 'izin' => 5, 'alpa' => 5],   // semester US: dilewati
+        ]);
+        $this->isi('tbl_nilai', [
+            ['id_nilai' => 10, 'id_siswa' => 1, 'mapel' => 'Matematika', 'id_tahun' => 1, 'jumlah_benar_pg' => 18, 'jumlah_salah_pg' => 2, 'skor_pg' => 90, 'skor_es' => 80, 'skor_akhir_komposit' => 86, 'status_koreksi' => 'Sudah Dikoreksi', 'waktu_selesai' => '2025-12-04 07:45:53'],
+            ['id_nilai' => 11, 'id_siswa' => 1, 'mapel' => 'XII_Gladi Bersih', 'id_tahun' => 2, 'jumlah_benar_pg' => 5, 'jumlah_salah_pg' => 5, 'skor_pg' => 50, 'skor_es' => null, 'skor_akhir_komposit' => 0, 'status_koreksi' => 'Belum Dikoreksi', 'waktu_selesai' => '2025-12-05 08:00:00'],
+            ['id_nilai' => 12, 'id_siswa' => 2, 'mapel' => 'Matematika', 'id_tahun' => 1, 'skor_pg' => 70],   // NISN tak dikenal
+        ]);
         $this->isi('tbl_soal_pg', [
             ['id_soal' => 1, 'mapel' => 'Matematika', 'tingkat_kelas' => 'X', 'pertanyaan' => 'Berapa 2+2?', 'opsi_a' => '3', 'opsi_b' => '4', 'opsi_c' => '5', 'opsi_d' => '6', 'kunci_jawaban' => 'B', 'gambar_pg' => 'x.png'],
             ['id_soal' => 2, 'mapel' => 'Matematika', 'tingkat_kelas' => 'X', 'pertanyaan' => 'Soal tanpa kunci', 'opsi_a' => '1', 'opsi_b' => '2', 'opsi_c' => '3', 'opsi_d' => '4', 'kunci_jawaban' => ''],
@@ -140,6 +175,17 @@ class MigrasiLamaTest extends TestCase
         $this->assertSame([84, 74, 79, 'final'], [$n->np, $n->nk, $n->na, $n->status]);
         $this->assertSame('X TKJ 1', $n->snapshot['kelas_nama']);
         $this->assertSame(1, NilaiRapor::count()); // siswa/mapel tak dikenal dan semester US tidak ikut
+
+        $r = RaporSiswa::where('siswa_id', $this->siswa[0]->id)->sole();
+        $this->assertSame([1, 2, 3, 'Tingkatkan lagi.', 'naik', 'final', 'impor'], [$r->sakit, $r->izin, $r->alpa, $r->catatan_wali, $r->keputusan, $r->status, $r->sumber_absensi]);
+        $this->assertSame(1, RaporSiswa::count());
+
+        $this->assertSame(2, HasilUjianLama::count()); // siswa tak dikenal tidak ikut
+        $a = HasilUjianLama::where('id_lama', 10)->first();
+        $this->assertSame(['Matematika', 'X TKJ 1', 18, 2, 86.0, true], [$a->mapel_nama, $a->kelas_nama, $a->benar, $a->salah, (float) $a->skor_akhir, $a->sudah_dikoreksi]);
+        $b = HasilUjianLama::where('id_lama', 11)->first();
+        $this->assertFalse($b->sudah_dikoreksi);
+        $this->assertSame('ujian_sekolah', $b->periode->tipe); // semester US lama menjadi semester Ujian Sekolah
         $this->assertFalse((bool) $n->periode->rapor_di_sini);
 
         $us = NilaiUs::first();
@@ -151,7 +197,29 @@ class MigrasiLamaTest extends TestCase
 
         // Diulang: tidak ada duplikat.
         $this->artisan('migrasi:lama', ['--simpan' => true])->assertSuccessful();
-        $this->assertSame([1, 1, 2], [NilaiRapor::count(), NilaiUs::count(), $bank->soal()->count()]);
+        $this->assertSame([1, 1, 2, 1, 2], [NilaiRapor::count(), NilaiUs::count(), $bank->soal()->count(), RaporSiswa::count(), HasilUjianLama::count()]);
+    }
+
+    public function test_kode_keputusan_dari_tulisan_bebas(): void
+    {
+        $this->assertSame('naik', PemindahDataLama::kodeKeputusan('Naik Kelas XII Teknik Sepeda Motor'));
+        $this->assertSame('naik', PemindahDataLama::kodeKeputusan('naik'));
+        $this->assertSame('tinggal', PemindahDataLama::kodeKeputusan('Tidak Naik'));
+        $this->assertSame('lulus', PemindahDataLama::kodeKeputusan('LULUS'));
+        $this->assertNull(PemindahDataLama::kodeKeputusan(''));
+        $this->assertNull(PemindahDataLama::kodeKeputusan(null));
+    }
+
+    public function test_arsip_hasil_ujian_hanya_admin_dan_menampilkan_nilai(): void
+    {
+        $this->isiData();
+        $this->artisan('migrasi:lama', ['--simpan' => true, '--bagian' => 'cbt'])->assertSuccessful();
+
+        $this->actingAs(User::factory()->create(), 'web')->get('/staf/arsip-hasil-ujian')->assertForbidden();
+        $this->actingAs($this->admin, 'web')->get('/staf/arsip-hasil-ujian')->assertOk()
+            ->assertSee('Matematika')->assertSee('86')->assertSee('Belum dikoreksi');
+        $this->get('/staf/arsip-hasil-ujian?q='.$this->siswa[0]->nisn)->assertOk()->assertSee('Matematika');
+        $this->get('/staf/arsip-hasil-ujian?q=zzzz')->assertOk()->assertSee('Belum ada hasil ujian lama');
     }
 
     public function test_menolak_bila_database_lama_belum_diatur_atau_bagian_salah(): void

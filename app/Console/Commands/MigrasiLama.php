@@ -10,17 +10,17 @@ use Illuminate\Support\Facades\DB;
 class MigrasiLama extends Command
 {
     protected $signature = 'migrasi:lama
-        {--bagian=semua : nilai, us, soal, atau semua}
+        {--bagian=semua : nilai, rapor, cbt, us, soal, atau semua}
         {--simpan : benar-benar simpan (tanpa ini hanya uji coba: semua dibatalkan di akhir)}
         {--admin= : id pengguna admin yang tercatat sebagai pembuat bank soal (bawaan: admin pertama)}';
 
-    protected $description = 'Pindahkan nilai rapor lama, nilai US, dan bank soal dari database aplikasi lama (hanya dibaca). Bawaan: uji coba.';
+    protected $description = 'Pindahkan nilai rapor lama, absensi dan catatan wali, hasil ujian CBT, nilai US, dan bank soal dari database aplikasi lama (hanya dibaca). Bawaan: uji coba.';
 
     public function handle(PemindahDataLama $pemindah): int
     {
         $bagian = (string) $this->option('bagian');
-        if (! in_array($bagian, ['nilai', 'us', 'soal', 'semua'], true)) {
-            $this->error('Pilihan --bagian: nilai, us, soal, atau semua.');
+        if (! in_array($bagian, ['nilai', 'rapor', 'cbt', 'us', 'soal', 'semua'], true)) {
+            $this->error('Pilihan --bagian: nilai, rapor, cbt, us, soal, atau semua.');
 
             return self::INVALID;
         }
@@ -44,6 +44,14 @@ class MigrasiLama extends Command
             if (in_array($bagian, ['nilai', 'semua'], true)) {
                 $this->line('Memindahkan nilai rapor…');
                 $pemindah->nilaiRapor($admin);
+            }
+            if (in_array($bagian, ['rapor', 'semua'], true)) {
+                $this->line('Memindahkan absensi, catatan wali, dan keputusan…');
+                $pemindah->dataRapor();
+            }
+            if (in_array($bagian, ['cbt', 'semua'], true)) {
+                $this->line('Memindahkan hasil ujian CBT…');
+                $pemindah->hasilCbt();
             }
             if (in_array($bagian, ['us', 'semua'], true)) {
                 $this->line('Memindahkan nilai Ujian Sekolah…');

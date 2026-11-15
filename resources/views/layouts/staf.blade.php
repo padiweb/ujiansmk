@@ -104,6 +104,10 @@
                    class="sisi-a {{ request()->routeIs('staf.arsip.*') ? 'aktif' : '' }}">
                     <x-ikon nama="berkas" /><span class="sisi-lbl">Arsip Siswa</span>
                 </a>
+                <a href="{{ route('staf.hasil-lama.index') }}" data-tip="Arsip Hasil Ujian"
+                   class="sisi-a {{ request()->routeIs('staf.hasil-lama.*') ? 'aktif' : '' }}">
+                    <x-ikon nama="berkas" /><span class="sisi-lbl">Arsip Hasil Ujian</span>
+                </a>
                 <a href="{{ route('staf.kelulusan.daftar', 'mutasi') }}" data-tip="Surat Mutasi"
                    class="sisi-a {{ request()->routeIs('staf.kelulusan.*') && request()->route('jenis') === 'mutasi' ? 'aktif' : '' }}">
                     <x-ikon nama="berkas" /><span class="sisi-lbl">Surat Mutasi</span>
