@@ -28,8 +28,10 @@ class Pelanggaran extends Model
         'screenshot' => ['Mencoba tangkap layar', true],
         'tab_ganda' => ['Tab atau jendela ganda', true],
         'aplikasi_android' => ['Dilaporkan aplikasi Android', true],
-        'devtools' => ['Alat pengembang terdeteksi', false],
-        'halaman_ditinggalkan' => ['Halaman ditutup atau dimuat ulang', false],
+        'devtools' => ['Alat pengembang terdeteksi', true],
+        'halaman_ditinggalkan' => ['Halaman ditutup atau dimuat ulang', true],
+        // Hanya informasi: sematan_dilepas selalu menyertai pindah_tab yang sudah dihitung (akan terhitung dua kali untuk satu kejadian),
+        // dan koneksi_putus bukan perbuatan siswa (jaringan yang buruk tidak boleh memblokir ujian).
         'sematan_dilepas' => ['Sematan layar kemungkinan dilepas', false],
         'koneksi_putus' => ['Koneksi terputus', false],
     ];

@@ -184,7 +184,7 @@ class PelanggaranUjianTest extends TestCase
         $this->siapkanUjian(['batas_pelanggaran' => 1]);
         [$sesi, $token] = $this->mulaiSiap();
 
-        foreach (['devtools', 'halaman_ditinggalkan', 'sematan_dilepas', 'koneksi_putus', 'devtools'] as $jenis) {
+        foreach (['sematan_dilepas', 'koneksi_putus', 'sematan_dilepas'] as $jenis) {
             $this->lapor($sesi, $token, $jenis)->assertOk()->assertJsonPath('dicatat', true)->assertJsonPath('dihitung', false)
                 ->assertJsonPath('status', 'berlangsung')->assertJsonPath('ke', 0);
             $this->maju(10);
@@ -192,7 +192,18 @@ class PelanggaranUjianTest extends TestCase
 
         $this->assertSame(0, $sesi->fresh()->jumlah_pelanggaran);
         $this->assertSame('berlangsung', $sesi->fresh()->status);
-        $this->assertSame(5, Pelanggaran::where('dihitung', false)->count());
+        $this->assertSame(3, Pelanggaran::where('dihitung', false)->count());
+    }
+
+    public function test_alat_pengembang_dan_halaman_ditinggalkan_dihitung_dan_bisa_memblokir(): void
+    {
+        $this->siapkanUjian(['batas_pelanggaran' => 2]);
+        [$sesi, $token] = $this->mulaiSiap();
+
+        $this->lapor($sesi, $token, 'devtools')->assertOk()->assertJsonPath('dihitung', true)->assertJsonPath('ke', 1)->assertJsonPath('status', 'berlangsung');
+        $this->maju(10);
+        $this->lapor($sesi, $token, 'halaman_ditinggalkan')->assertOk()->assertJsonPath('dihitung', true)->assertJsonPath('ke', 2)->assertJsonPath('status', 'diblokir');
+        $this->assertSame('diblokir', $sesi->fresh()->status);
     }
 
     public function test_pelanggaran_informasi_tidak_menggeser_jeda_hitungan(): void
@@ -200,7 +211,7 @@ class PelanggaranUjianTest extends TestCase
         $this->siapkanUjian();
         [$sesi, $token] = $this->mulaiSiap();
 
-        $this->lapor($sesi, $token, 'devtools');
+        $this->lapor($sesi, $token, 'sematan_dilepas');
         $this->maju(1);
         // Pelanggaran yang dihitung tidak terhalang oleh catatan informasi sebelumnya.
         $this->lapor($sesi, $token, 'pindah_tab')->assertJsonPath('dihitung', true);
@@ -306,9 +317,12 @@ class PelanggaranUjianTest extends TestCase
             $this->assertSame($label, Pelanggaran::label($kode));
         }
         $this->assertSame('jenis_asing', Pelanggaran::label('jenis_asing'));
-        // Sinyal yang mudah salah tidak boleh menjadi dasar blokir.
-        foreach (['devtools', 'halaman_ditinggalkan', 'sematan_dilepas', 'koneksi_putus'] as $informasi) {
+        // Hanya dua sinyal yang bukan perbuatan siswa atau sudah terwakili jenis lain yang tidak dihitung.
+        foreach (['sematan_dilepas', 'koneksi_putus'] as $informasi) {
             $this->assertFalse(Pelanggaran::JENIS[$informasi][1]);
+        }
+        foreach (['devtools', 'halaman_ditinggalkan'] as $dihitung) {
+            $this->assertTrue(Pelanggaran::JENIS[$dihitung][1]);
         }
     }
 
