@@ -32,6 +32,9 @@ class PemindahDataLama
     /** @var list<string> */
     public array $catatan = [];
 
+    /** @var array<int,int> siswa_id => jumlah baris rapor yang gagal disimpan */
+    private array $gagalRapor = [];
+
     /** @var array<int,?Siswa> */
     private array $petaSiswa = [];
 
@@ -52,7 +55,8 @@ class PemindahDataLama
 
     private function catat(string $pesan): void
     {
-        if (count($this->catatan) < 200) {
+        // Pesan yang sama tidak diulang (satu siswa/mapel bisa muncul ratusan kali), supaya penyebab lain tetap terlihat.
+        if (count($this->catatan) < 200 && ! in_array($pesan, $this->catatan, true)) {
             $this->catatan[] = $pesan;
         }
     }
@@ -301,7 +305,18 @@ class PemindahDataLama
             $ada = NilaiRapor::where('siswa_id', $siswa->id)->where('mapel_id', $mapel->id)->where('periode_id', $periode->id)->exists();
             $kelasLama = trim((string) ($this->lama()->table('tbl_siswa')->where('id_siswa', $r->id_siswa)->value('kelas') ?? '')) ?: null;
             $h = $this->lampau->simpan($pelaku, $mapel, $kelas, $periode, [$siswa->id => $hasil], $kelasLama, false);
-            $this->tambah($h['disimpan'] === 1 ? ($ada ? 'rapor_diperbarui' : 'rapor_baru') : 'rapor_gagal_simpan');
+            if ($h['disimpan'] === 1) {
+                $this->tambah($ada ? 'rapor_diperbarui' : 'rapor_baru');
+            } else {
+                $this->tambah('rapor_gagal_simpan');
+                $this->gagalRapor[$siswa->id] = ($this->gagalRapor[$siswa->id] ?? 0) + 1;
+                $alasan = match (true) {
+                    ! in_array($siswa->status, ['aktif', 'lulus'], true) => "status siswa '{$siswa->status}' (hanya aktif/lulus yang dapat menerima nilai)",
+                    $h['salah'] > 0 => 'nilai bukan angka 0–100',
+                    default => "siswa tidak termasuk anggota kelas {$kelas->nama} yang berlaku",
+                };
+                $this->catat("Rapor gagal: {$siswa->nama} (NISN {$siswa->nisn}), kelas {$kelas->nama}: {$alasan}.");
+            }
         }
     }
 
@@ -354,7 +369,7 @@ class PemindahDataLama
 
         foreach ($kelompok as $kunci => $isi) {
             [$namaMapel, $tingkat] = explode('|', $kunci);
-            $mapel = Mapel::whereRaw('lower(nama) = ?', [mb_strtolower($namaMapel)])->first();
+            $mapel = Mapel::whereRaw('lower(nama) = ?', [mb_strtolower(self::namaMapelBaru($namaMapel))])->first();
             $tingkat = strtoupper($tingkat);
             if (! $mapel || ! in_array($tingkat, ['X', 'XI', 'XII'], true)) {
                 $this->tambah('soal_mapel_atau_tingkat_tak_dikenal', count($isi['pg'] ?? []) + count($isi['es'] ?? []));
