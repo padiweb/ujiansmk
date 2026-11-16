@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Mapel;
 use App\Models\Siswa;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -78,9 +79,17 @@ class MigrasiPeriksa extends Command
 
         if ($belum === []) {
             $this->info('Semua siswa lama sudah cocok.');
-
-            return self::SUCCESS;
+        } else {
+            $this->tampilkanBelum($belum);
         }
+
+        $this->periksaMapel($lama, $jumlahRapor);
+
+        return self::SUCCESS;
+    }
+
+    private function tampilkanBelum(array $belum): void
+    {
 
         $batas = max(1, (int) $this->option('batas'));
         $this->warn(count($belum).' siswa lama belum cocok. Kolom "Nilai" = rapor / CBT / US (jumlah baris yang akan terlewat).');
@@ -88,8 +97,31 @@ class MigrasiPeriksa extends Command
         if (count($belum) > $batas) {
             $this->line('… dan '.(count($belum) - $batas).' lainnya (naikkan --batas untuk melihat semua).');
         }
+    }
 
-        return self::SUCCESS;
+    /** Mapel lama yang namanya tidak ada di mapel EduWeb: nilainya tidak akan ikut pindah. */
+    private function periksaMapel($lama, $jumlahRapor): void
+    {
+        $namaBaru = Mapel::pluck('nama')->map(fn ($n) => mb_strtolower(trim($n)))->all();
+        $perMapel = $lama->table('tbl_nilai_rapor')->select('id_mapel', DB::raw('count(*) n'))->groupBy('id_mapel')->pluck('n', 'id_mapel');
+        $perMapelUs = $lama->table('tbl_nilai_us')->select('id_mapel', DB::raw('count(*) n'))->groupBy('id_mapel')->pluck('n', 'id_mapel');
+        $tak = [];
+        foreach ($lama->table('tbl_mapel')->orderBy('nama_mapel')->get() as $m) {
+            $rapor = (int) ($perMapel[$m->id_mapel] ?? 0);
+            $us = (int) ($perMapelUs[$m->id_mapel] ?? 0);
+            if (($rapor + $us) === 0 || in_array(mb_strtolower(trim($m->nama_mapel)), $namaBaru, true)) {
+                continue;
+            }
+            $tak[] = [$m->id_mapel, $m->nama_mapel, $rapor, $us];
+        }
+        if ($tak === []) {
+            $this->info('Semua mapel lama yang punya nilai sudah cocok dengan mapel EduWeb.');
+
+            return;
+        }
+        $this->warn(count($tak).' mapel lama punya nilai tetapi namanya tidak ada di EduWeb (nilainya terlewat):');
+        $this->table(['ID lama', 'Nama mapel lama', 'Baris rapor', 'Baris US'], $tak);
+        $this->line('Mapel EduWeb yang ada: '.Mapel::orderBy('nama')->pluck('nama')->implode(' | '));
     }
 
     private function normal(?string $nama): string
