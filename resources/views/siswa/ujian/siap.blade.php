@@ -23,8 +23,20 @@
 
         <form method="POST" action="{{ route('siswa.ujian.mulai', $jadwal) }}" style="margin-top:20px">
             @csrf
+            <input type="hidden" name="mode_tampil" id="mode-tampil" value="peramban">
+            <input type="hidden" name="sentuh" id="sentuh" value="0">
             <button class="tombol" type="submit">{{ $sesi->status === 'belum' ? 'Mulai ujian' : 'Lanjutkan ujian' }}</button>
         </form>
+        <script>
+            (function () {
+                try {
+                    var m = window.matchMedia;
+                    var terpasang = (m && (m('(display-mode: standalone)').matches || m('(display-mode: fullscreen)').matches)) || window.navigator.standalone === true;
+                    document.getElementById('mode-tampil').value = terpasang ? 'pwa' : 'peramban';
+                    document.getElementById('sentuh').value = (navigator.maxTouchPoints || 0) > 1 ? '1' : '0';
+                } catch (e) {}
+            })();
+        </script>
         <div class="login-tautan"><a href="{{ route('siswa.beranda') }}">← Kembali ke beranda</a></div>
     </div>
 </div>

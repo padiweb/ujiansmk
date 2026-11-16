@@ -138,7 +138,14 @@
 
         tr.appendChild(el('td', null, usia(b.kabar)));
 
-        var tdPl = el('td', null, b.platform === 'aplikasi' ? 'Aplikasi' : (b.platform ? 'Peramban' : '—'));
+        var tdPl = el('td');
+        if (b.sistem_operasi || b.nama_peramban) {
+            tdPl.appendChild(el('span', null, [b.sistem_operasi, b.nama_peramban].filter(Boolean).join(' · ')));
+            var modeNama = { aplikasi: 'Aplikasi sekolah', pwa: 'PWA terpasang', peramban: 'Peramban' }[b.mode_tampil];
+            if (modeNama) tdPl.appendChild(el('small', 'bantuan', modeNama));
+        } else {
+            tdPl.appendChild(document.createTextNode(b.platform === 'aplikasi' ? 'Aplikasi' : (b.platform ? 'Peramban' : '—')));
+        }
         if (b.perangkat_dilepas) tdPl.appendChild(el('small', 'bantuan', 'perangkat dilepas, menunggu masuk ulang'));
         tr.appendChild(tdPl);
 

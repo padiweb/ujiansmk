@@ -7,6 +7,7 @@ use App\Models\JadwalUjian;
 use App\Models\Jawaban;
 use App\Models\SesiUjian;
 use App\Models\Siswa;
+use App\Support\InfoPerangkat;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -89,6 +90,7 @@ class LayananSesi
                 $sesi->update([
                     'token_perangkat' => hash('sha256', $baru),
                     'platform' => $this->platform($ua),
+                ] + $this->infoPerangkat($request, $ua) + [
                     'info_peramban' => mb_substr($ua, 0, 300),
                     'ip' => $request->ip(),
                     'terakhir_aktif' => now(),
@@ -114,6 +116,7 @@ class LayananSesi
                 'batas_selesai' => $mulai->copy()->addMinutes($jadwal->durasi_menit + $sesi->tambahan_menit),
                 'token_perangkat' => hash('sha256', $token),
                 'platform' => $this->platform($ua),
+            ] + $this->infoPerangkat($request, $ua) + [
                 'info_peramban' => mb_substr($ua, 0, 300),
                 'ip' => $request->ip(),
                 'terakhir_aktif' => $mulai,
@@ -130,6 +133,14 @@ class LayananSesi
         }
 
         return $token;
+    }
+
+    /** Sistem operasi, peramban, dan cara membuka ujian untuk ditampilkan ke pengawas (hanya informasi). */
+    private function infoPerangkat(Request $request, string $ua): array
+    {
+        $mode = (string) $request->input('mode_tampil');
+
+        return InfoPerangkat::dari($ua, in_array($mode, ['pwa', 'peramban'], true) ? $mode : null, $request->boolean('sentuh'));
     }
 
     private function platform(string $userAgent): string

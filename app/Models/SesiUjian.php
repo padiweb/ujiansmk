@@ -18,7 +18,7 @@ class SesiUjian extends Model
 
     protected $fillable = [
         'jadwal_id', 'siswa_id', 'ruang_id', 'no_meja', 'status', 'mulai_pada', 'batas_selesai', 'selesai_pada', 'alasan_selesai',
-        'jumlah_pelanggaran', 'token_perangkat', 'platform', 'info_peramban', 'ip', 'terakhir_aktif', 'susunan', 'tambahan_menit',
+        'jumlah_pelanggaran', 'token_perangkat', 'platform', 'sistem_operasi', 'nama_peramban', 'mode_tampil', 'info_peramban', 'ip', 'terakhir_aktif', 'susunan', 'tambahan_menit',
     ];
 
     protected $hidden = ['token_perangkat'];
