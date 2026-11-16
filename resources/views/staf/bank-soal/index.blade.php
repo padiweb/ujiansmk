@@ -7,6 +7,9 @@
         <h1 class="judul-halaman judul-kecil">Bank Soal</h1>
         <p class="sub">Kelola repositori soal ujian · {{ number_format($banks->count(), 0, ',', '.') }} bank soal tersedia</p>
     </div>
+    @if (auth('web')->user()->role === \App\Models\User::ADMIN)
+        <a class="tombol kecil garis" href="{{ route('staf.bank-soal.kelengkapan') }}">Kelengkapan bank soal</a>
+    @endif
 </div>
 
 <form class="bank-cari" method="GET" action="{{ route('staf.bank-soal.index') }}">

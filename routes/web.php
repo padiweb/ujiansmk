@@ -17,6 +17,7 @@ use App\Http\Controllers\Staf\MonitorController;
 use App\Http\Controllers\Staf\OtomatisSoalController;
 use App\Http\Controllers\Staf\ArsipSiswaController;
 use App\Http\Controllers\Staf\HasilLamaController;
+use App\Http\Controllers\Staf\KelengkapanBankController;
 use App\Http\Controllers\Staf\StatistikController;
 use App\Http\Controllers\Staf\ImporNilaiLampauController;
 use App\Http\Controllers\Staf\KelulusanController;
@@ -188,6 +189,9 @@ Route::prefix('staf')->group(function () {
 
     // Arsip siswa (lulus/keluar): hanya admin.
     Route::get('arsip-siswa', [ArsipSiswaController::class, 'index'])->middleware(['auth:web', 'peran:admin'])->name('staf.arsip.index');
+
+    // Pemantauan admin: guru dan mapel yang belum membuat bank soal.
+    Route::get('kelengkapan-bank-soal', [KelengkapanBankController::class, 'index'])->middleware(['auth:web', 'peran:admin'])->name('staf.bank-soal.kelengkapan');
 
     // Arsip hasil ujian CBT aplikasi lama: hanya admin, hanya baca.
     Route::get('arsip-hasil-ujian', [HasilLamaController::class, 'index'])->middleware(['auth:web', 'peran:admin'])->name('staf.hasil-lama.index');
