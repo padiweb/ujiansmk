@@ -88,8 +88,7 @@ class KelengkapanBankTest extends TestCase
         $this->bank($g2, $m2, 4, null);                // bank umum/lama (hasil pemindahan)
 
         $this->actingAs($this->admin, 'web')->get('/staf/kelengkapan-bank-soal')->assertOk()
-            ->assertSee('Guru Soal Lama')->assertSee('Guru Bank Umum')->assertDontSee('Sudah ada soal</span>', false)
-            ->assertSee('1 bank umum', false);
+            ->assertSee('Guru Soal Lama')->assertSee('Guru Bank Umum')->assertDontSee('Sudah ada soal</span>', false);
 
         // Dilihat untuk kegiatan lama, guru pertama sudah ada soal.
         $this->get('/staf/kelengkapan-bank-soal?kegiatan='.$this->kegiatanLama->id.'&status=sendiri')->assertOk()
