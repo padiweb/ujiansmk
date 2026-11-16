@@ -45,6 +45,7 @@
                     <div class="bank-kartu-atas"><span class="bank-lencana lencana-{{ $tingkat }}">KELAS {{ $tingkat }}</span>@if ($b->jumlah_draf)<span class="lencana kuning">{{ $b->jumlah_draf }} draf</span>@endif</div>
                     <a class="bank-judul" href="{{ route('staf.bank-soal.show', $b) }}" title="{{ $b->nama }}">{{ $b->nama }}</a>
                     <div class="bank-mapel">{{ $b->mapel->nama }}@if (auth('web')->user()->role === 'admin') · {{ $b->pembuat->nama }}@endif</div>
+                    <div class="bank-mapel">{{ $b->kegiatan ? 'Kegiatan: '.$b->kegiatan->nama : 'Bank umum' }}</div>
                     <div class="bank-hitung-soal">
                         <div><b>{{ $b->jumlah_pg }}</b><span>Pilihan Ganda</span></div>
                         <div><b>{{ $b->jumlah_esai }}</b><span>Esai</span></div>

@@ -14,11 +14,17 @@ class BankSoal extends Model
 
     protected $table = 'bank_soal';
 
-    protected $fillable = ['mapel_id', 'tingkat', 'nama', 'jumlah_opsi_bawaan', 'dibuat_oleh'];
+    protected $fillable = ['mapel_id', 'tingkat', 'kegiatan_id', 'nama', 'jumlah_opsi_bawaan', 'dibuat_oleh'];
 
     public function mapel(): BelongsTo
     {
         return $this->belongsTo(Mapel::class);
+    }
+
+    /** Kegiatan ujian tujuan bank ini; kosong = bank umum/lama. */
+    public function kegiatan(): BelongsTo
+    {
+        return $this->belongsTo(KegiatanUjian::class, 'kegiatan_id');
     }
 
     public function pembuat(): BelongsTo

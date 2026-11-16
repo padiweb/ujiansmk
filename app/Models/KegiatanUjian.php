@@ -24,6 +24,18 @@ class KegiatanUjian extends Model
         return $this->belongsTo(Periode::class);
     }
 
+    /** Kegiatan yang dipakai sebagai pilihan awal: yang aktif terbaru, atau bila tak ada, yang terbaru. */
+    public static function bawaan(): ?self
+    {
+        return static::where('aktif', true)->orderByDesc('id')->first() ?? static::orderByDesc('id')->first();
+    }
+
+    /** Nama kegiatan beserta semesternya, untuk pilihan dan label. */
+    public function labelLengkap(): string
+    {
+        return $this->nama.' ('.($this->periode?->label() ?? '—').')';
+    }
+
     public function jadwal(): HasMany
     {
         return $this->hasMany(JadwalUjian::class, 'kegiatan_id');

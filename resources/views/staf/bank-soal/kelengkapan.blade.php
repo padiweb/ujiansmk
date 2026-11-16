@@ -6,20 +6,33 @@
     <div>
         <h1 class="judul-halaman">Kelengkapan Bank Soal</h1>
         <p class="sub">
-            @if ($tahun)Guru dan mata pelajaran yang diampu pada tahun ajaran {{ $tahun->nama }} · {{ number_format($total, 0, ',', '.') }} baris
-            @else Belum ada tahun ajaran aktif. @endif
+            @if (! $tahun)Belum ada tahun ajaran aktif.
+            @elseif (! $kegiatan)Belum ada kegiatan ujian. Buat kegiatan ujian lebih dulu di menu Jadwal Ujian.
+            @else{{ $kegiatan->nama }} · guru dan mapel yang diampu pada tahun ajaran {{ $tahun->nama }} · {{ number_format($total, 0, ',', '.') }} baris @endif
         </p>
     </div>
     <a class="tombol kecil garis" href="{{ route('staf.bank-soal.index') }}">Kembali ke Bank Soal</a>
 </div>
 
+<form class="bar-saring" method="GET" action="{{ route('staf.bank-soal.kelengkapan') }}">
+    <div class="bar-isi">
+        <label for="f-kegiatan">Kegiatan ujian</label>
+        <select id="f-kegiatan" name="kegiatan" onchange="this.form.submit()">
+            @foreach ($daftarKegiatan as $k)
+                <option value="{{ $k->id }}" @selected($kegiatan && $kegiatan->id === $k->id)>{{ $k->labelLengkap() }}</option>
+            @endforeach
+        </select>
+    </div>
+</form>
+
 <div class="bank-chip-baris">
     @foreach ($labelStatus as $kunci => $label)
-        <a class="bank-chip" href="{{ route('staf.bank-soal.kelengkapan', ['status' => $kunci]) }}">{{ $label }} : <strong>{{ $ringkas[$kunci] }}</strong></a>
+        <a class="bank-chip" href="{{ route('staf.bank-soal.kelengkapan', ['kegiatan' => $kegiatan?->id, 'status' => $kunci]) }}">{{ $label }} : <strong>{{ $ringkas[$kunci] }}</strong></a>
     @endforeach
 </div>
 
 <form class="bar-saring" method="GET" action="{{ route('staf.bank-soal.kelengkapan') }}">
+    <input type="hidden" name="kegiatan" value="{{ $kegiatan?->id }}">
     <div class="bar-isi">
         <label for="f-status">Status</label>
         <select id="f-status" name="status" onchange="this.form.submit()">
@@ -43,7 +56,7 @@
         <input id="f-q" type="search" name="q" value="{{ $q }}" placeholder="Nama guru atau mata pelajaran…" autocomplete="off">
     </div>
     <button class="tombol kecil" type="submit">Cari</button>
-    @if ($status !== '' || $tingkat !== '' || $q !== '')<a class="tautan" href="{{ route('staf.bank-soal.kelengkapan') }}">Atur ulang</a>@endif
+    @if ($status !== '' || $tingkat !== '' || $q !== '')<a class="tautan" href="{{ route('staf.bank-soal.kelengkapan', ['kegiatan' => $kegiatan?->id]) }}">Atur ulang</a>@endif
     <span class="bar-total">Tampil: <b>{{ number_format($baris->count(), 0, ',', '.') }}</b> baris</span>
 </form>
 
@@ -75,5 +88,5 @@
         </table>
     </div>
 </div>
-<p class="sub" style="margin-top:12px">"Ada bank dari pengguna lain" berarti bank soal untuk mata pelajaran dan tingkat itu sudah ada, tetapi dibuat oleh admin atau guru lain (misalnya hasil pemindahan dari aplikasi lama), bukan oleh guru pengampu ini.</p>
+<p class="sub" style="margin-top:12px">Hanya bank soal yang ditautkan ke kegiatan ini yang dihitung. "Ada bank dari pengguna lain" berarti bank untuk mata pelajaran dan tingkat itu pada kegiatan ini dibuat oleh admin atau guru lain, bukan oleh guru pengampu ini.@if ($bankUmum > 0) Ada {{ number_format($bankUmum, 0, ',', '.') }} bank umum (tidak ditautkan ke kegiatan, misalnya hasil pemindahan dari aplikasi lama) yang tidak ikut dihitung; kegiatannya bisa diatur lewat menu Ubah pada bank soal.@endif</p>
 @endsection

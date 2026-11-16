@@ -23,7 +23,7 @@ class BankSoalController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user('web');
-        $kueri = BankSoal::query()->dapatDilihat($user)->with('mapel', 'pembuat')
+        $kueri = BankSoal::query()->dapatDilihat($user)->with('mapel', 'pembuat', 'kegiatan')
             ->withCount([
                 'soal as jumlah_pg' => fn ($q) => $q->where('tipe', Soal::PG),
                 'soal as jumlah_esai' => fn ($q) => $q->where('tipe', Soal::ESAI),
@@ -119,6 +119,7 @@ class BankSoalController extends Controller
         }
 
         $baru = $this->layanan->salinBank($bank, $user, mb_substr($bank->nama, 0, 138).' (salinan)');
+        $baru->update(['kegiatan_id' => \App\Models\KegiatanUjian::bawaan()?->id]); // salinan dipakai untuk kegiatan yang sedang berjalan
         AuditLog::catat('banksoal.salin', "dari {$bank->id} ke {$baru->id}", $user);
 
         return redirect()->route('staf.bank-soal.show', $baru)->with('berhasil', 'Bank disalin. Ubah nama dan soalnya sesuai kebutuhan.');
@@ -164,6 +165,8 @@ class BankSoalController extends Controller
             'jumlah_opsi_bawaan' => ['required', Rule::in([4, 5])],
         ];
 
+        $aturan['kegiatan_id'] = ['nullable', Rule::exists('kegiatan_ujian', 'id')];
+
         return $baru
             ? $aturan + ['mapel_id' => ['required', Rule::exists('mapel', 'id')], 'tingkat' => ['required', Rule::in(Kelas::TINGKAT)]]
             : $aturan;
@@ -171,7 +174,7 @@ class BankSoalController extends Controller
 
     private function nama(): array
     {
-        return ['nama' => 'Nama bank', 'jumlah_opsi_bawaan' => 'Jumlah opsi', 'mapel_id' => 'Mata pelajaran', 'tingkat' => 'Tingkat'];
+        return ['nama' => 'Nama bank', 'jumlah_opsi_bawaan' => 'Jumlah opsi', 'mapel_id' => 'Mata pelajaran', 'tingkat' => 'Tingkat', 'kegiatan_id' => 'Kegiatan ujian'];
     }
 
     /** Guru hanya melihat mapel yang diampunya di tahun ajaran aktif. */
@@ -182,6 +185,10 @@ class BankSoalController extends Controller
             $mapel->whereIn('id', collect($this->layanan->pasanganDiampu($user))->pluck(0)->unique());
         }
 
-        return ['daftarMapel' => $mapel->pluck('nama', 'id')];
+        return [
+            'daftarMapel' => $mapel->pluck('nama', 'id'),
+            'daftarKegiatan' => \App\Models\KegiatanUjian::with('periode.tahunAjaran')->orderByDesc('id')->get(),
+            'kegiatanBawaan' => \App\Models\KegiatanUjian::bawaan()?->id,
+        ];
     }
 }

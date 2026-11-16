@@ -54,6 +54,18 @@
         </div>
     @endif
 
+    <div class="bidang @error('kegiatan_id') salah @enderror">
+        <label for="kegiatan_id">Untuk kegiatan ujian</label>
+        <select id="kegiatan_id" name="kegiatan_id">
+            <option value="">— Bank umum (tidak untuk kegiatan tertentu) —</option>
+            @foreach ($daftarKegiatan as $k)
+                <option value="{{ $k->id }}" @selected((string) old('kegiatan_id', $bank ? $bank->kegiatan_id : $kegiatanBawaan) === (string) $k->id)>{{ $k->labelLengkap() }}</option>
+            @endforeach
+        </select>
+        <small class="bantuan">Admin memantau kelengkapan bank soal per kegiatan, jadi pilih kegiatan yang bank ini dipersiapkan untuknya.</small>
+        @error('kegiatan_id') <small class="galat-bidang">{{ $message }}</small> @enderror
+    </div>
+
     <div class="bidang @error('jumlah_opsi_bawaan') salah @enderror">
         <label for="jumlah_opsi_bawaan">Jumlah opsi pilihan ganda (bawaan)</label>
         <select id="jumlah_opsi_bawaan" name="jumlah_opsi_bawaan">
