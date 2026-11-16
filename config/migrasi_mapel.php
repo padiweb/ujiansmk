@@ -15,5 +15,8 @@ return [
         // Penulisan berbeda, mapelnya sama:
         'Pendidikan Jasmani Olahraga dan Kesehatan' => 'Pendidikan Jasmani, Olahraga, dan Kesehatan',
         'Projek Kreatif dan Kewirausahaan' => 'Kreativitas, Inovasi, dan Kewirausahaan',
+        // Penulisan di tabel soal lama (tulisan bebas, termasuk salah ketik):
+        'Pendidikan Agama Islam' => 'Pendidikan Agama Islam dan Budi Pekerti',
+        'Keahlian Desian Produksi Busana' => 'Keahlian Desain dan Produksi Busana',
     ],
 ];
