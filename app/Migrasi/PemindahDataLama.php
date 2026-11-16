@@ -73,10 +73,23 @@ class PemindahDataLama
     {
         if (! array_key_exists($idLama, $this->petaMapel)) {
             $nama = trim((string) $this->lama()->table('tbl_mapel')->where('id_mapel', $idLama)->value('nama_mapel'));
-            $this->petaMapel[$idLama] = $nama === '' ? null : Mapel::whereRaw('lower(nama) = ?', [mb_strtolower($nama)])->first();
+            $this->petaMapel[$idLama] = $nama === '' ? null : Mapel::whereRaw('lower(nama) = ?', [mb_strtolower(self::namaMapelBaru($nama))])->first();
         }
 
         return $this->petaMapel[$idLama];
+    }
+
+    /** Nama mapel lama diterjemahkan ke nama di EduWeb lewat config/migrasi_mapel.php (bila ada pemetaannya). */
+    public static function namaMapelBaru(string $nama): string
+    {
+        $nama = trim($nama);
+        foreach ((array) config('migrasi_mapel.pemetaan', []) as $lama => $baru) {
+            if (mb_strtolower(trim((string) $lama)) === mb_strtolower($nama)) {
+                return trim((string) $baru);
+            }
+        }
+
+        return $nama;
     }
 
     /** Kelas terbaru siswa (bila ada), untuk menautkan data rapor ke kelas. */

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Migrasi\PemindahDataLama;
 use App\Models\Mapel;
 use App\Models\Siswa;
 use Illuminate\Console\Command;
@@ -109,10 +110,10 @@ class MigrasiPeriksa extends Command
         foreach ($lama->table('tbl_mapel')->orderBy('nama_mapel')->get() as $m) {
             $rapor = (int) ($perMapel[$m->id_mapel] ?? 0);
             $us = (int) ($perMapelUs[$m->id_mapel] ?? 0);
-            if (($rapor + $us) === 0 || in_array(mb_strtolower(trim($m->nama_mapel)), $namaBaru, true)) {
+            if (($rapor + $us) === 0 || in_array(mb_strtolower(PemindahDataLama::namaMapelBaru($m->nama_mapel)), $namaBaru, true)) {
                 continue;
             }
-            $tak[] = [$m->id_mapel, $m->nama_mapel, $rapor, $us];
+            $tak[] = [$m->id_mapel, $m->nama_mapel, $rapor, $us, $this->saran($m->nama_mapel)];
         }
         if ($tak === []) {
             $this->info('Semua mapel lama yang punya nilai sudah cocok dengan mapel EduWeb.');
@@ -120,8 +121,29 @@ class MigrasiPeriksa extends Command
             return;
         }
         $this->warn(count($tak).' mapel lama punya nilai tetapi namanya tidak ada di EduWeb (nilainya terlewat):');
-        $this->table(['ID lama', 'Nama mapel lama', 'Baris rapor', 'Baris US'], $tak);
+        $this->table(['ID lama', 'Nama mapel lama', 'Baris rapor', 'Baris US', 'Mirip di EduWeb'], $tak);
         $this->line('Mapel EduWeb yang ada: '.Mapel::orderBy('nama')->pluck('nama')->implode(' | '));
+    }
+
+    /** Mapel EduWeb yang namanya paling mirip (untuk bahan pemetaan), atau "-" bila tidak ada yang cukup mirip. */
+    private function saran(string $nama): string
+    {
+        $n = mb_strtolower(trim($nama));
+        $terbaik = '-';
+        $skor = 0.0;
+        foreach (Mapel::pluck('nama') as $kandidat) {
+            $k = mb_strtolower(trim($kandidat));
+            similar_text($n, $k, $persen);
+            if (str_contains($k, $n) || str_contains($n, $k)) {
+                $persen = max($persen, 85);
+            }
+            if ($persen > $skor) {
+                $skor = $persen;
+                $terbaik = $kandidat;
+            }
+        }
+
+        return $skor >= 78 ? $terbaik : '-';
     }
 
     private function normal(?string $nama): string
