@@ -168,6 +168,21 @@ class SinkronEduwebTest extends TestCase
         $this->assertNotNull($p->eduweb_sinkron_penuh_pada);
     }
 
+    public function test_kelompok_mapel_dibaca_dari_nama_grup_eduweb(): void
+    {
+        $this->edu['subjects'] = [
+            ['id' => 1, 'name' => 'Pendidikan Pancasila', 'code' => 'PP', 'major_id' => null, 'group' => 'Kelompok Nasional'],
+            ['id' => 2, 'name' => 'Informatika', 'code' => 'IT', 'major_id' => null, 'group' => 'Kelompok Kejuruan'],
+            ['id' => 3, 'name' => 'Bahasa Jawa', 'code' => 'BJW', 'major_id' => null, 'group' => 'Muatan Lokal'],
+            ['id' => 4, 'name' => 'Tanpa Grup', 'code' => 'TG', 'major_id' => null, 'group' => null],
+        ];
+        $this->pasangEdu();
+
+        $this->artisan('eduweb:sinkron')->assertSuccessful();
+
+        $this->assertSame(['A', 'C3', 'ML', 'A'], Mapel::orderBy('id')->pluck('kelompok')->all());
+    }
+
     public function test_tanggal_semester_mengikuti_eduweb_dan_diperbarui_saat_berubah(): void
     {
         $this->sinkron();

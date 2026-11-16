@@ -156,6 +156,26 @@ class UjianSekolahTest extends TestCase
         $this->assertSame([null, null, 84.0, 86.0, null, null], $t['kelompok']['UMUM'][0]['slot']);
     }
 
+    public function test_transkrip_mengelompokkan_dan_mengurutkan_mapel_seperti_aplikasi_lama(): void
+    {
+        $s = $this->lulusan[0];
+        $daftar = [
+            ['JPN', 'Bahasa Jepang', 'C3'], ['INF', 'Informatika', 'C3'], ['JWA', 'Bahasa Jawa', 'ML'], ['SJH', 'Sejarah', 'A'],
+            ['PAI', 'Pendidikan Agama Islam dan Budi Pekerti', 'A'], ['MAT', 'Matematika Dasar', 'C3'], ['PPK', 'Pendidikan Pancasila', 'A'],
+        ];
+        foreach ($daftar as [$kode, $nama, $kel]) {
+            $m = Mapel::create(['kode' => $kode, 'nama' => $nama, 'kelompok' => $kel, 'kkm' => 75]);
+            $this->nilai($s, $m, '2025/2026', 'ganjil', 80);
+        }
+
+        $t = app(LayananTranskrip::class)->susun($s);
+
+        $this->assertSame(['UMUM', 'KEJURUAN', 'ML'], array_keys($t['kelompok']));
+        $this->assertSame(['Pendidikan Agama Islam dan Budi Pekerti', 'Pendidikan Pancasila', 'Sejarah'], array_column($t['kelompok']['UMUM'], 'nama'));
+        $this->assertSame(['Matematika Dasar', 'Informatika', 'Bahasa Jepang'], array_column($t['kelompok']['KEJURUAN'], 'nama'));
+        $this->assertSame(['Bahasa Jawa'], array_column($t['kelompok']['ML'], 'nama'));
+    }
+
     // ── Cetak ───────────────────────────────────────────────────────────────
 
     public function test_admin_mencetak_transkrip_dan_skl_dan_guru_ditolak(): void

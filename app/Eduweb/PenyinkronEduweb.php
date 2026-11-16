@@ -826,6 +826,11 @@ class PenyinkronEduweb
         if (preg_match('/kelompok\s+(C[123]|[AB])\b/i', $teks, $m)) {
             return strtoupper($m[1]);
         }
+        // Nama grup EduWeb bebas ("Kelompok Nasional", "Kelompok Kejuruan", ...): kejuruan masuk C3
+        // (urutan di dalam kelompok ditentukan nama mapel), selainnya (umum/nasional/tak diketahui) A.
+        if (preg_match('/kejuruan|keahlian|produktif/i', $teks)) {
+            return 'C3';
+        }
 
         return 'A';
     }

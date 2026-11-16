@@ -122,12 +122,16 @@ class LayananTranskrip
                 continue;
             }
 
-            $k = $m['mapel']->kelompok;
-            $grup = str_starts_with((string) $k, 'C') ? 'KEJURUAN' : ($k === 'ML' ? 'ML' : 'UMUM');
-            $kelompok[$grup][] = ['nama' => $m['mapel']->nama_skl ?: $m['mapel']->nama, 'slot' => $slot, 'us' => $nilaiUs, 'rata' => $rata, 'urut' => $m['mapel']->nama];
+            // Seperti aplikasi lama: A/B = Umum, ML = Muatan Lokal, selainnya (C1-C3) = Kejuruan.
+            $k = strtoupper(trim((string) $m['mapel']->kelompok));
+            $grup = in_array($k, ['A', 'B'], true) ? 'UMUM' : ($k === 'ML' ? 'ML' : 'KEJURUAN');
+            $kelompok[$grup][] = [
+                'nama' => $m['mapel']->nama_skl ?: $m['mapel']->nama, 'slot' => $slot, 'us' => $nilaiUs, 'rata' => $rata,
+                'urut' => [LayananCetakRapor::URUT_KELOMPOK[$k] ?? 7, LayananCetakRapor::urutNama($m['mapel']->nama), mb_strtolower($m['mapel']->nama)],
+            ];
         }
         foreach ($kelompok as $g => $baris) {
-            usort($baris, fn ($a, $b) => strcmp($a['urut'], $b['urut']));
+            usort($baris, fn ($a, $b) => $a['urut'] <=> $b['urut']);
             $kelompok[$g] = array_map(fn ($b) => array_diff_key($b, ['urut' => 1]), $baris);
         }
         $kelompok = array_filter($kelompok);

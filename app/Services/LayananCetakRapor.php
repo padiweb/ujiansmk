@@ -14,10 +14,10 @@ class LayananCetakRapor
 {
     public function __construct(private LayananNilaiRapor $nilaiRapor) {}
 
-    private const URUT_KELOMPOK = ['A' => 1, 'B' => 2, 'ML' => 3, 'C1' => 4, 'C2' => 5, 'C3' => 6];
+    public const URUT_KELOMPOK = ['A' => 1, 'B' => 2, 'ML' => 3, 'C1' => 4, 'C2' => 5, 'C3' => 6];
 
     /** Urutan mapel dalam satu kelompok (kata kunci nama mapel; yang tidak cocok di akhir). */
-    private const URUT_NAMA = [
+    public const URUT_NAMA = [
         'agama', 'pancasila', 'indonesia', 'sejarah', 'seni', ['olahraga', 'pjok'], 'matematika', 'inggris', 'informatika',
         ['ipas', 'ilmu pengetahuan'], 'dasar', ['konsentrasi', 'keahlian'], ['kreativitas', 'kewirausahaan'],
         ['pkl', 'kerja industri', 'kerja lapangan'], 'jepang',
@@ -140,7 +140,7 @@ class LayananCetakRapor
         return [$beri($baris->where('umum', true)->values()), $beri($baris->where('umum', false)->values())];
     }
 
-    private function urutNama(string $nama): int
+    public static function urutNama(string $nama): int
     {
         $n = mb_strtolower($nama);
         foreach (self::URUT_NAMA as $i => $kata) {
