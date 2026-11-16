@@ -12,6 +12,8 @@
 */
 return [
     'pemetaan' => [
-        // 'Pendidikan Agama Islam' => 'Pendidikan Agama Islam dan Budi Pekerti',
+        // Penulisan berbeda, mapelnya sama:
+        'Pendidikan Jasmani Olahraga dan Kesehatan' => 'Pendidikan Jasmani, Olahraga, dan Kesehatan',
+        'Projek Kreatif dan Kewirausahaan' => 'Kreativitas, Inovasi, dan Kewirausahaan',
     ],
 ];
