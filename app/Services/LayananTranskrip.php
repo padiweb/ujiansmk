@@ -11,7 +11,9 @@ use Illuminate\Support\Collection;
 /**
  * Menyusun transkrip nilai dan SKL: nilai rapor enam semester (X-1 sampai XII-2) dari semua semester reguler siswa,
  * ditambah nilai Ujian Sekolah. Rumus mengikuti aplikasi lama:
- *  - Tiga tahun ajaran terakhir yang punya nilai dipetakan dari belakang: terakhir = XII, sebelumnya = XI, lalu X.
+ *  - Tingkat tiap semester dihitung dari kelas siswa yang terbaru: tahun ajaran yang sama dengan kelas itu = tingkat kelas itu,
+ *    satu tahun sebelumnya = satu tingkat di bawahnya. Jadi siswa kelas XI yang baru punya nilai kelas X tidak tampil di kolom XII.
+ *  - Siswa tanpa kelas: tiga tahun ajaran terakhir yang punya nilai dipetakan dari belakang: terakhir = XII, sebelumnya = XI, lalu X.
  *  - Nilai rata-rata mapel = rata-rata semester yang bernilai > 0; bila tidak ada, memakai nilai US.
  *  - Nilai US mengisi kolom XII-2 hanya bila kolom itu kosong dan mapelnya ditandai "masuk XII-2" saat Input US.
  */
@@ -30,6 +32,47 @@ class LayananTranskrip
     }
 
     /**
+     * Awal slot (0 = X-1, 2 = XI-1, 4 = XII-1) tiap tahun ajaran. Dijangkarkan ke kelas siswa yang terbaru bila ada;
+     * bila tidak, tiga tahun ajaran terakhir dipetakan dari belakang (XII, XI, X).
+     *
+     * @param  list<string>  $tahun
+     * @return array<string,int>
+     */
+    private function petaTahun(Siswa $siswa, array $tahun): array
+    {
+        $kelas = $siswa->kelas()->with('tahunAjaran')->get()
+            ->filter(fn ($k) => $k->tahunAjaran && in_array($k->tingkat, ['X', 'XI', 'XII'], true))
+            ->sortByDesc(fn ($k) => $this->tahunAwal($k->tahunAjaran->nama) * 100000 + $k->id)->first();
+
+        $peta = [];
+        if ($kelas) {
+            $tingkat = ['X' => 0, 'XI' => 1, 'XII' => 2][$kelas->tingkat];
+            $awal = $this->tahunAwal($kelas->tahunAjaran->nama);
+            foreach ($tahun as $nama) {
+                $t = $tingkat - ($awal - $this->tahunAwal($nama));
+                if ($t >= 0 && $t <= 2) {
+                    $peta[$nama] = $t * 2;
+                }
+            }
+
+            return $peta;
+        }
+
+        $tahun = array_slice($tahun, -3);
+        $jumlah = count($tahun);
+        foreach ($tahun as $i => $nama) {
+            $peta[$nama] = (3 - $jumlah + $i) * 2; // 3 tahun: 0,2,4; 2 tahun: 2,4; 1 tahun: 4
+        }
+
+        return $peta;
+    }
+
+    private function tahunAwal(string $nama): int
+    {
+        return (int) substr(trim($nama), 0, 4);
+    }
+
+    /**
      * @return array{
      *   kelompok:array<string,list<array{nama:string,slot:array<int,?float>,us:?float,rata:?float}>>,
      *   rata_slot:array<int,?float>, rata_us:?float, rata_semua:?float, ada:bool
@@ -41,14 +84,8 @@ class LayananTranskrip
             ->whereHas('periode', fn ($p) => $p->where('tipe', 'reguler'))->get();
         $us = NilaiUs::with('mapel')->where('siswa_id', $siswa->id)->get();
 
-        // Tiga tahun ajaran terakhir dipetakan dari belakang: XII, XI, X.
         $tahun = $rapor->map(fn ($n) => $n->periode->tahunAjaran->nama)->unique()->sort()->values()->all();
-        $tahun = array_slice($tahun, -3);
-        $dasar = [];
-        $jumlah = count($tahun);
-        foreach ($tahun as $i => $nama) {
-            $dasar[$nama] = (3 - $jumlah + $i) * 2; // 3 tahun: 0,2,4; 2 tahun: 2,4; 1 tahun: 4
-        }
+        $dasar = $this->petaTahun($siswa, $tahun);
 
         $mapel = []; // kunci: id mapel
         foreach ($rapor as $n) {

@@ -128,6 +128,34 @@ class UjianSekolahTest extends TestCase
         $this->assertSame(77.0, $t['kelompok']['KEJURUAN'][0]['rata']); // hanya US (dari CBT): rata = nilai US
     }
 
+    public function test_transkrip_siswa_kelas_xi_dengan_nilai_tahun_lalu_tampil_di_kolom_x_bukan_xii(): void
+    {
+        $tahunBaru = TahunAjaran::firstOrCreate(['nama' => '2026/2027']);
+        $xi = Kelas::create(['tahun_ajaran_id' => $tahunBaru->id, 'tingkat' => 'XI', 'nama' => 'XI TKJ']);
+        $s = Siswa::factory()->create();
+        $s->kelas()->attach($xi->id, ['status' => 'aktif']);
+        $this->nilai($s, $this->mtk, '2025/2026', 'ganjil', 80); // nilai kelas X (tahun lalu)
+        $this->nilai($s, $this->mtk, '2025/2026', 'genap', 82);
+
+        $t = app(LayananTranskrip::class)->susun($s);
+
+        $this->assertSame([80.0, 82.0, null, null, null, null], $t['kelompok']['UMUM'][0]['slot']);
+    }
+
+    public function test_transkrip_siswa_kelas_xii_dengan_nilai_tahun_lalu_tampil_di_kolom_xi(): void
+    {
+        $tahunBaru = TahunAjaran::firstOrCreate(['nama' => '2026/2027']);
+        $xii = Kelas::create(['tahun_ajaran_id' => $tahunBaru->id, 'tingkat' => 'XII', 'nama' => 'XII TSM']);
+        $s = Siswa::factory()->create();
+        $s->kelas()->attach($xii->id, ['status' => 'aktif']);
+        $this->nilai($s, $this->mtk, '2025/2026', 'ganjil', 84);
+        $this->nilai($s, $this->mtk, '2025/2026', 'genap', 86);
+
+        $t = app(LayananTranskrip::class)->susun($s);
+
+        $this->assertSame([null, null, 84.0, 86.0, null, null], $t['kelompok']['UMUM'][0]['slot']);
+    }
+
     // ── Cetak ───────────────────────────────────────────────────────────────
 
     public function test_admin_mencetak_transkrip_dan_skl_dan_guru_ditolak(): void
