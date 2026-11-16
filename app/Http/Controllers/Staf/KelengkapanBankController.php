@@ -85,7 +85,6 @@ class KelengkapanBankController extends Controller
             'tahun' => $tahun, 'kegiatan' => $kegiatan, 'daftarKegiatan' => $daftarKegiatan,
             'baris' => $tampil, 'ringkas' => $ringkas, 'status' => $status, 'tingkat' => $tingkat, 'q' => $q,
             'labelStatus' => self::STATUS, 'total' => $baris->count(),
-            'bankUmum' => BankSoal::whereNull('kegiatan_id')->count(),
         ]);
     }
 }

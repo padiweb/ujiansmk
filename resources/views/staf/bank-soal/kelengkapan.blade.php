@@ -7,8 +7,8 @@
         <h1 class="judul-halaman">Kelengkapan Bank Soal</h1>
         <p class="sub">
             @if (! $tahun)Belum ada tahun ajaran aktif.
-            @elseif (! $kegiatan)Belum ada kegiatan ujian. Buat kegiatan ujian lebih dulu di menu Jadwal Ujian.
-            @else{{ $kegiatan->nama }} · guru dan mapel yang diampu pada tahun ajaran {{ $tahun->nama }} · {{ number_format($total, 0, ',', '.') }} baris @endif
+            @elseif (! $kegiatan)Belum ada kegiatan ujian.
+            @else{{ $kegiatan->nama }} · {{ number_format($total, 0, ',', '.') }} baris @endif
         </p>
     </div>
     <a class="tombol kecil garis" href="{{ route('staf.bank-soal.index') }}">Kembali ke Bank Soal</a>
@@ -88,5 +88,4 @@
         </table>
     </div>
 </div>
-<p class="sub" style="margin-top:12px">Hanya bank soal yang ditautkan ke kegiatan ini yang dihitung. "Ada bank dari pengguna lain" berarti bank untuk mata pelajaran dan tingkat itu pada kegiatan ini dibuat oleh admin atau guru lain, bukan oleh guru pengampu ini.@if ($bankUmum > 0) Ada {{ number_format($bankUmum, 0, ',', '.') }} bank umum (tidak ditautkan ke kegiatan, misalnya hasil pemindahan dari aplikasi lama) yang tidak ikut dihitung; kegiatannya bisa diatur lewat menu Ubah pada bank soal.@endif</p>
 @endsection

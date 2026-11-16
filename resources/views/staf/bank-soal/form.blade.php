@@ -62,7 +62,6 @@
                 <option value="{{ $k->id }}" @selected((string) old('kegiatan_id', $bank ? $bank->kegiatan_id : $kegiatanBawaan) === (string) $k->id)>{{ $k->labelLengkap() }}</option>
             @endforeach
         </select>
-        <small class="bantuan">Admin memantau kelengkapan bank soal per kegiatan, jadi pilih kegiatan yang bank ini dipersiapkan untuknya.</small>
         @error('kegiatan_id') <small class="galat-bidang">{{ $message }}</small> @enderror
     </div>
 
