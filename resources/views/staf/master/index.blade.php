@@ -54,7 +54,7 @@
 @else
 <div class="kartu tanpa-padding">
     <div class="gulir">
-        <table class="tabel tabel-daftar tabel-kartu">
+        <table class="tabel tabel-daftar">
             <thead>
                 <tr>
                     <th class="no">No</th>

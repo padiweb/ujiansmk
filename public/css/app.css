@@ -1252,3 +1252,49 @@ h1, h2, h3 { color: var(--teks); }
     .lembar-riwayat li.lembar-muat::before { content: none; }
     .lembar-riwayat small { color: var(--teks-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
 }
+
+/* Tabel yang tetap berupa tabel di HP: dibuat padat, kolom kurang penting disembunyikan, tombol tidak terpotong */
+@media (max-width: 768px) {
+    .aksi-halaman .tombol { flex: 1 1 auto; white-space: normal; text-align: center; }
+    .gulir { -webkit-overflow-scrolling: touch; }
+    .tabel:not(.tabel-kartu) { font-size: .82rem; }
+    .tabel:not(.tabel-kartu) th { padding: 8px 10px; font-size: .64rem; letter-spacing: .03em; }
+    .tabel:not(.tabel-kartu) td, .db-panel .tabel:not(.tabel-kartu) td { padding: 9px 10px; }
+    .db-panel .tabel:not(.tabel-kartu) th { padding: 8px 10px; }
+    .tabel:not(.tabel-kartu) td strong { font-size: .86rem; }
+    .tabel:not(.tabel-kartu) .no { width: 32px; min-width: 32px; padding-left: 6px; padding-right: 6px; }
+    .tabel:not(.tabel-kartu) .kanan { white-space: normal; }
+    .aksi-baris { flex-wrap: wrap; justify-content: flex-end; gap: 6px 14px; }
+    .aksi-baris a, .aksi-baris .tautan { min-height: 36px; display: inline-flex; align-items: center; }
+    .tabel .lencana { padding: 2px 8px; font-size: .68rem; }
+
+    /* Pilih ruang (Monitor): Ruang | Siswa | Mengerjakan | Terblokir | Pantau */
+    .padat-ruang th:nth-child(1), .padat-ruang td:nth-child(1),
+    .padat-ruang th:nth-child(3), .padat-ruang td:nth-child(3),
+    .padat-ruang th:nth-child(4), .padat-ruang td:nth-child(4) { display: none; }
+    .padat-ruang th:nth-child(n+5), .padat-ruang td:nth-child(n+5) { text-align: center; }
+    .padat-ruang th:last-child, .padat-ruang td:last-child { text-align: right; }
+
+    /* Jadwal aktif (Monitor): Jadwal | Waktu | Mengerjakan | Terblokir | Pantau */
+    .padat-jadwal th:nth-child(1), .padat-jadwal td:nth-child(1),
+    .padat-jadwal th:nth-child(3), .padat-jadwal td:nth-child(3),
+    .padat-jadwal th:nth-child(5), .padat-jadwal td:nth-child(5),
+    .padat-jadwal th:nth-child(8), .padat-jadwal td:nth-child(8),
+    .padat-jadwal th:nth-child(9), .padat-jadwal td:nth-child(9) { display: none; }
+    .padat-jadwal th:nth-child(n+6), .padat-jadwal td:nth-child(n+6) { text-align: center; }
+    .padat-jadwal th:last-child, .padat-jadwal td:last-child { text-align: right; }
+
+    /* Daftar ruang ujian: Ruang | Kapasitas | Siswa | Aksi */
+    .padat-denah th:nth-child(1), .padat-denah td:nth-child(1),
+    .padat-denah th:nth-child(4), .padat-denah td:nth-child(4) { display: none; }
+    .padat-denah td:nth-child(5) .lencana { margin: 0 2px 2px 0; }
+
+    /* Atur meja satu ruang: Meja | Nama | Kelas | Pindah */
+    .padat-denah-ruang th:nth-child(2), .padat-denah-ruang td:nth-child(2),
+    .padat-denah-ruang th:nth-child(5), .padat-denah-ruang td:nth-child(5) { display: none; }
+    .padat-denah-ruang td:first-child { width: 44px; text-align: center; }
+    .padat-denah-ruang td:nth-child(3) small { display: block; }
+    .padat-denah-ruang td:nth-child(6) .aksi-form { flex-wrap: wrap !important; gap: 6px; }
+    .padat-denah-ruang td:nth-child(6) select { width: 100%; min-height: 40px; font-size: 14px; }
+    .padat-denah-ruang td:nth-child(6) .tombol { width: 100%; min-height: 38px; }
+}

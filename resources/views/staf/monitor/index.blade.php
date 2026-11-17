@@ -17,7 +17,7 @@
     <div class="db-panel" style="margin-bottom:18px">
         <header><h3>Pilih ruang</h3><small>{{ $ruang->count() }} ruang</small></header>
         <div class="gulir">
-            <table class="tabel tabel-daftar tabel-kartu">
+            <table class="tabel tabel-daftar padat-ruang">
                 <thead><tr><th class="no">No</th><th>Ruang</th><th>Jenis</th><th>Kapasitas</th><th>Siswa</th><th>Mengerjakan</th><th>Terblokir</th><th class="kanan">Aksi</th></tr></thead>
                 <tbody>
                     @forelse ($ruang as $r)
@@ -49,7 +49,7 @@
 <div class="db-panel">
     <header><h3>{{ $pengawas ? 'Jadwal ujian' : 'Jadwal aktif' }}</h3><small>{{ $jadwal->count() }} jadwal</small></header>
     <div class="gulir">
-        <table class="tabel tabel-daftar tabel-kartu">
+        <table class="tabel tabel-daftar padat-jadwal">
             <thead><tr><th class="no">No</th><th>Jadwal</th><th>Mata pelajaran</th><th>Waktu</th><th>Status</th><th>Mengerjakan</th><th>Terblokir</th><th>Selesai</th><th>Belum mulai</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($jadwal as $j)

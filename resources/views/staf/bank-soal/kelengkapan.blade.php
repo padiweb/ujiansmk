@@ -62,7 +62,7 @@
 
 <div class="kartu tanpa-padding">
     <div class="gulir">
-        <table class="tabel tabel-daftar tabel-kartu">
+        <table class="tabel tabel-daftar">
             <thead>
                 <tr><th class="no">No</th><th>Guru</th><th>Mata pelajaran</th><th>Tingkat</th><th>Kelas yang diajar</th><th>Status</th><th class="kanan">Jumlah soal</th></tr>
             </thead>
