@@ -1332,3 +1332,16 @@ h1, h2, h3 { color: var(--teks); }
     .bawah-a.aktif svg { visibility: hidden; color: inherit; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { .bawah-a { transition: none; } }
+
+/* Blok biru tua di tiap halaman memakai gaya yang sama dengan bola bilah bawah: biru bergradasi, kilau tipis, bayangan lembut */
+:root {
+    --biru-kilau: linear-gradient(160deg, #4A73FF, #2A47D1);
+    --bayangan-kilau: 0 10px 22px rgba(42, 71, 209, .26), inset 0 1px 0 rgba(255, 255, 255, .28);
+}
+.db-atas, .pita-info, .hp-hero { background: var(--biru-kilau); box-shadow: var(--bayangan-kilau); }
+.pil.aktif, .fab-utama.terbuka { background: var(--biru-kilau); border-color: transparent; box-shadow: 0 6px 14px rgba(42, 71, 209, .3), inset 0 1px 0 rgba(255, 255, 255, .28); }
+.ikon-lapisan { background: var(--biru-kilau); box-shadow: 0 6px 14px rgba(42, 71, 209, .3); }
+/* teks redup di atas biru yang lebih terang dibuat sedikit lebih tegas agar tetap terbaca */
+.db-atas p { color: rgba(255, 255, 255, .88); }
+.pita-info .pita-isi small, .pita-info small { color: rgba(255, 255, 255, .85); }
+.hp-hero small, .hp-hero span { opacity: .92; }
