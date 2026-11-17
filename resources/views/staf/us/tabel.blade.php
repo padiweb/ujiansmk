@@ -24,7 +24,7 @@
 
     <div class="kartu tanpa-padding" style="margin-top:12px">
         <div class="gulir">
-            <table class="tabel tabel-nilai">
+            <table class="tabel tabel-nilai tabel-kartu">
                 <thead>
                     <tr>
                         <th class="no">No</th><th class="nama">Nama Siswa</th><th class="tengah grup-np">Nilai CBT</th>

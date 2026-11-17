@@ -54,7 +54,7 @@
     <div class="kartu">
         <h2 class="judul-kartu">Hasil sinkron</h2>
         @if ($hasil['entitas'])
-            <table class="tabel" style="margin-top:6px"><thead><tr><th>Data</th><th>Baru</th><th>Diperbarui</th><th>Dilewati</th></tr></thead><tbody>
+            <table class="tabel tabel-kartu" style="margin-top:6px"><thead><tr><th>Data</th><th>Baru</th><th>Diperbarui</th><th>Dilewati</th></tr></thead><tbody>
                 @foreach ($hasil['entitas'] as $k => $v)
                     <tr><td>{{ $nama[$k] ?? $k }}</td><td>{{ $v['baru'] }}</td><td>{{ $v['diperbarui'] }}</td><td>{{ $v['dilewati'] }}</td></tr>
                 @endforeach
@@ -78,7 +78,7 @@
 <div class="kartu tanpa-padding">
     <h2 class="judul-kartu" style="padding:16px 20px 0">Riwayat sinkron</h2>
     <div class="gulir">
-        <table class="tabel">
+        <table class="tabel tabel-kartu">
             <thead><tr><th>Waktu</th><th>Jenis</th><th>Status</th><th>Ringkasan</th><th>Lama</th></tr></thead>
             <tbody>
                 @forelse ($log as $l)
@@ -116,7 +116,7 @@
 <div class="kartu tanpa-padding">
     <h2 class="judul-kartu" style="padding:16px 20px 0">Pemakaian layanan otomatis</h2>
     <div class="gulir">
-        <table class="tabel">
+        <table class="tabel tabel-kartu">
             <thead><tr><th>Waktu</th><th>Pengguna</th><th>Diminta</th><th>Jadi</th><th>Hasil</th></tr></thead>
             <tbody>
                 @forelse ($logOtomatis as $l)

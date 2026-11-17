@@ -39,7 +39,7 @@
 <div class="kartu tanpa-padding" style="margin-top:16px">
     <h2 class="judul-kartu" style="padding:16px 20px 0">Riwayat terbaru</h2>
     <div class="gulir">
-        <table class="tabel">
+        <table class="tabel tabel-kartu">
             <thead><tr><th>Waktu</th><th>Jenis</th><th>Status</th><th>Keterangan</th></tr></thead>
             <tbody>
                 @forelse ($log as $l)

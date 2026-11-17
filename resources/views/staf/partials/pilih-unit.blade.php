@@ -33,7 +33,7 @@
 
 <div class="db-panel">
     <div class="gulir">
-        <table class="tabel tabel-daftar">
+        <table class="tabel tabel-daftar tabel-kartu">
             <thead><tr><th class="no">No</th><th>Mata Pelajaran &amp; Kelas</th><th>Jadwal Ujian</th><th>Waktu</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($unit as $u)

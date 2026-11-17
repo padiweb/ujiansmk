@@ -30,7 +30,7 @@
     @csrf
     <div class="kartu tanpa-padding">
         <div class="gulir gulir-nilai">
-            <table class="tabel tabel-nilai">
+            <table class="tabel tabel-nilai tabel-kartu">
                 <thead>
                     <tr>
                         <th rowspan="2" class="lekat no">No</th>

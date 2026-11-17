@@ -70,7 +70,7 @@
 
     <div class="kartu tanpa-padding">
         <div class="gulir">
-            <table class="tabel tabel-nilai">
+            <table class="tabel tabel-nilai tabel-kartu">
                 <thead>
                     <tr>
                         <th class="no">No</th><th class="nama">Nama Siswa</th><th class="tengah grup-np">NP</th><th class="tengah grup-nk">NK</th>

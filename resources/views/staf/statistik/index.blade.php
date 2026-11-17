@@ -46,7 +46,7 @@
                 <a href="{{ route('staf.statistik.cetak', ['kelas' => $id, 'periode' => $periode->id]) }}" data-cetak>Cetak</a>
             </header>
             <div class="gulir">
-                <table class="tabel tabel-daftar">
+                <table class="tabel tabel-daftar tabel-kartu">
                     <thead><tr><th class="no">Rank</th><th>Nama Siswa</th><th>NISN</th><th>Jumlah Mapel</th><th class="kanan">Rata-rata</th></tr></thead>
                     <tbody>
                         @foreach ($baris as $r)
@@ -63,7 +63,7 @@
             <div class="db-panel" style="margin-bottom:16px">
                 <header><h3>Juara Paralel Kelas {{ $tingkat }}</h3><small>10 teratas</small></header>
                 <div class="gulir">
-                    <table class="tabel tabel-daftar">
+                    <table class="tabel tabel-daftar tabel-kartu">
                         <thead><tr><th class="no">Rank</th><th>Nama Siswa</th><th>Kelas</th><th class="kanan">Rata-rata</th></tr></thead>
                         <tbody>
                             @foreach ($baris as $r)
@@ -79,7 +79,7 @@
     <div class="db-panel">
         <header><h3>Rata-rata per Mata Pelajaran</h3><small>{{ count($perMapel) }} mapel</small></header>
         <div class="gulir">
-            <table class="tabel tabel-daftar">
+            <table class="tabel tabel-daftar tabel-kartu">
                 <thead><tr><th>Mata Pelajaran</th><th>KKM</th><th>Siswa</th><th>Tuntas</th><th>Tertinggi</th><th>Terendah</th><th class="kanan">Rata-rata</th></tr></thead>
                 <tbody>
                     @foreach ($perMapel as $m)

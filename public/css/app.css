@@ -1252,3 +1252,21 @@ h1, h2, h3 { color: var(--teks); }
     .lembar-riwayat li.lembar-muat::before { content: none; }
     .lembar-riwayat small { color: var(--teks-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
 }
+
+/* Tabel nilai (isian) dan tabel pelengkap menjadi kartu di HP */
+@media (max-width: 768px) {
+    .tabel-kartu.tabel-nilai td, .tabel-kartu.tabel-siswa td { height: auto; border: 0; position: static; min-width: 0; max-width: none; background: transparent; text-align: right; padding: 7px 0; }
+    .tabel-kartu.tabel-nilai td.lekat, .tabel-kartu.tabel-nilai .no, .tabel-kartu.tabel-nilai .nama { position: static; left: auto; }
+    .tabel-kartu.tabel-nilai td.sel-judul, .tabel-kartu.tabel-nilai td.nama { text-align: left; border-right: 0; padding: 0 0 10px; }
+    .tabel-kartu.tabel-nilai td.sel-hasil { border-radius: 8px; padding: 7px 10px; }
+    .tabel-kartu.tabel-nilai td.sel-hasil.np { background: var(--biru-muda); }
+    .tabel-kartu.tabel-nilai td.sel-hasil.nk { background: var(--kuning-muda); }
+    .tabel-kartu.tabel-nilai td.sel-hasil.na { font-size: 1rem; }
+    .tabel-kartu.tabel-nilai td input, .tabel-kartu.tabel-nilai td:last-child input { width: 120px; min-width: 0; height: 44px; border: 1px solid var(--garis); border-radius: 10px; background: #fff; text-align: center; font-size: 16px; }
+    .tabel-kartu.tabel-nilai td.kolom-catatan { display: block; text-align: left; }
+    .tabel-kartu.tabel-nilai td.kolom-catatan::before { display: block; margin-bottom: 6px; }
+    .tabel-kartu.tabel-nilai td.kolom-catatan input { width: 100%; min-width: 0; text-align: left; }
+    .tabel-kartu td select, .tabel-kartu td textarea { max-width: 60%; }
+    .tabel-kartu td input[type=text], .tabel-kartu td input[type=number] { max-width: 60%; }
+    .gulir, .gulir-nilai { overflow-x: visible; max-height: none; }
+}

@@ -1,4 +1,4 @@
-<table class="tabel tabel-siswa">
+<table class="tabel tabel-siswa tabel-kartu">
     <thead>
         <tr>
             <th class="no">#</th>
