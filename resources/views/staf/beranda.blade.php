@@ -12,6 +12,26 @@
 @section('konten')
 <div class="db-krumb"><span>Dashboard</span><span>›</span><span>Monitor Langsung</span></div>
 
+{{-- Tampilan HP: kartu ujian yang sedang berlangsung dan pintasan (disembunyikan CSS di layar lebar) --}}
+@php $sekarang = $jadwal->first(); @endphp
+<section class="hp-saja hp-hero" aria-label="Ujian berlangsung">
+    @if ($sekarang)
+        <small>Sedang berlangsung</small>
+        <strong>{{ $sekarang->mapel->nama }}</strong>
+        <span>{{ $sekarang->nama }} · {{ $sekarang->mulai_pada->format('H.i') }}–{{ $sekarang->tutup_pada->format('H.i') }}@if ($jadwal->count() > 1) · +{{ $jadwal->count() - 1 }} ujian lain @endif</span>
+        <a class="hp-hero-tombol" href="{{ route('staf.monitor.show', $sekarang) }}">Buka monitor</a>
+    @else
+        <small>Ujian</small>
+        <strong>Tidak ada ujian berlangsung</strong>
+        <span>Jadwal yang aktif akan muncul di sini.</span>
+    @endif
+</section>
+<div class="hp-saja hp-pintas">
+    @foreach ($pintas as $p)
+        <a href="{{ isset($p[3]) ? route($p[0], $p[3]) : route($p[0]) }}"><i><x-ikon :nama="$p[2]" :ukuran="20" /></i><span>{{ $p[1] }}</span></a>
+    @endforeach
+</div>
+
 <div class="db-atas">
     <div>
         <h2>{{ $sapaan }}, {{ $user->nama }}</h2>

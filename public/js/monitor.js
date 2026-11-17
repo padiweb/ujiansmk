@@ -101,7 +101,8 @@
         if (b.senyap) tr.classList.add('mon-senyap');
         if (b.status === 'selesai' || b.status === 'belum') tr.classList.add('mon-redup');
 
-        var tdNama = el('td');
+        var tdNama = el('td', 'mon-nama');
+        tdNama.setAttribute('data-inisial', inisial(b.nama)); // dipakai CSS untuk lingkaran inisial di tampilan HP
         tdNama.appendChild(el('strong', null, b.nama));
         tdNama.appendChild(el('small', 'bantuan', (b.nisn || '') + (b.ujian ? ' · ' + b.ujian : '') + (b.ruang ? ' · ' + b.ruang + (b.meja ? ' / meja ' + b.meja : '') : '')));
         tr.appendChild(tdNama);
@@ -115,7 +116,7 @@
         if (b.tambahan > 0) tdStatus.appendChild(el('small', 'bantuan', '+' + b.tambahan + ' menit · sampai ' + (b.batas || '—')));
         tr.appendChild(tdStatus);
 
-        var tdP = el('td');
+        var tdP = el('td', b.status === 'belum' || !b.pelanggaran ? 'mon-nol' : 'mon-pel');
         if (b.status === 'belum') tdP.textContent = '—';
         else {
             tdP.appendChild(el('strong', null, String(b.pelanggaran)));
@@ -123,7 +124,7 @@
         }
         tr.appendChild(tdP);
 
-        var tdJ = el('td');
+        var tdJ = el('td', b.status === 'belum' ? 'mon-nol' : 'mon-jawab');
         if (b.status === 'belum') tdJ.textContent = '—';
         else {
             var total = b.total_soal !== undefined ? b.total_soal : totalSoal;
@@ -136,9 +137,9 @@
         }
         tr.appendChild(tdJ);
 
-        tr.appendChild(el('td', null, usia(b.kabar)));
+        tr.appendChild(el('td', 'mon-kabar', usia(b.kabar)));
 
-        var tdPl = el('td');
+        var tdPl = el('td', 'mon-perangkat');
         if (b.sistem_operasi || b.nama_peramban) {
             tdPl.appendChild(el('span', null, [b.sistem_operasi, b.nama_peramban].filter(Boolean).join(' · ')));
             var modeNama = { aplikasi: 'Aplikasi sekolah', pwa: 'PWA terpasang', peramban: 'Peramban' }[b.mode_tampil];
@@ -151,15 +152,98 @@
 
         var tdA = el('td', 'kanan');
         var kotak = el('div', 'mon-aksi');
-        if (b.status === 'diblokir' && boleh('aktifkan')) kotak.appendChild(tombolAksi(b, 'aktifkan', 'Aktifkan kembali', ''));
+        if (b.status === 'diblokir' && boleh('aktifkan')) kotak.appendChild(tombolAksi(b, 'aktifkan', 'Aktifkan kembali', 'hp-utama'));
         if ((b.status === 'berlangsung' || b.status === 'diblokir') && boleh('reset')) kotak.appendChild(tombolAksi(b, 'reset', 'Reset perangkat'));
         if (b.status !== 'selesai' && boleh('waktu')) kotak.appendChild(tombolAksi(b, 'waktu', 'Tambah waktu'));
         if ((b.status === 'berlangsung' || b.status === 'diblokir') && boleh('selesai')) kotak.appendChild(tombolAksi(b, 'selesai', 'Paksa selesai', 'bahaya'));
         tdA.appendChild(kotak);
         tr.appendChild(tdA);
 
+        // Tampilan HP: ketuk kartu membuka lembar rincian (tombol di dalam kartu tetap bekerja sendiri).
+        tr.addEventListener('click', function (e) {
+            if (!layarHP.matches || e.target.closest('button, a, input, select')) return;
+            bukaLembar(b);
+        });
+
         return tr;
     }
+
+    function inisial(nama) {
+        var k = String(nama || '').trim().split(/\s+/).filter(Boolean);
+        if (!k.length) return '?';
+        return (k[0].charAt(0) + (k.length > 1 ? k[1].charAt(0) : '')).toUpperCase();
+    }
+
+    // ── Lembar rincian siswa (khusus HP) ─────────────────────────────────────
+
+    var layarHP = window.matchMedia('(max-width: 768px)');
+    var lembar = null;       // { akar, id }
+
+    function baris2(k, v) {
+        var d = el('div', 'lembar-kv');
+        d.appendChild(el('span', null, k));
+        d.appendChild(el('b', null, v));
+        return d;
+    }
+
+    function tutupLembar() {
+        if (lembar) { lembar.akar.remove(); lembar = null; document.documentElement.classList.remove('lembar-terbuka'); }
+    }
+
+    function bukaLembar(b) {
+        tutupLembar();
+        var akar = el('div', 'lembar');
+        akar.setAttribute('role', 'dialog'); akar.setAttribute('aria-modal', 'true'); akar.setAttribute('aria-label', 'Rincian ' + b.nama);
+        var tirai = el('div', 'lembar-tirai');
+        tirai.addEventListener('click', tutupLembar);
+        var kotak = el('div', 'lembar-kotak');
+        kotak.appendChild(el('div', 'lembar-gagang'));
+
+        var kepala = el('div', 'lembar-kepala');
+        kepala.appendChild(el('span', 'lembar-av' + (b.status === 'diblokir' ? ' kuning' : ''), inisial(b.nama)));
+        var nm = el('div', 'lembar-nama');
+        nm.appendChild(el('strong', null, b.nama));
+        nm.appendChild(el('small', null, [b.kelas, b.nisn ? 'NISN ' + b.nisn : ''].filter(Boolean).join(' · ')));
+        kepala.appendChild(nm);
+        kepala.appendChild(el('span', 'lencana' + (b.status === 'diblokir' ? ' kuning' : (b.status === 'berlangsung' ? '' : ' pucat')), NAMA_STATUS[b.status] || b.status));
+        kotak.appendChild(kepala);
+
+        var total = b.total_soal !== undefined ? b.total_soal : totalSoal;
+        var perangkat = [b.sistem_operasi, b.nama_peramban].filter(Boolean).join(' · ') || (b.platform === 'aplikasi' ? 'Aplikasi' : (b.platform ? 'Peramban' : '—'));
+        var modeNama = { aplikasi: 'aplikasi sekolah', pwa: 'PWA terpasang', peramban: 'peramban' }[b.mode_tampil];
+        kotak.appendChild(baris2('Perangkat', perangkat + (modeNama ? ' (' + modeNama + ')' : '')));
+        if (b.ruang) kotak.appendChild(baris2('Ruang', b.ruang + (b.meja ? ' / meja ' + b.meja : '')));
+        if (b.status !== 'belum') kotak.appendChild(baris2('Soal terjawab', b.dijawab + ' dari ' + total));
+        kotak.appendChild(baris2('Kabar terakhir', usia(b.kabar) + (b.kabar !== null && b.kabar !== undefined ? ' lalu' : '')));
+        if (b.tambahan > 0) kotak.appendChild(baris2('Tambahan waktu', '+' + b.tambahan + ' menit (sampai ' + (b.batas || '—') + ')'));
+        if (b.status === 'selesai' && b.alasan) kotak.appendChild(baris2('Selesai karena', NAMA_ALASAN[b.alasan] || b.alasan));
+        if (b.perangkat_dilepas) kotak.appendChild(baris2('Perangkat', 'dilepas, menunggu masuk ulang'));
+        if (b.status !== 'belum') kotak.appendChild(baris2('Pelanggaran', b.pelanggaran + (b.p_jenis ? ' · terakhir ' + b.p_jenis + ' (' + b.p_waktu + ')' : '')));
+
+        var aksi = el('div', 'lembar-aksi');
+        function tmb(ke, kode, label, kelas) {
+            var t = el('button', 'tombol ' + kelas, label); t.type = 'button';
+            t.addEventListener('click', function () { tutupLembar(); mintaAksi(b, kode); });
+            ke.appendChild(t);
+        }
+        var dua = el('div', 'lembar-dua');
+        var aktif = b.status === 'berlangsung' || b.status === 'diblokir';
+        if (b.status === 'diblokir' && boleh('aktifkan')) tmb(aksi, 'aktifkan', 'Aktifkan kembali', 'lembar-besar');
+        if (b.status !== 'selesai' && boleh('waktu')) tmb(dua, 'waktu', 'Tambah waktu', 'garis');
+        if (aktif && boleh('reset')) tmb(dua, 'reset', 'Reset perangkat', 'garis');
+        if (aktif && boleh('selesai')) tmb(dua, 'selesai', 'Paksa selesai', 'garis bahaya');
+        if (dua.children.length) aksi.appendChild(dua);
+        var tutup = el('button', 'lembar-tutup', 'Tutup'); tutup.type = 'button';
+        tutup.addEventListener('click', tutupLembar);
+        aksi.appendChild(tutup);
+        kotak.appendChild(aksi);
+
+        akar.appendChild(tirai); akar.appendChild(kotak);
+        document.body.appendChild(akar);
+        document.documentElement.classList.add('lembar-terbuka');
+        lembar = { akar: akar, id: b.id };
+    }
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') tutupLembar(); });
 
     function gambar() {
         var tampil = data.peserta.filter(lolos);
@@ -293,6 +377,27 @@
         ul.insertBefore(el('li', null, teks), ul.firstChild);
         while (ul.children.length > 8) ul.removeChild(ul.lastChild);
     }
+
+    // Tampilan HP: saringan status berupa deretan pil (dipasang dari pilihan <select>, yang disembunyikan CSS di HP).
+    (function () {
+        var pilih = $('monStatus');
+        if (!pilih) return;
+        var baris = el('div', 'pil-baris');
+        baris.setAttribute('role', 'group'); baris.setAttribute('aria-label', 'Saring status');
+        Array.prototype.forEach.call(pilih.options, function (o) {
+            var p = el('button', 'pil' + (o.value === pilih.value ? ' aktif' : ''), o.value === '' ? 'Semua' : o.textContent);
+            p.type = 'button'; p.setAttribute('aria-pressed', o.value === pilih.value ? 'true' : 'false');
+            p.addEventListener('click', function () {
+                pilih.value = o.value;
+                Array.prototype.forEach.call(baris.children, function (x) { x.classList.remove('aktif'); x.setAttribute('aria-pressed', 'false'); });
+                p.classList.add('aktif'); p.setAttribute('aria-pressed', 'true');
+                gambar();
+            });
+            baris.appendChild(p);
+        });
+        var form = pilih.closest('form');
+        form.parentNode.insertBefore(baris, form);
+    })();
 
     // Mulai: gambar data awal dari halaman, lalu perbarui berkala.
     periksaBaru();

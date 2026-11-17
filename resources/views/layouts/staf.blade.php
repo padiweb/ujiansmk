@@ -30,6 +30,66 @@
     } else {
         $tab[] = ['staf.monitor.index', 'Monitor', 'monitor', 'staf.monitor.*'];
     }
+
+    // Menu samping, diurutkan menurut alur kerja: siapkan soal → atur ujian → awasi → nilai → rapor/kelulusan → data induk → sistem.
+    $jenis = request()->route('jenis');
+    $guruAtauAdmin = $admin || $pengguna->role === 'guru';
+    $butir = fn (string $rute, string $label, string $ikon, string $pola) => [route($rute), $label, $ikon, request()->routeIs($pola)];
+    $menu = [['judul' => null, 'isi' => [$butir('staf.beranda', 'Beranda', 'beranda', 'staf.beranda')]]];
+
+    if ($guruAtauAdmin) {
+        $menu[] = ['judul' => 'Siapkan soal', 'isi' => [
+            [route('staf.bank-soal.index'), 'Bank Soal', 'bank-soal', request()->routeIs('staf.bank-soal.*', 'staf.soal.*')],
+        ]];
+    }
+    if ($admin) {
+        $menu[] = ['judul' => 'Atur ujian', 'isi' => [
+            $butir('staf.kegiatan.index', 'Kegiatan Ujian', 'kalender', 'staf.kegiatan.*'),
+            $butir('staf.jadwal.index', 'Jadwal Ujian', 'jam', 'staf.jadwal.*'),
+            $butir('staf.ruang.index', 'Ruang Ujian', 'ruang', 'staf.ruang.*'),
+            $butir('staf.pengawas.index', 'Pengawas', 'staf', 'staf.pengawas.*'),
+        ]];
+    }
+    $menu[] = ['judul' => $guruAtauAdmin ? 'Awasi ujian' : 'Ujian', 'isi' => [$butir('staf.monitor.index', 'Monitor Ujian', 'monitor', 'staf.monitor.*')]];
+
+    if ($guruAtauAdmin) {
+        $nilai = [
+            $butir('staf.koreksi.index', 'Koreksi Esai', 'koreksi', 'staf.koreksi.*'),
+            $butir('staf.nilai.index', 'Input Nilai', 'berkas', 'staf.nilai.*'),
+            $butir('staf.us.index', 'Input Nilai US', 'berkas', 'staf.us.*'),
+            $butir('staf.lampau.index', 'Nilai Lampau', 'berkas', 'staf.lampau.*'),
+            $butir('staf.wali.index', 'Wali Kelas', 'staf', 'staf.wali.*'),
+            $butir('staf.rekap.index', 'Rekap Nilai', 'berkas', 'staf.rekap.*'),
+        ];
+        if ($admin) {
+            $nilai[] = $butir('staf.statistik.index', 'Statistik', 'berkas', 'staf.statistik.*');
+        }
+        $menu[] = ['judul' => 'Nilai', 'isi' => $nilai];
+    }
+    if ($admin) {
+        $menu[] = ['judul' => 'Kelulusan & arsip', 'isi' => [
+            [route('staf.kelulusan.daftar', 'transkrip'), 'Transkrip US', 'berkas', request()->routeIs('staf.kelulusan.*') && $jenis === 'transkrip'],
+            [route('staf.kelulusan.daftar', 'skl'), 'Cetak SKL', 'berkas', request()->routeIs('staf.kelulusan.*') && $jenis === 'skl'],
+            [route('staf.kelulusan.daftar', 'mutasi'), 'Surat Mutasi', 'berkas', request()->routeIs('staf.kelulusan.*') && $jenis === 'mutasi'],
+            $butir('staf.arsip.index', 'Arsip Siswa', 'berkas', 'staf.arsip.*'),
+            $butir('staf.hasil-lama.index', 'Arsip Hasil Ujian', 'berkas', 'staf.hasil-lama.*'),
+        ]];
+
+        $induk = [];
+        foreach ($master as [$slug, $label, $ikon]) {
+            $induk[] = [route('staf.master.index', $slug), $label, $ikon, $slugAktif === $slug];
+        }
+        $menu[] = ['judul' => 'Data induk', 'isi' => $induk];
+
+        $sistem = [];
+        if (config('ujian.mode_pengembang')) {
+            $sistem[] = $butir('staf.sinkron.index', 'Diagnosis Sistem', 'unduh', 'staf.sinkron.*');
+        }
+        $sistem[] = $butir('staf.eduweb', 'Sinkron EduWeb', 'unduh', 'staf.eduweb*');
+        $sistem[] = $butir('staf.rapor.pengaturan', 'Pengaturan Rapor', 'pengaturan', 'staf.rapor.*');
+        $sistem[] = $butir('staf.pengaturan', 'Pengaturan Sekolah', 'pengaturan', 'staf.pengaturan');
+        $menu[] = ['judul' => 'Sistem', 'isi' => $sistem];
+    }
 @endphp
 
 @push('kepala')
@@ -54,120 +114,14 @@
         </div>
 
         <nav class="sisi-badan">
-            <a href="{{ route('staf.beranda') }}" class="sisi-a {{ request()->routeIs('staf.beranda') ? 'aktif' : '' }}" data-tip="Beranda">
-                <x-ikon nama="beranda" /><span class="sisi-lbl">Beranda</span>
-            </a>
-
-            <div class="sisi-seksi"><span>Ujian</span></div>
-            <a href="{{ route('staf.monitor.index') }}" data-tip="Monitor Ujian"
-               class="sisi-a {{ request()->routeIs('staf.monitor.*') ? 'aktif' : '' }}">
-                <x-ikon nama="monitor" /><span class="sisi-lbl">Monitor Ujian</span>
-            </a>
-
-            @if ($admin || $pengguna->role === 'guru')
-                @if ($admin)
-                    <a href="{{ route('staf.jadwal.index') }}" data-tip="Jadwal Ujian"
-                       class="sisi-a {{ request()->routeIs('staf.jadwal.*') ? 'aktif' : '' }}">
-                        <x-ikon nama="jam" /><span class="sisi-lbl">Jadwal Ujian</span>
-                    </a>
-                    <a href="{{ route('staf.kegiatan.index') }}" data-tip="Kegiatan Ujian"
-                       class="sisi-a {{ request()->routeIs('staf.kegiatan.*') ? 'aktif' : '' }}">
-                        <x-ikon nama="kalender" /><span class="sisi-lbl">Kegiatan Ujian</span>
-                    </a>
-                    <a href="{{ route('staf.pengawas.index') }}" data-tip="Pengawas"
-                       class="sisi-a {{ request()->routeIs('staf.pengawas.*') ? 'aktif' : '' }}">
-                        <x-ikon nama="staf" /><span class="sisi-lbl">Pengawas</span>
-                    </a>
-                    <a href="{{ route('staf.ruang.index') }}" data-tip="Ruang Ujian"
-                       class="sisi-a {{ request()->routeIs('staf.ruang.*') ? 'aktif' : '' }}">
-                        <x-ikon nama="ruang" /><span class="sisi-lbl">Ruang Ujian</span>
-                    </a>
-                @endif
-                <a href="{{ route('staf.koreksi.index') }}" data-tip="Koreksi Esai"
-                   class="sisi-a {{ request()->routeIs('staf.koreksi.*') ? 'aktif' : '' }}">
-                    <x-ikon nama="koreksi" /><span class="sisi-lbl">Koreksi Esai</span>
-                </a>
-                <a href="{{ route('staf.nilai.index') }}" data-tip="Input Nilai"
-                   class="sisi-a {{ request()->routeIs('staf.nilai.*') ? 'aktif' : '' }}">
-                    <x-ikon nama="berkas" /><span class="sisi-lbl">Input Nilai</span>
-                </a>
-                <a href="{{ route('staf.lampau.index') }}" data-tip="Nilai Lampau"
-                   class="sisi-a {{ request()->routeIs('staf.lampau.*') ? 'aktif' : '' }}">
-                    <x-ikon nama="berkas" /><span class="sisi-lbl">Nilai Lampau</span>
-                </a>
-                <a href="{{ route('staf.wali.index') }}" data-tip="Wali Kelas"
-                   class="sisi-a {{ request()->routeIs('staf.wali.*') ? 'aktif' : '' }}">
-                    <x-ikon nama="staf" /><span class="sisi-lbl">Wali Kelas</span>
-                </a>
-                <a href="{{ route('staf.rekap.index') }}" data-tip="Rekap Nilai"
-                   class="sisi-a {{ request()->routeIs('staf.rekap.*') ? 'aktif' : '' }}">
-                    <x-ikon nama="berkas" /><span class="sisi-lbl">Rekap Nilai</span>
-                </a>
-                <a href="{{ route('staf.us.index') }}" data-tip="Input Nilai US"
-                   class="sisi-a {{ request()->routeIs('staf.us.*') ? 'aktif' : '' }}">
-                    <x-ikon nama="berkas" /><span class="sisi-lbl">Input Nilai US</span>
-                </a>
-                @if ($admin)
-                <a href="{{ route('staf.kelulusan.daftar', 'transkrip') }}" data-tip="Transkrip US"
-                   class="sisi-a {{ request()->routeIs('staf.kelulusan.*') && request()->route('jenis') === 'transkrip' ? 'aktif' : '' }}">
-                    <x-ikon nama="berkas" /><span class="sisi-lbl">Transkrip US</span>
-                </a>
-                <a href="{{ route('staf.statistik.index') }}" data-tip="Statistik"
-                   class="sisi-a {{ request()->routeIs('staf.statistik.*') ? 'aktif' : '' }}">
-                    <x-ikon nama="berkas" /><span class="sisi-lbl">Statistik</span>
-                </a>
-                <a href="{{ route('staf.arsip.index') }}" data-tip="Arsip Siswa"
-                   class="sisi-a {{ request()->routeIs('staf.arsip.*') ? 'aktif' : '' }}">
-                    <x-ikon nama="berkas" /><span class="sisi-lbl">Arsip Siswa</span>
-                </a>
-                <a href="{{ route('staf.hasil-lama.index') }}" data-tip="Arsip Hasil Ujian"
-                   class="sisi-a {{ request()->routeIs('staf.hasil-lama.*') ? 'aktif' : '' }}">
-                    <x-ikon nama="berkas" /><span class="sisi-lbl">Arsip Hasil Ujian</span>
-                </a>
-                <a href="{{ route('staf.kelulusan.daftar', 'mutasi') }}" data-tip="Surat Mutasi"
-                   class="sisi-a {{ request()->routeIs('staf.kelulusan.*') && request()->route('jenis') === 'mutasi' ? 'aktif' : '' }}">
-                    <x-ikon nama="berkas" /><span class="sisi-lbl">Surat Mutasi</span>
-                </a>
-                <a href="{{ route('staf.kelulusan.daftar', 'skl') }}" data-tip="Cetak SKL"
-                   class="sisi-a {{ request()->routeIs('staf.kelulusan.*') && request()->route('jenis') === 'skl' ? 'aktif' : '' }}">
-                    <x-ikon nama="berkas" /><span class="sisi-lbl">Cetak SKL</span>
-                </a>
-                @endif
-                <a href="{{ route('staf.bank-soal.index') }}" data-tip="Bank Soal"
-                   class="sisi-a {{ request()->routeIs('staf.bank-soal.*', 'staf.soal.*') ? 'aktif' : '' }}">
-                    <x-ikon nama="bank-soal" /><span class="sisi-lbl">Bank Soal</span>
-                </a>
-            @endif
-
-            @if ($admin)
-                <div class="sisi-seksi"><span>Administrator</span></div>
-                @foreach ($master as [$slug, $label, $ikon])
-                    <a href="{{ route('staf.master.index', $slug) }}" data-tip="{{ $label }}"
-                       class="sisi-a {{ $slugAktif === $slug ? 'aktif' : '' }}">
+            @foreach ($menu as $seksi)
+                @if ($seksi['judul'])<div class="sisi-seksi"><span>{{ $seksi['judul'] }}</span></div>@endif
+                @foreach ($seksi['isi'] as [$url, $label, $ikon, $aktif])
+                    <a href="{{ $url }}" data-tip="{{ $label }}" class="sisi-a {{ $aktif ? 'aktif' : '' }}" @if ($aktif) aria-current="page" @endif>
                         <x-ikon :nama="$ikon" /><span class="sisi-lbl">{{ $label }}</span>
                     </a>
                 @endforeach
-
-                <div class="sisi-seksi"><span>Sistem</span></div>
-                @if (config('ujian.mode_pengembang'))
-                    <a href="{{ route('staf.sinkron.index') }}" data-tip="Diagnosis Sistem"
-                       class="sisi-a {{ request()->routeIs('staf.sinkron.*') ? 'aktif' : '' }}">
-                        <x-ikon nama="unduh" /><span class="sisi-lbl">Diagnosis Sistem</span>
-                    </a>
-                @endif
-                <a href="{{ route('staf.eduweb') }}" data-tip="Sinkron EduWeb"
-                   class="sisi-a {{ request()->routeIs('staf.eduweb*') ? 'aktif' : '' }}">
-                    <x-ikon nama="unduh" /><span class="sisi-lbl">Sinkron EduWeb</span>
-                </a>
-                <a href="{{ route('staf.rapor.pengaturan') }}" data-tip="Pengaturan Rapor"
-                   class="sisi-a {{ request()->routeIs('staf.rapor.*') ? 'aktif' : '' }}">
-                    <x-ikon nama="pengaturan" /><span class="sisi-lbl">Pengaturan Rapor</span>
-                </a>
-                <a href="{{ route('staf.pengaturan') }}" data-tip="Pengaturan Sekolah"
-                   class="sisi-a {{ request()->routeIs('staf.pengaturan') ? 'aktif' : '' }}">
-                    <x-ikon nama="pengaturan" /><span class="sisi-lbl">Pengaturan Sekolah</span>
-                </a>
-            @endif
+            @endforeach
         </nav>
 
         <div class="sisi-kaki">

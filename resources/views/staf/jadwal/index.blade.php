@@ -13,7 +13,7 @@
         <p class="sub">{{ number_format($jadwal->total(), 0, ',', '.') }} jadwal</p>
     </div>
     <div class="aksi-halaman">
-        <a class="tombol kecil" href="{{ route('staf.jadwal.create') }}"><x-ikon nama="tambah" :ukuran="16" />Buat jadwal</a>
+        <a class="tombol kecil fab-hp" href="{{ route('staf.jadwal.create') }}"><x-ikon nama="tambah" :ukuran="16" />Buat jadwal</a>
     </div>
 </div>
 
@@ -36,13 +36,13 @@
 
 <div class="kartu tanpa-padding">
     <div class="gulir">
-        <table class="tabel tabel-kartu">
+        <table class="tabel tabel-kartu tabel-jadwal">
             <thead><tr><th class="no">No</th><th>Jadwal</th><th>Mapel</th><th>Waktu</th><th>Durasi</th><th>Kelas</th><th>Token</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($jadwal as $j)
                     <tr>
                         <td class="no">{{ $jadwal->firstItem() + $loop->index }}</td>
-                        <td><a href="{{ route('staf.jadwal.show', $j) }}"><strong>{{ $j->nama }}</strong></a>
+                        <td><span class="tgl-blok" aria-hidden="true"><b>{{ $j->mulai_pada->format('j') }}</b><span>{{ ['JAN','FEB','MAR','APR','MEI','JUN','JUL','AGU','SEP','OKT','NOV','DES'][$j->mulai_pada->month - 1] }}</span></span><a href="{{ route('staf.jadwal.show', $j) }}"><strong>{{ $j->nama }}</strong></a>
                             <small class="bantuan" style="margin:0">{{ $j->periode->label() }}@if ($j->kegiatan && ! $j->kegiatan->aktif) · kegiatan tidak aktif @endif</small></td>
                         <td>{{ $j->mapel->nama }}</td>
                         <td>{{ $j->mulai_pada->format('d/m/Y H:i') }}<br><small class="bantuan" style="margin:0">s.d. {{ $j->tutup_pada->format('d/m/Y H:i') }}</small></td>
