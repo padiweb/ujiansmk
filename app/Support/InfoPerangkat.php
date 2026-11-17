@@ -56,6 +56,7 @@ class InfoPerangkat
             (bool) preg_match('/EdgA\/|EdgiOS\/|Edg\//', $ua) => 'Edge',
             str_contains($ua, 'FxiOS') || str_contains($ua, 'Firefox') => 'Firefox',
             str_contains($ua, 'DuckDuckGo') => 'DuckDuckGo',
+            str_contains($ua, 'UjianSMKAltan/') => 'Aplikasi ujian',
             str_contains($ua, 'Android') && str_contains($ua, '; wv)') => 'WebView (dalam aplikasi)',
             str_contains($ua, 'CriOS') || str_contains($ua, 'Chrome') => 'Chrome',
             str_contains($ua, 'Safari') => 'Safari',

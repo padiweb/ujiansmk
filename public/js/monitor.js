@@ -140,9 +140,11 @@
         tr.appendChild(el('td', 'mon-kabar', usia(b.kabar)));
 
         var tdPl = el('td', 'mon-perangkat');
-        if (b.sistem_operasi || b.nama_peramban) {
+        if (b.mode_tampil === 'aplikasi' || b.platform === 'aplikasi') {
+            tdPl.appendChild(el('span', null, [b.sistem_operasi, 'Menggunakan aplikasi'].filter(Boolean).join(' · ')));
+        } else if (b.sistem_operasi || b.nama_peramban) {
             tdPl.appendChild(el('span', null, [b.sistem_operasi, b.nama_peramban].filter(Boolean).join(' · ')));
-            var modeNama = { aplikasi: 'Aplikasi sekolah', pwa: 'PWA terpasang', peramban: 'Peramban' }[b.mode_tampil];
+            var modeNama = { pwa: 'PWA terpasang', peramban: 'Peramban' }[b.mode_tampil];
             if (modeNama) tdPl.appendChild(el('small', 'bantuan', modeNama));
         } else {
             tdPl.appendChild(document.createTextNode(b.platform === 'aplikasi' ? 'Aplikasi' : (b.platform ? 'Peramban' : '—')));
@@ -209,8 +211,13 @@
         kotak.appendChild(kepala);
 
         var total = b.total_soal !== undefined ? b.total_soal : totalSoal;
-        var perangkat = [b.sistem_operasi, b.nama_peramban].filter(Boolean).join(' · ') || (b.platform === 'aplikasi' ? 'Aplikasi' : (b.platform ? 'Peramban' : '—'));
-        var modeNama = { aplikasi: 'aplikasi sekolah', pwa: 'PWA terpasang', peramban: 'peramban' }[b.mode_tampil];
+        var perangkat, modeNama;
+        if (b.mode_tampil === 'aplikasi' || b.platform === 'aplikasi') {
+            perangkat = [b.sistem_operasi, 'Menggunakan aplikasi'].filter(Boolean).join(' · ');
+        } else {
+            perangkat = [b.sistem_operasi, b.nama_peramban].filter(Boolean).join(' · ') || (b.platform ? 'Peramban' : '—');
+            modeNama = { pwa: 'PWA terpasang', peramban: 'peramban' }[b.mode_tampil];
+        }
         kotak.appendChild(baris2('Perangkat', perangkat + (modeNama ? ' (' + modeNama + ')' : '')));
         if (b.ruang) kotak.appendChild(baris2('Ruang', b.ruang + (b.meja ? ' / meja ' + b.meja : '')));
         if (b.status !== 'belum') kotak.appendChild(baris2('Soal terjawab', b.dijawab + ' dari ' + total));
