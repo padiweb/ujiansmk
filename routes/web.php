@@ -29,6 +29,7 @@ use App\Http\Controllers\Staf\WaliKelasController;
 use App\Http\Controllers\Staf\PengaturanRaporController;
 use App\Http\Controllers\Staf\PengaturanSekolahController;
 use App\Http\Controllers\Staf\PengawasController;
+use App\Http\Controllers\Staf\ProfilController;
 use App\Http\Controllers\Staf\SinkronEduwebController;
 use App\Http\Controllers\Staf\RekapController;
 use App\Http\Controllers\Siswa\RaporController as RaporSiswaController;
@@ -76,6 +77,9 @@ Route::prefix('staf')->group(function () {
         Route::get('/', [BerandaController::class, 'staf'])->name('staf.beranda');
         Route::get('/beranda/data', [BerandaController::class, 'data'])->middleware('throttle:60,1')->name('staf.beranda.data');
         Route::post('/keluar', [MasukStafController::class, 'keluar'])->name('staf.keluar');
+        Route::get('/profil', [ProfilController::class, 'tampil'])->name('staf.profil');
+        Route::post('/profil', [ProfilController::class, 'simpan'])->middleware('throttle:20,1')->name('staf.profil.simpan');
+        Route::get('/profil/foto', [ProfilController::class, 'foto'])->name('staf.profil.foto');
 
         // Daftar hadir: admin, atau pengawas yang ditugaskan (dicek di pengendali).
         Route::get('/hadir/{jadwal}', [KartuUjianController::class, 'hadir'])->whereNumber('jadwal')->name('staf.hadir');

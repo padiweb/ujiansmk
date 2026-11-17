@@ -22,7 +22,7 @@ class User extends Authenticatable
 
     protected $table = 'users';
 
-    protected $fillable = ['eduweb_id', 'nama', 'username', 'password', 'eduweb_hash_sandi', 'role', 'aktif', 'bisa_mengawasi', 'login_terakhir'];
+    protected $fillable = ['eduweb_id', 'nama', 'username', 'foto', 'password', 'eduweb_hash_sandi', 'role', 'aktif', 'bisa_mengawasi', 'login_terakhir'];
 
     protected $hidden = ['password', 'eduweb_hash_sandi', 'remember_token'];
 

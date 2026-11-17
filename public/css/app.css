@@ -1345,3 +1345,19 @@ h1, h2, h3 { color: var(--teks); }
 .db-atas p { color: rgba(255, 255, 255, .88); }
 .pita-info .pita-isi small, .pita-info small { color: rgba(255, 255, 255, .85); }
 .hp-hero small, .hp-hero span { opacity: .92; }
+
+/* Foto profil staf: bilah atas dan halaman Profil Saya */
+a.lencana-pengguna { text-decoration: none; color: inherit; transition: border-color .2s ease, box-shadow .2s ease; }
+a.lencana-pengguna:hover { border-color: var(--biru-garis); box-shadow: 0 2px 8px rgba(57, 96, 251, .15); }
+.lencana-pengguna .avatar { overflow: hidden; flex: none; }
+.lencana-pengguna .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.profil-kartu { max-width: 560px; }
+.profil-atas { display: flex; align-items: center; gap: 18px; margin-bottom: 20px; }
+.profil-foto { flex: none; width: 96px; height: 96px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: var(--biru); color: #fff; box-shadow: 0 6px 16px rgba(42, 71, 209, .25); }
+.profil-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.profil-foto img[hidden], .profil-inisial[hidden] { display: none; }
+.profil-inisial { font-size: 2.4rem; font-weight: 800; }
+.profil-nama { font-size: 1.15rem; font-weight: 800; margin: 0; }
+.profil-sub { display: flex; align-items: center; gap: 8px; margin: 6px 0 0; color: var(--teks-3); font-size: .86rem; }
+.profil-form { border-top: 1px solid var(--garis-lembut); padding-top: 16px; }
+.profil-hapus { margin-top: 12px; }

@@ -141,11 +141,17 @@
             <button type="button" class="hamburger" id="hamburger" aria-label="Buka menu"><x-ikon nama="menu" /></button>
             <h1>@yield('judul')</h1>
         </div>
-        <div class="lencana-pengguna" title="{{ $pengguna->nama }}">
-            <span class="avatar">{{ mb_strtoupper(mb_substr($pengguna->nama, 0, 1)) }}</span>
+        <a class="lencana-pengguna" href="{{ route('staf.profil') }}" title="{{ $pengguna->nama }}: buka profil" aria-label="Profil {{ $pengguna->nama }}">
+            <span class="avatar">
+                @if ($pengguna->foto)
+                    <img src="{{ route('staf.profil.foto', ['v' => substr(md5($pengguna->foto), 0, 8)]) }}" alt="" width="28" height="28">
+                @else
+                    {{ mb_strtoupper(mb_substr($pengguna->nama, 0, 1)) }}
+                @endif
+            </span>
             <span class="nama">{{ $pengguna->nama }}</span>
             <small>{{ $pengguna->role }}</small>
-        </div>
+        </a>
     </header>
 
     <main class="utama">

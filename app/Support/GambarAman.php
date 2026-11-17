@@ -58,6 +58,45 @@ class GambarAman
     }
 
     /**
+     * Foto profil: diperiksa sebagai gambar sungguhan, dipotong persegi dari tengah, diperkecil ke $sisi px,
+     * lalu dibuat ulang (metadata dibuang) dan disimpan di disk privat dengan nama acak.
+     */
+    public static function simpanPersegi(UploadedFile $berkas, string $bidang = 'foto', string $folder = 'profil', int $sisi = 320): string
+    {
+        $jalur = $berkas->getRealPath();
+        $info = $jalur ? @getimagesize($jalur) : false;
+
+        if (! $info || ! in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
+            throw ValidationException::withMessages([$bidang => 'Berkas bukan gambar JPG, PNG, atau WEBP yang valid.']);
+        }
+        if ($info[0] * $info[1] > self::MAKS_PIKSEL) {
+            throw ValidationException::withMessages([$bidang => 'Dimensi gambar terlalu besar.']);
+        }
+
+        $asal = @imagecreatefromstring((string) file_get_contents($jalur));
+        if (! $asal) {
+            throw ValidationException::withMessages([$bidang => 'Gambar tidak dapat diproses.']);
+        }
+
+        $lebar = imagesx($asal);
+        $tinggi = imagesy($asal);
+        $potong = min($lebar, $tinggi);
+        $hasil = imagecreatetruecolor($sisi, $sisi);
+        imagefill($hasil, 0, 0, imagecolorallocate($hasil, 255, 255, 255));
+        imagecopyresampled($hasil, $asal, 0, 0, intdiv($lebar - $potong, 2), intdiv($tinggi - $potong, 2), $sisi, $sisi, $potong, $potong);
+
+        $webp = function_exists('imagewebp');
+        ob_start();
+        $webp ? imagewebp($hasil, null, 85) : imagejpeg($hasil, null, 88);
+        $isi = (string) ob_get_clean();
+
+        $nama = $folder.'/'.Str::random(40).($webp ? '.webp' : '.jpg');
+        Storage::disk('local')->put($nama, $isi);
+
+        return $nama;
+    }
+
+    /**
      * Foto yang akan dikirim ke penyedia AI: diperiksa sebagai gambar sungguhan, diperkecil, dibuat ulang sebagai JPEG
      * (metadata dibuang), dan TIDAK disimpan. @return array{0:string,1:string} [isi, tipe mime]
      */
