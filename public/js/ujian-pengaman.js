@@ -331,8 +331,10 @@
     });
 
     /* ── Jembatan aplikasi Android (tahap 4) ───────────────────────────── */
-    window.reportMobileViolation = function (alasan) {
-        lapor('aplikasi_android', String(alasan || 'Overlay atau jendela mengambang terdeteksi (aplikasi)').slice(0, 200), {}, 1500);
+    // informasi = true: hanya dicatat untuk pengawas (mis. siswa melanjutkan tanpa sematan layar), tidak dihitung sebagai pelanggaran.
+    window.reportMobileViolation = function (alasan, informasi) {
+        lapor(informasi === true ? 'sematan_dilepas' : 'aplikasi_android',
+            String(alasan || 'Overlay atau jendela mengambang terdeteksi (aplikasi)').slice(0, 200), {}, 1500);
     };
 
     window.Pengaman = { lapor: lapor, KONFIG: KONFIG, periksaUkuranJendela: periksaUkuranJendela };
