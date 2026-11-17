@@ -23,7 +23,7 @@
 <div class="db-panel">
     <header><h3>{{ $admin ? 'Daftar Kelas' : 'Kelas Perwalian Anda' }}</h3><small>{{ count($kelas) }} kelas</small></header>
     <div class="gulir">
-        <table class="tabel tabel-daftar">
+        <table class="tabel tabel-daftar tabel-kartu">
             <thead><tr><th class="no">No</th><th>Kelas</th>@if ($admin)<th>Wali Kelas</th>@endif<th>Jumlah Siswa</th><th>Nilai Mapel Lengkap</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($kelas as $k)

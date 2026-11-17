@@ -69,7 +69,7 @@
 
 <div class="kartu tanpa-padding">
     <div class="gulir">
-        <table class="tabel tabel-monitor" id="monTabel"
+        <table class="tabel tabel-monitor tabel-kartu" id="monTabel"
                data-url="{{ route('staf.monitor.data', $j) }}"
                data-aksi="{{ url('staf/monitor/'.$j->id.'/sesi') }}"
                data-token="{{ csrf_token() }}"

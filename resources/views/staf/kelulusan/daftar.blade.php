@@ -54,7 +54,7 @@
 
 <div class="kartu tanpa-padding">
     <div class="gulir">
-        <table class="tabel tabel-daftar">
+        <table class="tabel tabel-daftar tabel-kartu">
             <thead><tr><th class="no">No</th><th>Nama Siswa</th><th>NISN</th><th>No. Peserta US</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($siswa as $s)

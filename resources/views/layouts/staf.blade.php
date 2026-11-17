@@ -14,6 +14,22 @@
         ['staf', 'Guru & Staf', 'staf'],
         ['pengampu', 'Guru Pengampu', 'pengampu'],
     ];
+
+    // Bilah tab bawah (tampilan HP): empat pintasan utama sesuai peran, ditambah tombol Menu.
+    $tab = [['staf.beranda', 'Beranda', 'beranda', 'staf.beranda']];
+    if ($admin) {
+        $tab[] = ['staf.monitor.index', 'Monitor', 'monitor', 'staf.monitor.*'];
+        $tab[] = ['staf.jadwal.index', 'Jadwal', 'jam', 'staf.jadwal.*'];
+        $tab[] = ['staf.bank-soal.index', 'Bank Soal', 'berkas', 'staf.bank-soal.*'];
+    } elseif ($pengguna->role === 'guru') {
+        $tab[] = ['staf.bank-soal.index', 'Bank Soal', 'berkas', 'staf.bank-soal.*'];
+        $tab[] = ['staf.koreksi.index', 'Koreksi', 'koreksi', 'staf.koreksi.*'];
+        $tab[] = $pengguna->mengawasi()
+            ? ['staf.monitor.index', 'Monitor', 'monitor', 'staf.monitor.*']
+            : ['staf.nilai.index', 'Nilai', 'berkas', 'staf.nilai.*'];
+    } else {
+        $tab[] = ['staf.monitor.index', 'Monitor', 'monitor', 'staf.monitor.*'];
+    }
 @endphp
 
 @push('kepala')
@@ -193,11 +209,21 @@
             @yield('konten')
         </div>
     </main>
+
+    <nav class="bawah" aria-label="Menu cepat">
+        @foreach ($tab as [$rute, $label, $ikon, $pola])
+            <a href="{{ route($rute) }}" class="bawah-a {{ request()->routeIs($pola) ? 'aktif' : '' }}" @if (request()->routeIs($pola)) aria-current="page" @endif>
+                <x-ikon :nama="$ikon" :ukuran="22" /><span>{{ $label }}</span>
+            </a>
+        @endforeach
+        <button type="button" class="bawah-a" id="bawahMenu" aria-label="Buka semua menu"><x-ikon nama="menu" :ukuran="22" /><span>Menu</span></button>
+    </nav>
 </div>
 @endsection
 
 @push('skrip')
 <script src="{{ asset('js/cetak-bingkai.js') }}?v={{ filemtime(public_path('js/cetak-bingkai.js')) }}" defer></script>
+<script src="{{ asset('js/tabel-kartu.js') }}?v={{ filemtime(public_path('js/tabel-kartu.js')) }}" defer></script>
 <script>
     (function () {
         var html = document.documentElement;
@@ -206,6 +232,7 @@
         document.getElementById('sisiBuka').addEventListener('click', function () { html.classList.remove('sisi-mini'); simpan('0'); });
         function tutup() { html.classList.remove('sisi-terbuka'); }
         document.getElementById('hamburger').addEventListener('click', function () { html.classList.add('sisi-terbuka'); });
+        document.getElementById('bawahMenu').addEventListener('click', function () { html.classList.add('sisi-terbuka'); });
         document.getElementById('tirai').addEventListener('click', tutup);
         document.addEventListener('keydown', function (e) { if (e.key === 'Escape') tutup(); });
         document.querySelectorAll('.sisi-badan a').forEach(function (a) { a.addEventListener('click', tutup); });

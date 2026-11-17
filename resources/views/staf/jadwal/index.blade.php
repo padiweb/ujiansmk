@@ -36,7 +36,7 @@
 
 <div class="kartu tanpa-padding">
     <div class="gulir">
-        <table class="tabel">
+        <table class="tabel tabel-kartu">
             <thead><tr><th class="no">No</th><th>Jadwal</th><th>Mapel</th><th>Waktu</th><th>Durasi</th><th>Kelas</th><th>Token</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($jadwal as $j)
