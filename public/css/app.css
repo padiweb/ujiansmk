@@ -1241,3 +1241,14 @@ h1, h2, h3 { color: var(--teks); }
     .hp-pintas a { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px 10px; border-radius: 14px; background: #fff; border: 1px solid var(--garis); color: var(--teks-2); text-decoration: none; text-align: center; font-size: .68rem; font-weight: 700; line-height: 1.25; }
     .hp-pintas i { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--biru-muda); color: var(--biru-tua); }
 }
+
+@media (max-width: 768px) {
+    .lembar-riwayat { margin-top: 14px; }
+    .lembar-riwayat strong { font-size: .86rem; }
+    .lembar-riwayat ul { list-style: none; margin: 6px 0 0; padding: 0; }
+    .lembar-riwayat li { display: flex; align-items: flex-start; gap: 10px; justify-content: space-between; padding: 7px 0 7px 18px; position: relative; font-size: .84rem; }
+    .lembar-riwayat li::before { content: ''; position: absolute; left: 0; top: 12px; width: 9px; height: 9px; box-sizing: border-box; border-radius: 50%; background: var(--kuning); border: 2px solid var(--kuning-tua); }
+    .lembar-riwayat li.lembar-muat { padding-left: 0; color: var(--teks-3); }
+    .lembar-riwayat li.lembar-muat::before { content: none; }
+    .lembar-riwayat small { color: var(--teks-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+}

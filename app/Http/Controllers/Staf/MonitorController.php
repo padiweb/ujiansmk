@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Staf;
 use App\Http\Controllers\Controller;
 use App\Models\AksiPengawas;
 use App\Models\JadwalUjian;
+use App\Models\Pelanggaran;
 use App\Models\Ruang;
 use App\Models\SesiUjian;
 use App\Services\KesalahanUjian;
@@ -88,6 +89,22 @@ class MonitorController extends Controller
         }
 
         return response()->json($this->monitor->data($jadwal))->header('Cache-Control', 'no-store');
+    }
+
+    /** Riwayat pelanggaran satu siswa (untuk lembar rincian di HP); dimuat hanya saat lembar dibuka. */
+    public function pelanggaran(Request $request, JadwalUjian $jadwal, SesiUjian $sesi): JsonResponse
+    {
+        $this->izinkanLihat($request, $jadwal);
+        abort_unless($sesi->jadwal_id === $jadwal->id, 404);
+
+        $daftar = Pelanggaran::query()->where('sesi_id', $sesi->id)->latest('created_at')->latest('id')->limit(30)->get()
+            ->map(fn (Pelanggaran $p) => [
+                'waktu' => $p->created_at?->format('H:i:s'),
+                'jenis' => Pelanggaran::label($p->jenis),
+                'dihitung' => (bool) $p->dihitung,
+            ])->values();
+
+        return response()->json(['pelanggaran' => $daftar])->header('Cache-Control', 'no-store');
     }
 
     /** Tindakan pengawas terhadap satu sesi siswa. */

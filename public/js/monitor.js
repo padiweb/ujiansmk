@@ -220,6 +220,29 @@
         if (b.perangkat_dilepas) kotak.appendChild(baris2('Perangkat', 'dilepas, menunggu masuk ulang'));
         if (b.status !== 'belum') kotak.appendChild(baris2('Pelanggaran', b.pelanggaran + (b.p_jenis ? ' · terakhir ' + b.p_jenis + ' (' + b.p_waktu + ')' : '')));
 
+        if (b.pelanggaran > 0) {
+            var riw = el('div', 'lembar-riwayat');
+            riw.appendChild(el('strong', null, 'Catatan pelanggaran'));
+            var ul = el('ul'); var memuat = el('li', 'lembar-muat', 'Memuat…'); ul.appendChild(memuat);
+            riw.appendChild(ul); kotak.appendChild(riw);
+            var alamat = b.jadwal_id ? tabel.getAttribute('data-aksi') + '/' + b.jadwal_id + '/sesi/' + b.id + '/pelanggaran'
+                : tabel.getAttribute('data-aksi') + '/' + b.id + '/pelanggaran';
+            fetch(alamat, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin', cache: 'no-store' })
+                .then(function (r) { if (!r.ok) throw new Error('gagal'); return r.json(); })
+                .then(function (j) {
+                    if (!lembar || lembar.akar !== akar) return;
+                    ul.textContent = '';
+                    if (!j.pelanggaran.length) { ul.appendChild(el('li', 'lembar-muat', 'Belum ada catatan.')); return; }
+                    j.pelanggaran.forEach(function (p) {
+                        var li = el('li');
+                        li.appendChild(el('span', null, p.jenis + (p.dihitung ? '' : ' (hanya catatan)')));
+                        li.appendChild(el('small', null, p.waktu || ''));
+                        ul.appendChild(li);
+                    });
+                })
+                .catch(function () { memuat.textContent = 'Catatan tidak dapat dimuat.'; });
+        }
+
         var aksi = el('div', 'lembar-aksi');
         function tmb(ke, kode, label, kelas) {
             var t = el('button', 'tombol ' + kelas, label); t.type = 'button';

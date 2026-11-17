@@ -65,6 +65,21 @@ class MonitorPengawasTest extends TestCase
         $this->assertSame(SesiUjian::DIBLOKIR, $sesi->fresh()->status);
     }
 
+    public function test_riwayat_pelanggaran_siswa_dapat_dimuat_pengawas(): void
+    {
+        [$sesi] = $this->berjalan();
+        app(LayananPelanggaran::class)->catat($sesi->fresh(), 'pindah_tab', null);
+
+        $url = "/staf/monitor/{$this->jadwal->id}/sesi/{$sesi->id}/pelanggaran";
+        $j = $this->actingAs($this->pengawas, 'web')->getJson($url)->assertOk()->json('pelanggaran');
+
+        $this->assertCount(1, $j);
+        $this->assertSame(Pelanggaran::label('pindah_tab'), $j[0]['jenis']);
+        $this->assertTrue($j[0]['dihitung']);
+
+        $this->actingAs(User::factory()->create(), 'web')->getJson($url)->assertNotFound(); // guru bukan pengampu mapel ini
+    }
+
     // ── Hak akses ───────────────────────────────────────────────────────────
 
     public function test_semua_pengawas_melihat_jadwal_aktif_dan_tokennya_tanpa_penugasan(): void

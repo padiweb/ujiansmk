@@ -88,7 +88,8 @@ Route::prefix('staf')->group(function () {
             Route::prefix('{jadwal}')->whereNumber('jadwal')->group(function () {
                 Route::get('/', [MonitorController::class, 'show'])->name('show');
                 Route::get('/data', [MonitorController::class, 'data'])->name('data');
-                Route::post('/sesi/{sesi}/{aksi}', [MonitorController::class, 'aksi'])->whereNumber('sesi')
+                Route::get('/sesi/{sesi}/pelanggaran', [MonitorController::class, 'pelanggaran'])->whereNumber('sesi')->middleware('throttle:60,1')->name('pelanggaran');
+                Route::post('/sesi/{sesi}/{aksi}',[MonitorController::class, 'aksi'])->whereNumber('sesi')
                     ->where('aksi', 'aktifkan|reset|waktu|selesai')->middleware('throttle:60,1')->name('aksi');
             });
         });
