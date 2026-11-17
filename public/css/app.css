@@ -1299,27 +1299,38 @@ h1, h2, h3 { color: var(--teks); }
     .padat-denah-ruang td:nth-child(6) .tombol { width: 100%; min-height: 38px; }
 }
 
-/* Bilah tab bawah di HP: dok melayang gelap dengan penanda aktif, lebih modern */
+/* Bilah tab bawah di HP: bilah putih bergaris lengkung; tab terpilih muncul sebagai bola biru yang keluar dari lekukan (gerak diatur bilah-bawah.js) */
 @media (max-width: 768px) {
-    :root { --tinggi-bawah: 88px; }
+    :root { --tinggi-bawah: 84px; }
     .bawah {
-        left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); padding: 6px; gap: 4px;
-        border: 0; border-radius: 26px; background: rgba(16, 29, 99, .97);
-        box-shadow: 0 14px 34px rgba(16, 29, 99, .38), 0 2px 6px rgba(16, 29, 99, .25);
-        -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 880; display: flex; align-items: flex-start; gap: 0;
+        height: calc(66px + env(safe-area-inset-bottom)); padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none;
+        -webkit-backdrop-filter: none; backdrop-filter: none;
     }
+    .bawah-latar {
+        position: absolute; left: 0; bottom: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none;
+        filter: drop-shadow(0 -1px 0 #E3E7EE) drop-shadow(0 -8px 14px rgba(16, 29, 99, .10));
+    }
+    .bawah-bola {
+        position: absolute; left: 0; top: -21px; width: 54px; height: 54px; margin-left: -27px; z-index: 3; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; color: #fff; pointer-events: none; will-change: transform;
+        background: linear-gradient(160deg, #4F78FF, #2A47D1);
+        box-shadow: 0 8px 16px rgba(42, 71, 209, .38), inset 0 1px 0 rgba(255, 255, 255, .3);
+    }
+    .bawah-bola svg { flex: none; }
+    .bawah-bola.tanpa { display: none; }
+    .bawah-bola.tiba { animation: bola-tiba .42s cubic-bezier(.3, 1.5, .5, 1); }
+    @keyframes bola-tiba { 0% { scale: .78; } 100% { scale: 1; } }
     .bawah-a {
-        position: relative; min-height: 56px; border-radius: 20px; gap: 4px; padding-top: 6px;
-        color: rgba(255, 255, 255, .62); font-size: .66rem; font-weight: 600; letter-spacing: .01em;
-        transition: background .2s ease, color .2s ease, transform .15s ease;
+        position: relative; z-index: 2; flex: 1; min-width: 0; height: 66px; padding: 12px 0 0; gap: 5px;
+        display: flex; flex-direction: column; align-items: center; justify-content: flex-start; border-radius: 0; background: none; border: 0;
+        color: #8A93A6; font: inherit; font-size: .69rem; font-weight: 600; letter-spacing: .01em; text-decoration: none; cursor: pointer;
+        -webkit-tap-highlight-color: transparent; transition: color .2s ease;
     }
-    .bawah-a:active { background: rgba(255, 255, 255, .1); transform: scale(.96); }
-    .bawah-a.aktif { color: #fff; background: rgba(255, 255, 255, .14); }
-    .bawah-a.aktif svg { color: var(--kuning); transform: translateY(1px); }
-    .bawah-a.aktif::before {
-        content: ''; position: absolute; top: 5px; left: 50%; width: 16px; height: 3px; margin-left: -8px;
-        border-radius: 2px; background: var(--kuning);
-    }
-    .bawah-a span { line-height: 1.1; }
+    .bawah-a svg { stroke-width: 1.8; }
+    .bawah-a:active { background: none; }
+    .bawah-a.aktif { color: #101D63; font-weight: 800; background: none; }
+    .bawah-a.aktif::before { content: none; }
+    .bawah-a.aktif svg { visibility: hidden; color: inherit; transform: none; }
 }
-@media (prefers-reduced-motion: reduce) { .bawah-a { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .bawah-bola.tiba { animation: none; } .bawah-a { transition: none; } }

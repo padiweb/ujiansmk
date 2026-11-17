@@ -165,12 +165,14 @@
     </main>
 
     <nav class="bawah" aria-label="Menu cepat">
+        <svg class="bawah-latar" aria-hidden="true" focusable="false"><path d="" fill="#fff"/></svg>
+        <span class="bawah-bola" aria-hidden="true"></span>
         @foreach ($tab as [$rute, $label, $ikon, $pola])
             <a href="{{ route($rute) }}" class="bawah-a {{ request()->routeIs($pola) ? 'aktif' : '' }}" @if (request()->routeIs($pola)) aria-current="page" @endif>
-                <x-ikon :nama="$ikon" :ukuran="22" /><span>{{ $label }}</span>
+                <x-ikon :nama="$ikon" :ukuran="25" /><span>{{ $label }}</span>
             </a>
         @endforeach
-        <button type="button" class="bawah-a" id="bawahMenu" aria-label="Buka semua menu"><x-ikon nama="menu" :ukuran="22" /><span>Menu</span></button>
+        <button type="button" class="bawah-a" id="bawahMenu" aria-label="Buka semua menu"><x-ikon nama="menu" :ukuran="25" /><span>Menu</span></button>
     </nav>
 </div>
 @endsection
@@ -178,6 +180,7 @@
 @push('skrip')
 <script src="{{ asset('js/cetak-bingkai.js') }}?v={{ filemtime(public_path('js/cetak-bingkai.js')) }}" defer></script>
 <script src="{{ asset('js/tabel-kartu.js') }}?v={{ filemtime(public_path('js/tabel-kartu.js')) }}" defer></script>
+<script src="{{ asset('js/bilah-bawah.js') }}?v={{ filemtime(public_path('js/bilah-bawah.js')) }}" defer></script>
 <script>
     (function () {
         var html = document.documentElement;
