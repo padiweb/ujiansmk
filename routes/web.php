@@ -109,6 +109,7 @@ Route::prefix('staf')->group(function () {
             Route::prefix('{bank}')->whereNumber('bank')->group(function () {
                 Route::get('/', [BankSoalController::class, 'show'])->name('staf.bank-soal.show');
                 Route::get('/kisi-kisi', [BankSoalController::class, 'kisi'])->middleware('throttle:30,1')->name('staf.bank-soal.kisi');
+                Route::post('/kisi-kisi/susun', [BankSoalController::class, 'susunKisi'])->middleware('throttle:60,1')->name('staf.bank-soal.kisi.susun');
                 Route::get('/ubah', [BankSoalController::class, 'edit'])->name('staf.bank-soal.edit');
                 Route::put('/', [BankSoalController::class, 'update'])->name('staf.bank-soal.update');
                 Route::delete('/', [BankSoalController::class, 'destroy'])->name('staf.bank-soal.destroy');
@@ -150,6 +151,7 @@ Route::prefix('staf')->group(function () {
             Route::get('/', [KoreksiController::class, 'show'])->name('show');
             Route::get('/soal/{soal}', [KoreksiController::class, 'soal'])->whereNumber('soal')->name('soal');
             Route::post('/soal/{soal}/nilai-semua', [KoreksiController::class, 'nilaiSemua'])->whereNumber('soal')->middleware('throttle:20,1')->name('nilai-semua');
+            Route::post('/soal/{soal}/otomatis', [KoreksiController::class, 'otomatis'])->whereNumber('soal')->middleware('throttle:60,1')->name('otomatis');
             Route::post('/soal/{soal}/saran', [KoreksiController::class, 'saran'])->whereNumber('soal')->middleware('throttle:20,1')->name('saran');
             Route::post('/jawaban/{jawaban}/nilai', [KoreksiController::class, 'nilai'])->whereNumber('jawaban')->middleware('throttle:240,1')->name('nilai');
         });

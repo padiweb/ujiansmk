@@ -18,7 +18,7 @@ class Soal extends Model
 
     public const LEVEL = ['L1' => 'L1 — Pengetahuan/pemahaman', 'L2' => 'L2 — Penerapan', 'L3' => 'L3 — Penalaran (HOTS)'];
 
-    protected $fillable = ['bank_soal_id', 'bacaan_id', 'level', 'pembahasan', 'tipe', 'pertanyaan', 'gambar', 'bobot', 'rubrik_esai', 'status', 'sumber', 'urutan'];
+    protected $fillable = ['bank_soal_id', 'bacaan_id', 'level', 'materi', 'indikator', 'pembahasan', 'tipe', 'pertanyaan', 'gambar', 'bobot', 'rubrik_esai', 'status', 'sumber', 'urutan'];
 
     protected function casts(): array
     {

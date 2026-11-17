@@ -162,6 +162,57 @@ class KoreksiController extends Controller
     }
 
     /**
+     * Koreksi otomatis: menilai dan MENYIMPAN nilai untuk satu rombongan (maks. 10) jawaban yang belum bernilai.
+     * Dipanggil berulang oleh halaman sampai tidak ada sisa. Nilai guru tidak pernah ditimpa.
+     */
+    public function otomatis(Request $request, JadwalUjian $jadwal, Soal $soal): JsonResponse
+    {
+        $kelas = $this->lingkup($request, $jadwal, $request->input('kelas'));
+        abort_unless($this->koreksi->soalMilik($jadwal, $soal), 404);
+        $user = $request->user('web');
+
+        $batch = $this->koreksi->jawabanBelumDinilai($jadwal, $soal, $kelas, LayananOtomatis::MAKS_SARAN);
+        if ($batch->isEmpty()) {
+            return response()->json(['ok' => true, 'diproses' => 0, 'sisa' => 0, 'sisa_harian' => $this->otomatis->sisaHariIni($user)]);
+        }
+
+        $adaKunci = $this->kunci->kelasTerkunci($jadwal, $kelas) !== [];
+
+        try {
+            $saran = $this->otomatis->sarankanNilai(
+                $user, $soal, $jadwal->mapel->nama,
+                $batch->map(fn (Jawaban $j) => ['id' => $j->id, 'teks' => (string) $j->teks_esai])->all(),
+            );
+        } catch (KesalahanOtomatis $e) {
+            $tunggu = $e->getMessage() === LayananOtomatis::PESAN_TUNGGU;
+
+            return response()->json(['kode' => $tunggu ? 'tunggu' : 'otomatis', 'pesan' => $e->getMessage()], $tunggu ? 429 : 422);
+        }
+
+        $diproses = 0;
+        foreach ($batch as $j) {
+            if (! isset($saran[$j->id])) {
+                continue;
+            }
+            try {
+                $this->koreksi->simpanSaran($j, $saran[$j->id]['nilai'], $saran[$j->id]['catatan']);
+                $this->koreksi->simpanNilai($j, $saran[$j->id]['nilai'], $user, otomatis: true);
+                $diproses++;
+            } catch (KesalahanUjian) {
+                // jawaban ini dilewati (mis. sesi belum selesai); sisanya tetap diproses
+            }
+        }
+
+        return response()->json([
+            'ok' => true,
+            'diproses' => $diproses,
+            'sisa' => $this->koreksi->jumlahBelumDinilai($jadwal, $soal, $kelas),
+            'kunci_dibuka' => $adaKunci && $diproses > 0,
+            'sisa_harian' => $this->otomatis->sisaHariIni($user),
+        ]);
+    }
+
+    /**
      * Kelas yang boleh ditangani (dipersempit ?kelas= bila ada). 404 bila pengguna tidak mengampu kelas itu.
      *
      * @return list<int>

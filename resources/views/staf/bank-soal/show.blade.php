@@ -4,6 +4,7 @@
 @push('skrip')
     @include('staf.partials.skrip-rumus')
     <script src="{{ asset('js/editor-soal.js') }}?v={{ filemtime(public_path('js/editor-soal.js')) }}" defer></script>
+    <script src="{{ asset('js/kisi-susun.js') }}?v={{ filemtime(public_path('js/kisi-susun.js')) }}" defer></script>
 @endpush
 
 @php
@@ -41,6 +42,9 @@
     <div class="stat-kotak"><span class="stat-ikon tot">∑</span><div><b>{{ $ringkasan['pg'] + $ringkasan['esai'] }}</b><small>Total Soal</small></div></div>
     @if ($ringkasan['pg'] + $ringkasan['esai'] > 0)
         <a class="stat-kotak stat-tautan" href="{{ route('staf.bank-soal.kisi', $bank) }}" data-cetak><x-ikon nama="cetak" :ukuran="18" />Cetak Kisi-Kisi</a>
+        @if ($otomatisAktif && $ringkasan['kisi_belum'] > 0)
+            <button type="button" class="stat-kotak stat-tautan" id="kisiSusun" data-url="{{ route('staf.bank-soal.kisi.susun', $bank) }}" data-token="{{ csrf_token() }}" data-sisa="{{ $ringkasan['kisi_belum'] }}"><x-ikon nama="berkas" :ukuran="18" /><span>Susun Indikator Kisi-Kisi ({{ $ringkasan['kisi_belum'] }} soal)</span></button>
+        @endif
     @endif
     @if ($ringkasan['draf'] > 0)
         <form class="stat-kotak stat-draf" method="POST" action="{{ route('staf.bank-soal.siapkan-semua', $bank) }}">@csrf

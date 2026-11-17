@@ -73,11 +73,13 @@ class BankSoalController extends Controller
         return view('staf.bank-soal.show', [
             'bank' => $bank->load('mapel', 'pembuat'),
             'daftarBacaan' => $bank->bacaan()->withCount('soal')->get(),
+            'otomatisAktif' => \App\Models\PenyediaOtomatis::aktif() !== null,
             'soal' => $bank->soal()->with('opsi', 'bacaan')->get(),
             'ringkasan' => [
                 'pg' => $bank->soal()->where('tipe', Soal::PG)->count(),
                 'esai' => $bank->soal()->where('tipe', Soal::ESAI)->count(),
                 'draf' => $bank->soal()->where('status', 'draf')->count(),
+                'kisi_belum' => $bank->soal()->whereNull('indikator')->count(),
             ],
         ]);
     }
@@ -151,6 +153,22 @@ class BankSoalController extends Controller
         }
 
         return $respons;
+    }
+
+    /** Susun materi dan indikator kisi-kisi secara otomatis untuk satu rombongan soal (dipanggil berulang oleh halaman). */
+    public function susunKisi(Request $request, BankSoal $bank, \App\Services\LayananOtomatis $otomatis): \Illuminate\Http\JsonResponse
+    {
+        $this->izin($request, $bank);
+
+        try {
+            $hasil = $otomatis->susunKisi($request->user('web'), $bank);
+        } catch (\App\Otomatis\KesalahanOtomatis $e) {
+            $tunggu = $e->getMessage() === \App\Services\LayananOtomatis::PESAN_TUNGGU;
+
+            return response()->json(['kode' => $tunggu ? 'tunggu' : 'otomatis', 'pesan' => $e->getMessage()], $tunggu ? 429 : 422);
+        }
+
+        return response()->json(['ok' => true] + $hasil);
     }
 
     private function izin(Request $request, BankSoal $bank): void

@@ -108,7 +108,7 @@
     </div>
     </div>
 
-    <details class="form-lanjut" @if ($errors->hasAny(['bacaan_id', 'level', 'pembahasan', 'bobot', 'status']) || $soal || $bacaanAwal) open @endif>
+    <details class="form-lanjut" @if ($errors->hasAny(['bacaan_id', 'level', 'materi', 'indikator', 'pembahasan', 'bobot', 'status']) || $soal || $bacaanAwal) open @endif>
         <summary>Pengaturan lain: bacaan, level, bobot, status, pembahasan</summary>
 
         <div class="baris-dua">
@@ -151,6 +151,17 @@
             </div>
         </div>
 
+        <div class="bidang @error('materi') salah @enderror">
+            <label for="materi">Materi (untuk kisi-kisi, opsional)</label>
+            <input id="materi" type="text" name="materi" maxlength="150" value="{{ old('materi', $soal?->materi) }}" placeholder="Contoh: Simple Present Tense">
+            @error('materi') <small class="galat-bidang">{{ $message }}</small> @enderror
+        </div>
+        <div class="bidang @error('indikator') salah @enderror">
+            <label for="indikator">Indikator soal (untuk kisi-kisi, opsional)</label>
+            <textarea id="indikator" name="indikator" rows="2" maxlength="400" placeholder="Disajikan teks prosedur, peserta didik dapat menentukan langkah kerja. Jangan menyalin soal.">{{ old('indikator', $soal?->indikator) }}</textarea>
+            <small class="bantuan">Tercetak di kisi-kisi yang dibagikan ke siswa. Tulis rumusan capaian, bukan kalimat soal.</small>
+            @error('indikator') <small class="galat-bidang">{{ $message }}</small> @enderror
+        </div>
         <div class="bidang @error('pembahasan') salah @enderror">
             <label for="pembahasan">Pembahasan / Keterangan (Opsional)</label>
             <textarea id="pembahasan" data-rumus name="pembahasan" rows="3" maxlength="3000" placeholder="Catatan Anda sendiri, tidak tampil ke siswa">{{ old('pembahasan', $soal?->pembahasan) }}</textarea>

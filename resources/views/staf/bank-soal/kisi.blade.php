@@ -12,6 +12,9 @@
     <div class="alat tanpa-cetak">
         <button type="button" onclick="window.print()">Cetak</button>
         <button type="button" class="garis" onclick="window.close()">Tutup</button>
+        @if ($kisi['belum'] > 0)
+            <span style="margin-left:12px;font-size:13px">{{ $kisi['belum'] }} soal memakai indikator umum. Susun indikator di halaman bank soal atau isi di editor tiap soal.</span>
+        @endif
     </div>
 @endunless
 <div class="lembar">
@@ -36,7 +39,7 @@
         <tbody>
             @forelse ($kisi['baris'] as $b)
                 <tr>
-                    <td class="n">{{ $b['no'] }}</td><td>{{ $bank->mapel->nama }}</td><td>{{ $b['indikator'] }}</td>
+                    <td class="n">{{ $b['no'] }}</td><td>{{ $b['materi'] ?? $bank->mapel->nama }}</td><td>{{ $b['indikator'] }}</td>
                     <td class="lv">{{ $b['level'] }}</td><td class="n">{{ $b['bentuk'] }}</td><td class="n">{{ $b['bobot'] }}</td><td class="n">{{ $b['kunci'] ?? '–' }}</td>
                 </tr>
             @empty

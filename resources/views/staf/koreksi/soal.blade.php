@@ -44,6 +44,8 @@
 <div class="kartu" id="korKotak"
      data-nilai="{{ url('staf/koreksi/'.$j->id.'/jawaban') }}"
      data-saran="{{ route('staf.koreksi.saran', [$j, $soal]) }}"
+     data-otomatis="{{ route('staf.koreksi.otomatis', [$j, $soal]) }}"
+     data-kelas="{{ $kelasId }}"
      data-token="{{ csrf_token() }}">
     <div class="kepala-halaman" style="margin-bottom:8px">
         <div><strong id="korProgres">{{ $kemajuan['dinilai'] }}/{{ $kemajuan['total'] }}</strong> jawaban sudah dinilai</div>
@@ -51,9 +53,13 @@
             <a class="tombol kecil garis" href="{{ request()->fullUrlWithQuery(['saring' => $belum ? null : 'belum', 'page' => null]) }}">{{ $belum ? 'Tampilkan semua' : 'Hanya yang belum dinilai' }}</a>
             @if ($penyedia)
                 <button type="button" class="tombol kecil garis" id="korSaran" title="Sisa permintaan hari ini: {{ $sisa }}">Saran nilai (halaman ini)</button>
+                <button type="button" class="tombol kecil" id="korOtomatis" title="Sisa permintaan hari ini: {{ $sisa }}">Koreksi otomatis</button>
             @endif
         </div>
     </div>
+    @if ($penyedia)
+        <p class="bantuan" style="margin:0 0 10px">Koreksi otomatis menilai semua jawaban yang belum bernilai pada soal ini, berdasarkan jawaban acuan. Nilai yang sudah Anda isi tidak diubah, dan setiap nilai otomatis dapat Anda ubah kapan saja.</p>
+    @endif
     <p id="korPesan" class="galat-bidang" hidden></p>
 
     @forelse ($jawaban as $i => $j2)
@@ -61,8 +67,12 @@
             <header>
                 <strong>{{ $j2->sesi->siswa->nama }}</strong>
                 <span class="kor-nama">· {{ $j2->sesi->siswa->kelas->whereIn('nama', explode(', ', $kelasPilihan))->pluck('nama')->implode(', ') }} · {{ $j2->sesi->siswa->nisn }}</span>
+                @if ($j2->dinilai_otomatis)<span class="lencana pucat" title="{{ $j2->saran_catatan }}">Nilai otomatis</span>@endif
                 <span class="kor-simpan" aria-live="polite"></span>
             </header>
+            @if ($j2->dinilai_otomatis && filled($j2->saran_catatan))
+                <p class="bantuan kor-alasan" style="margin:0 0 6px">Alasan: {{ $j2->saran_catatan }}</p>
+            @endif
             <div class="teks-jawaban">{!! nl2br(e($j2->teks_esai)) !!}</div>
             <div class="kor-nilai">
                 <label>Nilai (0–100)

@@ -37,6 +37,8 @@ class SoalController extends Controller
             $soal = $bank->soal()->create([
                 'bacaan_id' => $data['bacaan_id'] ?? null,
                 'level' => $data['level'] ?? null,
+                'materi' => $data['materi'] ?? null,
+                'indikator' => $data['indikator'] ?? null,
                 'pembahasan' => $data['pembahasan'] ?? null,
                 'tipe' => $data['tipe'],
                 'pertanyaan' => $data['pertanyaan'],
@@ -80,6 +82,8 @@ class SoalController extends Controller
             $soal->update([
                 'bacaan_id' => $data['bacaan_id'] ?? null,
                 'level' => $data['level'] ?? null,
+                'materi' => $data['materi'] ?? null,
+                'indikator' => $data['indikator'] ?? null,
                 'pembahasan' => $data['pembahasan'] ?? null,
                 'pertanyaan' => $data['pertanyaan'],
                 'bobot' => $data['bobot'],
@@ -144,6 +148,8 @@ class SoalController extends Controller
             'tipe' => ['required', Rule::in([Soal::PG, Soal::ESAI])],
             'bacaan_id' => ['nullable', 'integer', Rule::exists('bacaan_soal', 'id')->where('bank_soal_id', $bank->id)],
             'level' => ['nullable', Rule::in(array_keys(Soal::LEVEL))],
+            'materi' => ['nullable', 'string', 'max:150'],
+            'indikator' => ['nullable', 'string', 'max:400'],
             'pembahasan' => ['nullable', 'string', 'max:3000'],
             'pertanyaan' => ['required', 'string', 'max:5000'],
             'bobot' => ['required', 'numeric', 'between:0.01,100'],
@@ -163,7 +169,7 @@ class SoalController extends Controller
         }
 
         $nama = [
-            'level' => 'Level', 'pembahasan' => 'Pembahasan', 'bacaan_id' => 'Bacaan', 'pertanyaan' => 'Pertanyaan', 'bobot' => 'Bobot', 'status' => 'Status', 'gambar' => 'Gambar',
+            'level' => 'Level', 'materi' => 'Materi', 'indikator' => 'Indikator', 'pembahasan' => 'Pembahasan', 'bacaan_id' => 'Bacaan', 'pertanyaan' => 'Pertanyaan', 'bobot' => 'Bobot', 'status' => 'Status', 'gambar' => 'Gambar',
             'kunci' => 'Kunci jawaban', 'rubrik_esai' => 'Jawaban acuan', 'jumlah_opsi' => 'Jumlah opsi',
         ] + collect(LayananSoal::LABEL)->mapWithKeys(fn ($h) => ["opsi.{$h}" => "Opsi {$h}"])->all();
 

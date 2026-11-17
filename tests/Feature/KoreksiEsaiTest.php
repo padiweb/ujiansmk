@@ -235,6 +235,40 @@ class KoreksiEsaiTest extends TestCase
         $this->assertSame(1, LogOtomatis::where('status', 'berhasil')->count());
     }
 
+    public function test_koreksi_otomatis_menyimpan_nilai_menandainya_dan_tidak_menimpa_nilai_guru(): void
+    {
+        $this->sediakanPenyedia();
+        $a = $this->jawabanEsai($this->selesaikan(0, 'Jawaban A'));
+        $b = $this->jawabanEsai($this->selesaikan(1, 'Jawaban B'));
+        $this->nilai($this->guru, $b, 40)->assertOk(); // guru sudah menilai B
+        $this->fakeSaran([['id' => $a->id, 'nilai' => 85, 'catatan' => 'Sesuai rubrik.'], ['id' => $b->id, 'nilai' => 10, 'catatan' => 'x']]);
+
+        $url = "/staf/koreksi/{$this->jadwal->id}/soal/{$this->soal['esai']->id}/otomatis";
+        $this->actingAs($this->guru, 'web')->postJson($url)->assertOk()->assertJsonPath('diproses', 1)->assertJsonPath('sisa', 0);
+
+        $a->refresh();
+        $this->assertSame('85.00', $a->nilai_esai);
+        $this->assertTrue($a->dinilai_otomatis);
+        $this->assertSame('40.00', $b->fresh()->nilai_esai);
+        $this->assertFalse($b->fresh()->dinilai_otomatis);
+
+        // Guru mengubah nilai otomatis: tanda otomatis hilang.
+        $this->nilai($this->guru, $a, 70)->assertOk();
+        $this->assertFalse($a->fresh()->dinilai_otomatis);
+
+        // Tidak ada lagi yang perlu dinilai.
+        $this->actingAs($this->guru, 'web')->postJson($url)->assertOk()->assertJsonPath('diproses', 0);
+    }
+
+    public function test_koreksi_otomatis_ditolak_untuk_guru_lain_dan_tanpa_penyedia(): void
+    {
+        $this->selesaikan(0, 'Jawaban A');
+        $url = "/staf/koreksi/{$this->jadwal->id}/soal/{$this->soal['esai']->id}/otomatis";
+
+        $this->actingAs(User::factory()->create(), 'web')->postJson($url)->assertNotFound();
+        $this->actingAs($this->guru, 'web')->postJson($url)->assertStatus(422);
+    }
+
     public function test_saran_di_luar_rentang_dipotong_dan_id_asing_diabaikan(): void
     {
         $this->sediakanPenyedia();

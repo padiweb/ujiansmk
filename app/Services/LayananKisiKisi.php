@@ -24,18 +24,37 @@ class LayananKisiKisi
         $soal = $bank->soal()->with('opsi')->orderBy('tipe')->orderBy('urutan')->orderBy('id')->get();
         $baris = [];
         $sebaran = ['L1' => 0, 'L2' => 0, 'L3' => 0];
+        $belum = 0;
 
         foreach ($soal->sortBy(fn (Soal $s) => ($s->tipe === Soal::PG ? 0 : 1).sprintf('%08d', $s->urutan)) as $i => $s) {
             $level = in_array($s->level, ['L1', 'L2', 'L3'], true) ? $s->level : $this->level($s->pertanyaan, $s->tipe === Soal::ESAI);
             $sebaran[$level]++;
+            $ada = filled($s->indikator);
+            $belum += $ada ? 0 : 1;
             $baris[] = [
-                'no' => count($baris) + 1, 'jenis' => $s->tipe, 'indikator' => $this->indikator($s->pertanyaan), 'level' => $level,
+                'no' => count($baris) + 1, 'jenis' => $s->tipe, 'materi' => filled($s->materi) ? $s->materi : null,
+                'indikator' => $ada ? $s->indikator : $this->indikatorUmum($level, $s->tipe === Soal::ESAI), 'level' => $level,
                 'bentuk' => $s->tipe === Soal::PG ? 'Pilihan Ganda' : 'Esai', 'bobot' => rtrim(rtrim((string) $s->bobot, '0'), '.'),
                 'kunci' => $s->tipe === Soal::PG ? $s->opsi->firstWhere('benar', true)?->label : null,
             ];
         }
 
-        return ['baris' => $baris, 'sebaran' => $sebaran, 'jumlah_pg' => $soal->where('tipe', Soal::PG)->count(), 'jumlah_esai' => $soal->where('tipe', Soal::ESAI)->count()];
+        return ['baris' => $baris, 'sebaran' => $sebaran, 'belum' => $belum, 'jumlah_pg' => $soal->where('tipe', Soal::PG)->count(), 'jumlah_esai' => $soal->where('tipe', Soal::ESAI)->count()];
+    }
+
+    /**
+     * Indikator pengganti bila guru belum menyusunnya: rumusan umum menurut level, TIDAK memuat kalimat soal.
+     * Kisi-kisi dibagikan kepada siswa, jadi pertanyaan yang sebenarnya tidak boleh tercetak di sini.
+     */
+    public function indikatorUmum(string $level, bool $esai): string
+    {
+        $kko = match ($level) {
+            'L3' => 'menganalisis dan mengevaluasi',
+            'L2' => 'menerapkan',
+            default => 'mengingat dan memahami',
+        };
+
+        return "Peserta didik dapat {$kko} konsep pada materi ini".($esai ? ' dan menguraikannya dalam bentuk esai.' : '.');
     }
 
     public function level(string $pertanyaan, bool $esai = false): string
@@ -55,12 +74,4 @@ class LayananKisiKisi
         return $esai ? 'L2' : 'L1'; // esai minimal menuntut pemahaman/penerapan
     }
 
-    /** Ringkasan pertanyaan sebagai indikator: kalimat pertama yang bermakna, dipendekkan. */
-    public function indikator(string $pertanyaan): string
-    {
-        $t = trim(preg_replace('/\s+/u', ' ', $pertanyaan));
-        $kalimat = preg_split('/(?<=[.?!:])\s+/u', $t, 2)[0] ?? $t;
-
-        return Str::limit($kalimat !== '' ? $kalimat : $t, 170);
-    }
 }

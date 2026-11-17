@@ -13,7 +13,7 @@ class Jawaban extends Model
 
     protected $fillable = [
         'sesi_id', 'soal_id', 'opsi_label', 'teks_esai', 'dijawab_klien', 'diterima_pada', 'terlambat',
-        'nilai_esai', 'saran_nilai', 'saran_catatan', 'dikoreksi_oleh', 'dikoreksi_pada',
+        'nilai_esai', 'saran_nilai', 'saran_catatan', 'dinilai_otomatis', 'dikoreksi_oleh', 'dikoreksi_pada',
     ];
 
     protected function casts(): array
@@ -23,6 +23,7 @@ class Jawaban extends Model
             'diterima_pada' => 'datetime',
             'dikoreksi_pada' => 'datetime',
             'terlambat' => 'boolean',
+            'dinilai_otomatis' => 'boolean',
             'nilai_esai' => 'decimal:2',
             'saran_nilai' => 'decimal:2',
         ];

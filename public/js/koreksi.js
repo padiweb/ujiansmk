@@ -51,6 +51,7 @@
             kartu.setAttribute('data-tersimpan', nilai);
             status(kartu, nilai === '' ? 'Nilai dihapus' : 'Tersimpan');
             kartu.classList.toggle('dinilai', nilai !== '');
+            semua('.kor-alasan, header .lencana', kartu).forEach(function (x) { x.remove(); }); // nilai kini dari guru, bukan otomatis
             if (h.j.kunci_dibuka) {
                 pesan('Kunci nilai kelas ini terbuka karena nilai diubah. Kunci lagi di Rekap Nilai setelah selesai.');
                 var kk = $('korKunci'); if (kk) kk.hidden = true;
@@ -76,6 +77,44 @@
             input.value = kartu.querySelector('.kor-saran').getAttribute('data-saran');
             simpan(kartu);
         });
+    });
+
+    // Koreksi otomatis: panggil server berulang (10 jawaban per putaran) sampai semua jawaban bernilai.
+    var tombolOto = $('korOtomatis');
+    if (tombolOto) tombolOto.addEventListener('click', function () {
+        var urlOto = kotak.getAttribute('data-otomatis');
+        var kelas = kotak.getAttribute('data-kelas') || '';
+        if (!confirm('Nilai semua jawaban yang belum bernilai pada soal ini secara otomatis? Nilai yang sudah Anda isi tidak diubah, dan semua nilai otomatis tetap dapat Anda ubah.')) return;
+
+        var teksAwal = tombolOto.textContent, selesai = 0, menunggu = 0;
+        tombolOto.disabled = true; pesan('');
+        if ($('korSaran')) $('korSaran').disabled = true;
+
+        function berhenti(teks) {
+            tombolOto.disabled = false; tombolOto.textContent = teksAwal;
+            if ($('korSaran')) $('korSaran').disabled = false;
+            pesan(teks);
+        }
+
+        function putaran() {
+            tombolOto.textContent = 'Mengoreksi… ' + selesai + ' dinilai';
+            var b = new FormData();
+            if (kelas) b.append('kelas', kelas);
+            kirim(urlOto, b).then(function (h) {
+                if (h.status === 429 && h.j.kode === 'tunggu' && menunggu < 6) {
+                    menunggu++; tombolOto.textContent = 'Menunggu giliran… (' + selesai + ' dinilai)';
+                    setTimeout(putaran, 15000); return;
+                }
+                if (!h.ok) { berhenti((selesai ? selesai + ' jawaban sudah dinilai. ' : '') + (h.j.pesan || 'Koreksi otomatis gagal. Coba lagi.')); return; }
+                menunggu = 0;
+                selesai += h.j.diproses || 0;
+                if (h.j.sisa > 0 && h.j.diproses > 0) { putaran(); return; }
+                if (h.j.sisa > 0) { berhenti(selesai + ' jawaban dinilai; ' + h.j.sisa + ' jawaban belum bisa dinilai otomatis. Nilai manual atau coba lagi.'); if (selesai) setTimeout(function () { location.reload(); }, 2500); return; }
+                berhenti(selesai + ' jawaban dinilai otomatis. Memuat ulang…');
+                setTimeout(function () { location.reload(); }, 800);
+            }).catch(function () { berhenti((selesai ? selesai + ' jawaban sudah dinilai. ' : '') + 'Koneksi bermasalah. Coba lagi.'); });
+        }
+        putaran();
     });
 
     var tombolSaran = $('korSaran');

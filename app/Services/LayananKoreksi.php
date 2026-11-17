@@ -202,14 +202,19 @@ class LayananKoreksi
      *
      * @throws KesalahanUjian
      */
-    public function simpanNilai(Jawaban $jawaban, ?float $nilai, User $pengoreksi): Jawaban
+    public function simpanNilai(Jawaban $jawaban, ?float $nilai, User $pengoreksi, bool $otomatis = false): Jawaban
     {
         if ($nilai !== null && ($nilai < 0 || $nilai > 100)) {
             throw new KesalahanUjian('Nilai harus antara 0 sampai 100.', 'nilai_salah', 422);
         }
 
-        return DB::transaction(function () use ($jawaban, $nilai, $pengoreksi) {
+        return DB::transaction(function () use ($jawaban, $nilai, $pengoreksi, $otomatis) {
             $terkunci = Jawaban::query()->lockForUpdate()->findOrFail($jawaban->id);
+
+            // Koreksi otomatis tidak pernah menimpa nilai yang sudah ada (termasuk yang baru diisi guru).
+            if ($otomatis && $terkunci->nilai_esai !== null) {
+                return $terkunci;
+            }
             $sesi = SesiUjian::with('jadwal')->findOrFail($terkunci->sesi_id);
 
             if ($sesi->status !== SesiUjian::SELESAI) {
@@ -224,12 +229,13 @@ class LayananKoreksi
 
             $terkunci->update([
                 'nilai_esai' => $nilai,
+                'dinilai_otomatis' => $otomatis && $nilai !== null,
                 'dikoreksi_oleh' => $nilai === null ? null : $pengoreksi->id,
                 'dikoreksi_pada' => $nilai === null ? null : now(),
             ]);
 
             $this->penilaian->hitungEsai($sesi);
-            AuditLog::catat('koreksi.nilai', "jawaban {$terkunci->id} sesi {$sesi->id}: ".($nilai ?? 'dihapus'), $pengoreksi);
+            AuditLog::catat($otomatis ? 'koreksi.otomatis' : 'koreksi.nilai', "jawaban {$terkunci->id} sesi {$sesi->id}: ".($nilai ?? 'dihapus'), $pengoreksi);
 
             return $terkunci->fresh();
         });
@@ -267,6 +273,17 @@ class LayananKoreksi
     }
 
     /** Simpan saran "Otomatis" (tidak menyentuh nilai resmi). */
+    /** Jawaban satu soal yang belum bernilai (bahan koreksi otomatis), urut stabil agar tiap putaran maju. */
+    public function jawabanBelumDinilai(JadwalUjian $jadwal, Soal $soal, ?array $kelas, int $batas): Collection
+    {
+        return $this->jawabanSoal($jadwal, $soal, $kelas)->reorder()->whereNull('nilai_esai')->orderBy('id')->limit($batas)->get();
+    }
+
+    public function jumlahBelumDinilai(JadwalUjian $jadwal, Soal $soal, ?array $kelas): int
+    {
+        return $this->jawabanSoal($jadwal, $soal, $kelas)->reorder()->whereNull('nilai_esai')->count();
+    }
+
     public function simpanSaran(Jawaban $jawaban, float $nilai, ?string $catatan): void
     {
         $jawaban->update(['saran_nilai' => $nilai, 'saran_catatan' => $catatan]);

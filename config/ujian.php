@@ -8,7 +8,7 @@ return [
     'pengembang' => env('UJIAN_PENGEMBANG', 'Padiweb'),
 
     // Penyusun soal otomatis: batas permintaan per pengguna per hari dan soal per permintaan.
-    'batas_otomatis_harian' => (int) env('UJIAN_BATAS_OTOMATIS_HARIAN', 30),
+    'batas_otomatis_harian' => (int) env('UJIAN_BATAS_OTOMATIS_HARIAN', 150),
     'maks_soal_otomatis' => 10,
 
     // Layanan penyusun soal dan saran nilai otomatis. Diatur lewat .env (bukan layar admin); kunci tidak pernah ditampilkan.

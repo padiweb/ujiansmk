@@ -20,6 +20,9 @@ class LayananOtomatis
     /** Jawaban per permintaan saran nilai. */
     public const MAKS_SARAN = 10;
 
+    /** Pesan saat laju permintaan terlampaui; dikenali koreksi otomatis agar menunggu lalu mengulang. */
+    public const PESAN_TUNGGU = 'Terlalu sering meminta. Tunggu sebentar, lalu coba lagi.';
+
     public function __construct(private LayananSoal $layananSoal, private PenyaringHasil $penyaring) {}
 
     public function batasHarian(): int
@@ -139,17 +142,7 @@ class LayananOtomatis
             throw new KesalahanOtomatis('Pilih 1 sampai '.self::MAKS_SARAN.' jawaban untuk dimintakan saran.');
         }
 
-        if ($this->sisaHariIni($user) <= 0) {
-            throw new KesalahanOtomatis("Batas {$this->batasHarian()} permintaan per hari sudah tercapai. Coba lagi besok.");
-        }
-
-        $kunciLaju = "otomatis:{$user->id}";
-        if (RateLimiter::tooManyAttempts($kunciLaju, 5)) {
-            throw new KesalahanOtomatis('Terlalu sering meminta. Tunggu sebentar, lalu coba lagi.');
-        }
-        RateLimiter::hit($kunciLaju, 60);
-
-        set_time_limit(180);
+        $this->jagaBatas($user);
         $diminta = array_column($jawaban, 'id');
 
         try {
@@ -180,6 +173,129 @@ class LayananOtomatis
         $this->catatSaran($user, $penyedia, $soal, count($jawaban), count($saran), 'berhasil', null);
 
         return $saran;
+    }
+
+    /** Batas harian dan laju permintaan; dicatat sebagai satu permintaan. @throws KesalahanOtomatis */
+    private function jagaBatas(User $user): void
+    {
+        if ($this->sisaHariIni($user) <= 0) {
+            throw new KesalahanOtomatis("Batas {$this->batasHarian()} permintaan per hari sudah tercapai. Coba lagi besok.");
+        }
+
+        $kunciLaju = "otomatis:{$user->id}";
+        if (RateLimiter::tooManyAttempts($kunciLaju, 5)) {
+            throw new KesalahanOtomatis(self::PESAN_TUNGGU);
+        }
+        RateLimiter::hit($kunciLaju, 60);
+
+        set_time_limit(180);
+    }
+
+    /**
+     * Susun bahan kisi-kisi (materi, indikator, level) untuk satu rombongan soal bank yang indikatornya masih kosong dan
+     * simpan ke soal. Indikator yang menyalin soal dibuang (tetap kosong). Dipanggil berulang sampai tidak ada sisa.
+     *
+     * @return array{diproses:int,sisa:int}
+     *
+     * @throws KesalahanOtomatis
+     */
+    public function susunKisi(User $user, BankSoal $bank): array
+    {
+        $penyedia = PenyediaOtomatis::aktif()
+            ?? throw new KesalahanOtomatis('Fitur ini belum tersedia di instalasi ini. Hubungi pengelola aplikasi.');
+
+        $belum = fn () => $bank->soal()->whereNull('indikator');
+        $rombongan = $belum()->orderBy('id')->limit(self::MAKS_SARAN)->get();
+        if ($rombongan->isEmpty()) {
+            return ['diproses' => 0, 'sisa' => 0];
+        }
+
+        $this->jagaBatas($user);
+        $bank->loadMissing('mapel');
+
+        try {
+            $mentah = PenyusunSoal::untuk($penyedia)->kisi($bank->mapel->nama, (string) $bank->tingkat, $rombongan->map(fn (Soal $s) => [
+                'id' => $s->id, 'tipe' => $s->tipe === Soal::PG ? 'PG' : 'Esai', 'teks' => (string) $s->pertanyaan,
+            ])->all());
+        } catch (KesalahanOtomatis $e) {
+            $this->catatKisi($user, $penyedia, $bank, $rombongan->count(), 0, 'gagal', $e->getMessage());
+            throw $e;
+        } catch (Throwable $e) {
+            report($e);
+            $this->catatKisi($user, $penyedia, $bank, $rombongan->count(), 0, 'gagal', 'Galat tak terduga.');
+            throw new KesalahanOtomatis('Terjadi galat tak terduga saat menyusun kisi-kisi. Coba lagi.');
+        }
+
+        $diproses = 0;
+        $peta = $rombongan->keyBy('id');
+        foreach ($mentah as $butir) {
+            $id = $butir['id'] ?? null;
+            $soal = (is_int($id) || (is_string($id) && ctype_digit($id))) ? $peta->get((int) $id) : null;
+            if (! $soal) {
+                continue;
+            }
+            $indikator = $this->bersihTeks($butir['indikator'] ?? null, 400);
+            if ($indikator === null || $this->menyalinSoal($indikator, (string) $soal->pertanyaan)) {
+                continue; // tidak dipakai: kosong atau terlalu mirip soal
+            }
+            $level = strtoupper((string) ($butir['level'] ?? ''));
+            $soal->update([
+                'indikator' => $indikator,
+                'materi' => $this->bersihTeks($butir['materi'] ?? null, 150),
+                'level' => $soal->level ?: (in_array($level, ['L1', 'L2', 'L3'], true) ? $level : null),
+            ]);
+            $diproses++;
+        }
+
+        $this->catatKisi($user, $penyedia, $bank, $rombongan->count(), $diproses, $diproses > 0 ? 'berhasil' : 'gagal', $diproses > 0 ? null : 'Tidak ada indikator yang dapat dipakai.');
+
+        return ['diproses' => $diproses, 'sisa' => $belum()->count()];
+    }
+
+    private function bersihTeks(mixed $teks, int $maks): ?string
+    {
+        if (! is_string($teks)) {
+            return null;
+        }
+        $t = mb_substr(trim(preg_replace('/[\x00-\x1F\x7F]/u', ' ', strip_tags($teks)) ?? ''), 0, $maks);
+
+        return $t !== '' ? $t : null;
+    }
+
+    /** Indikator dianggap menyalin soal bila sangat mirip, atau memuat rangkaian 7 kata berurutan dari soal. */
+    private function menyalinSoal(string $indikator, string $pertanyaan): bool
+    {
+        $norm = fn (string $t) => trim(preg_replace('/\s+/u', ' ', preg_replace('/[^\p{L}\p{N}\s]/u', ' ', mb_strtolower($t))) ?? '');
+        $a = $norm($indikator);
+        $b = $norm($pertanyaan);
+        if ($b === '') {
+            return false;
+        }
+        similar_text($a, $b, $persen);
+        if ($persen >= 70) {
+            return true;
+        }
+        $kata = explode(' ', $b);
+        for ($i = 0; $i + 7 <= count($kata); $i++) {
+            if (str_contains($a, implode(' ', array_slice($kata, $i, 7)))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function catatKisi(User $user, PenyediaOtomatis $penyedia, BankSoal $bank, int $diminta, int $hasil, string $status, ?string $pesan): void
+    {
+        LogOtomatis::create([
+            'user_id' => $user->id,
+            'penyedia_id' => $penyedia->id,
+            'bank_soal_id' => $bank->id,
+            'jumlah_diminta' => $diminta,
+            'jumlah_dihasilkan' => $hasil,
+            'status' => $status,
+            'pesan' => $pesan !== null ? mb_substr('[kisi-kisi] '.$pesan, 0, 250) : '[kisi-kisi]',
+        ]);
     }
 
     private function catatSaran(User $user, PenyediaOtomatis $penyedia, Soal $soal, int $diminta, int $hasil, string $status, ?string $pesan): void
