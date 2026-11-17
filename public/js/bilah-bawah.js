@@ -57,9 +57,8 @@
         bola.appendChild(salin);
     }
 
-    function lunak(t) { // sedikit melampaui lalu kembali, seperti pegas
-        var c = 1.2;
-        return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2);
+    function halus(t) { // percepatan lalu perlambatan lembut, tanpa memantul
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     }
 
     function geser(dari, ke, indeksTujuan, durasi, selesai) {
@@ -68,13 +67,13 @@
         function langkah(waktu) {
             if (mulai === null) mulai = waktu;
             var t = Math.min(1, (waktu - mulai) / durasi);
-            gambar(dari + (ke - dari) * lunak(t));
-            if (!ganti && t >= 0.4) { ganti = true; pasangIkon(indeksTujuan); }
+            gambar(dari + (ke - dari) * halus(t));
+            // Ikon di dalam bola memudar, berganti di tengah perjalanan, lalu muncul lagi.
+            if (!ganti && t >= 0.5) { ganti = true; pasangIkon(indeksTujuan); }
+            if (bola.firstChild) bola.firstChild.style.opacity = String(t < 0.5 ? 1 - t * 2 : (t - 0.5) * 2);
             if (t < 1) { animasi = requestAnimationFrame(langkah); return; }
             gambar(ke);
-            bola.classList.remove('tiba');
-            void bola.offsetWidth; // ulang animasi "tiba"
-            bola.classList.add('tiba');
+            if (bola.firstChild) bola.firstChild.style.opacity = '';
             if (selesai) selesai();
         }
         animasi = requestAnimationFrame(langkah);
@@ -95,7 +94,7 @@
         var dari = lama !== null && lama !== '' ? parseInt(lama, 10) : NaN;
         if (gerak && !isNaN(dari) && dari !== a && item[dari] && item[dari].tagName === 'A') {
             gambar(pusat(dari));
-            geser(pusat(dari), tujuan, a, 420);
+            geser(pusat(dari), tujuan, a, 460);
         } else {
             gambar(tujuan);
         }
@@ -113,7 +112,7 @@
             if (lama >= 0) item[lama].classList.remove('aktif');
             el.classList.add('aktif');
             try { sessionStorage.setItem(SIMPAN, String(i)); } catch (err) { /* tidak wajib */ }
-            geser(x, pusat(i), i, 300, function () { window.location.href = el.href; });
+            geser(x, pusat(i), i, 380, function () { window.location.href = el.href; });
             setTimeout(function () { sibuk = false; }, 2500); // jaga-jaga bila halaman tidak berpindah
         });
     });

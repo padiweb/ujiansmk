@@ -1319,8 +1319,6 @@ h1, h2, h3 { color: var(--teks); }
     }
     .bawah-bola svg { flex: none; }
     .bawah-bola.tanpa { display: none; }
-    .bawah-bola.tiba { animation: bola-tiba .42s cubic-bezier(.3, 1.5, .5, 1); }
-    @keyframes bola-tiba { 0% { scale: .78; } 100% { scale: 1; } }
     .bawah-a {
         position: relative; z-index: 2; flex: 1; min-width: 0; height: 66px; padding: 12px 0 0; gap: 5px;
         display: flex; flex-direction: column; align-items: center; justify-content: flex-start; border-radius: 0; background: none; border: 0;
@@ -1333,4 +1331,4 @@ h1, h2, h3 { color: var(--teks); }
     .bawah-a.aktif::before { content: none; }
     .bawah-a.aktif svg { visibility: hidden; color: inherit; transform: none; }
 }
-@media (prefers-reduced-motion: reduce) { .bawah-bola.tiba { animation: none; } .bawah-a { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .bawah-a { transition: none; } }
