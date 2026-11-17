@@ -60,7 +60,7 @@
 
 <div class="kartu tanpa-padding">
     <div class="gulir">
-        <table class="tabel tabel-kartu" id="drTabel" data-url="{{ route('staf.ruang.urutan', $ruang) }}" data-token="{{ csrf_token() }}" data-per="{{ max(1, (int) $dr->siswa_per_meja) }}">
+        <table class="tabel" id="drTabel" data-url="{{ route('staf.ruang.urutan', $ruang) }}" data-token="{{ csrf_token() }}" data-per="{{ max(1, (int) $dr->siswa_per_meja) }}">
             <thead><tr><th style="width:70px">No Meja</th><th style="width:36px"></th><th>Nama Siswa</th><th>Kelas</th><th>Tingkat</th><th>Pindah ke ruang lain</th></tr></thead>
             <tbody id="drIsi">
                 @forelse ($baris as $p)

@@ -18,7 +18,7 @@
 
 <div class="kartu tanpa-padding">
     <div class="gulir">
-        <table class="tabel tabel-kartu">
+        <table class="tabel">
             <thead><tr><th class="no">No</th><th>Ruang</th><th>Kapasitas</th><th>Jenis</th><th>Siswa</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($ruang as $r)

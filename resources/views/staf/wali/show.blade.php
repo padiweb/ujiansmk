@@ -54,7 +54,7 @@
 <div class="db-panel" style="margin-bottom:16px">
     <header><h3>Kelengkapan Nilai Mata Pelajaran</h3><small>{{ count($mapel) }} mapel</small></header>
     <div class="gulir">
-        <table class="tabel tabel-kartu">
+        <table class="tabel">
             <thead><tr><th>Mata Pelajaran</th><th>Guru</th><th>Nilai Lengkap</th><th>Status</th></tr></thead>
             <tbody>
                 @forelse ($mapel as $m)
@@ -80,7 +80,7 @@
     @csrf
     <div class="kartu tanpa-padding">
         <div class="gulir">
-            <table class="tabel tabel-nilai tabel-kartu">
+            <table class="tabel tabel-nilai">
                 <thead>
                     <tr>
                         <th rowspan="2" class="lekat no">No</th><th rowspan="2" class="lekat nama">Nama Siswa</th>

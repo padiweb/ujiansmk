@@ -5,38 +5,8 @@
 (function () {
     'use strict';
 
-    /* Label tiap kolom; judul bertingkat (rowspan/colspan) diurai menjadi "Kelompok · Kolom". */
-    function labelKolom(tabel) {
-        var baris = tabel.querySelectorAll('thead tr'), peta = [], i, j, k, lebar = 0, hasil = [];
-        for (i = 0; i < baris.length; i++) {
-            peta[i] = peta[i] || [];
-            var kol = 0, th = baris[i].children;
-            for (j = 0; j < th.length; j++) {
-                while (peta[i][kol]) kol++;
-                var rs = parseInt(th[j].getAttribute('rowspan'), 10) || 1;
-                var cs = parseInt(th[j].getAttribute('colspan'), 10) || 1;
-                var teks = (th[j].textContent || '').replace(/\s+/g, ' ').trim();
-                for (var r = 0; r < rs; r++) {
-                    peta[i + r] = peta[i + r] || [];
-                    for (var c = 0; c < cs; c++) peta[i + r][kol + c] = teks;
-                }
-                kol += cs;
-            }
-        }
-        for (i = 0; i < peta.length; i++) lebar = Math.max(lebar, (peta[i] || []).length);
-        for (k = 0; k < lebar; k++) {
-            var bagian = [];
-            for (i = 0; i < peta.length; i++) {
-                var t = peta[i] && peta[i][k];
-                if (t && bagian.indexOf(t) === -1) bagian.push(t);
-            }
-            hasil.push(bagian.length > 1 ? bagian[0] + ' · ' + bagian[bagian.length - 1] : (bagian[0] || ''));
-        }
-        return hasil;
-    }
-
     function tandai(tabel) {
-        var judul = labelKolom(tabel);
+        var judul = Array.prototype.map.call(tabel.querySelectorAll('thead th'), function (th) { return (th.textContent || '').trim(); });
         Array.prototype.forEach.call(tabel.querySelectorAll('tbody tr'), function (tr) {
             if (tr.dataset.kartu === '1') return;
             var sel = tr.children, judulDitandai = false;

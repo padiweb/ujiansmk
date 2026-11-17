@@ -55,7 +55,7 @@
     @method('PUT')
     <h2 class="judul-kartu">Skala predikat</h2>
     @error('skala') @foreach ($errors->get('skala') as $m) <div class="pesan-salah" role="alert">{{ $m }}</div> @endforeach @enderror
-    <table class="tabel tabel-kartu" style="margin-top:8px">
+    <table class="tabel" style="margin-top:8px">
         <thead><tr><th>Batas bawah (≥)</th><th>Predikat</th><th>Keterangan</th></tr></thead>
         <tbody>
             @php $baris = old('skala') ?: $skala->map(fn ($s) => ['nilai_min' => $s->nilai_min, 'predikat' => $s->predikat, 'keterangan' => $s->keterangan])->all(); @endphp
@@ -77,7 +77,7 @@
     <h2 class="judul-kartu">Semester</h2>
     @error('periode') <div class="pesan-salah" role="alert">{{ $message }}</div> @enderror
     @foreach ($errors->get('periode.*') as $m) @foreach ($m as $x) <div class="pesan-salah" role="alert">{{ $x }}</div> @endforeach @endforeach
-    <table class="tabel tabel-kartu" style="margin-top:8px">
+    <table class="tabel" style="margin-top:8px">
         <thead><tr><th>Semester</th><th>Mulai</th><th>Selesai</th><th>Rapor di sini</th><th>Tampilkan ke siswa</th></tr></thead>
         <tbody>
             @forelse ($periode as $p)
@@ -126,7 +126,7 @@
     @if (session('kunci_api_baru'))
         <div class="pesan-salah catatan" role="status"><x-ikon nama="info" :ukuran="18" /><span>Kunci baru: <code>{{ session('kunci_api_baru') }}</code></span></div>
     @endif
-    <table class="tabel tabel-kartu" style="margin-top:8px">
+    <table class="tabel" style="margin-top:8px">
         <thead><tr><th>Nama</th><th>Kunci</th><th>Terakhir dipakai</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
         <tbody>
             @forelse ($klienApi as $k)

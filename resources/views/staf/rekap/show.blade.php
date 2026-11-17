@@ -66,7 +66,7 @@
 <div class="db-panel">
     <header><h3>Daftar Nilai Siswa</h3><small>{{ count($baris) }} siswa</small></header>
     <div class="gulir">
-        <table class="tabel tabel-kartu">
+        <table class="tabel">
             <thead><tr><th class="no">No</th><th>Nama</th><th>Kelas</th><th>Status</th><th>B / S / K</th><th>PG</th><th>Esai</th><th>Akhir</th><th>Keterangan</th></tr></thead>
             <tbody>
                 @forelse ($baris as $i => $b)

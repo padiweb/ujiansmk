@@ -34,7 +34,7 @@
         Impor dibatalkan: ada {{ count($hasil->galat) }} galat. Tidak ada data yang disimpan. Perbaiki berkas, lalu unggah ulang.
     </div>
     <div class="kartu tanpa-padding">
-        <table class="tabel tabel-kartu">
+        <table class="tabel">
             <thead><tr><th style="width:90px">Baris</th><th>Masalah</th></tr></thead>
             <tbody>
                 @foreach (array_slice($hasil->galat, 0, 200) as $g)
