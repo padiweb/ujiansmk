@@ -1298,3 +1298,28 @@ h1, h2, h3 { color: var(--teks); }
     .padat-denah-ruang td:nth-child(6) select { width: 100%; min-height: 40px; font-size: 14px; }
     .padat-denah-ruang td:nth-child(6) .tombol { width: 100%; min-height: 38px; }
 }
+
+/* Bilah tab bawah di HP: dok melayang gelap dengan penanda aktif, lebih modern */
+@media (max-width: 768px) {
+    :root { --tinggi-bawah: 88px; }
+    .bawah {
+        left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); padding: 6px; gap: 4px;
+        border: 0; border-radius: 26px; background: rgba(16, 29, 99, .97);
+        box-shadow: 0 14px 34px rgba(16, 29, 99, .38), 0 2px 6px rgba(16, 29, 99, .25);
+        -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    }
+    .bawah-a {
+        position: relative; min-height: 56px; border-radius: 20px; gap: 4px; padding-top: 6px;
+        color: rgba(255, 255, 255, .62); font-size: .66rem; font-weight: 600; letter-spacing: .01em;
+        transition: background .2s ease, color .2s ease, transform .15s ease;
+    }
+    .bawah-a:active { background: rgba(255, 255, 255, .1); transform: scale(.96); }
+    .bawah-a.aktif { color: #fff; background: rgba(255, 255, 255, .14); }
+    .bawah-a.aktif svg { color: var(--kuning); transform: translateY(1px); }
+    .bawah-a.aktif::before {
+        content: ''; position: absolute; top: 5px; left: 50%; width: 16px; height: 3px; margin-left: -8px;
+        border-radius: 2px; background: var(--kuning);
+    }
+    .bawah-a span { line-height: 1.1; }
+}
+@media (prefers-reduced-motion: reduce) { .bawah-a { transition: none; } }

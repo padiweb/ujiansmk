@@ -113,6 +113,11 @@
 
     function jadwalkan() {
         clearTimeout(S.pengatur);
+        // Selama diblokir hanya sedikit siswa yang menyinkron, jadi cek cepat (2,5-4 dtk) agar ujian terbuka segera setelah pengawas mengaktifkan.
+        if (S.alasanKunci === 'blokir') {
+            S.pengatur = setTimeout(function () { sinkron().then(jadwalkan); }, 2500 + Math.random() * 1500);
+            return;
+        }
         // Jeda acak +/-15% agar ratusan siswa tidak menyinkron bersamaan; mundur bertahap bila server sibuk.
         var dasar = S.selang * 1000 * (1 + Math.min(S.gagalBeruntun, 4));
         var acak = dasar * (0.85 + Math.random() * 0.3);
@@ -394,6 +399,7 @@
     function kunci(judul, isi, blokir) {
         S.terkunci = true;
         S.alasanKunci = blokir ? 'blokir' : 'lain';
+        if (blokir) jadwalkan(); // beralih ke pemeriksaan cepat tanpa menunggu giliran sinkron berikutnya
         akar.classList.add('terkunci');
         document.querySelectorAll('#formSoal input, #formSoal textarea').forEach(function (e) { e.disabled = true; });
         // Gerbang layar penuh tidak boleh menutupi pesan blokir / waktu habis.
