@@ -1,6 +1,6 @@
 /*
  * Bilah tab bawah (HP): garis bilah melengkung di bawah tab terpilih dan ikon tab itu muncul sebagai bola biru yang
- * keluar dari lekukan. Saat tab lain diketuk, lekukan dan bola bergeser ke sana, baru halaman berpindah.
+ * keluar dari lekukan. Saat tab lain diketuk, lekukan dan bola bergeser ke sana sementara halaman berpindah.
  * Hanya tampilan: tautan tetap tautan biasa, jadi tetap berfungsi bila skrip ini gagal.
  */
 (function () {
@@ -23,7 +23,6 @@
 
     var x = null;         // pusat lekukan saat ini (px dari kiri); null = tanpa lekukan
     var animasi = 0;
-    var sibuk = false;
 
     function pusat(i) {
         var r = item[i].getBoundingClientRect();
@@ -94,8 +93,11 @@
         return -1;
     }
 
+    var asli = -1; // tab yang aktif menurut halaman ini (sebelum bergeser karena ketukan)
+
     function awal() {
         var a = indeksAktif();
+        asli = a;
         if (a < 0) { gambar(null); return; }
         pasangIkon(a);
         var tujuan = pusat(a);
@@ -110,20 +112,18 @@
         }
     }
 
-    // Ketuk tab lain: lekukan bergeser dulu, lalu pindah halaman.
+    // Ketuk tab lain: halaman langsung berpindah (tidak menunggu), sementara lekukan dan bola bergeser pada halaman lama
+    // sebagai umpan balik seketika. Posisi baru dicatat supaya halaman tujuan langsung tampil di posisi akhir tanpa mengulang gerakan.
     item.forEach(function (el, i) {
         if (el.tagName !== 'A') return;
         el.addEventListener('click', function (e) {
-            if (!gerak || sibuk || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-            if (el.classList.contains('aktif') || x === null) return;
-            e.preventDefault();
-            sibuk = true;
+            if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            try { sessionStorage.setItem(SIMPAN, String(i)); } catch (err) { /* tidak wajib */ }
+            if (!gerak || el.classList.contains('aktif') || x === null) return;
             var lama = indeksAktif();
             if (lama >= 0) item[lama].classList.remove('aktif');
             el.classList.add('aktif');
-            try { sessionStorage.setItem(SIMPAN, String(i)); } catch (err) { /* tidak wajib */ }
-            geser(x, pusat(i), i, 380, function () { window.location.href = el.href; });
-            setTimeout(function () { sibuk = false; }, 2500); // jaga-jaga bila halaman tidak berpindah
+            geser(x, pusat(i), i, 260, null);
         });
     });
 
@@ -136,7 +136,14 @@
         }, 80);
     });
     window.addEventListener('pageshow', function (e) {
-        if (e.persisted) { sibuk = false; var a = indeksAktif(); gambar(a < 0 ? null : pusat(a)); }
+        if (!e.persisted) return;
+        // Kembali ke halaman ini lewat tombol kembali: pulihkan tab aktif menurut halaman ini.
+        item.forEach(function (el, i) { el.classList.toggle('aktif', i === asli); });
+        if (asli >= 0) {
+            pasangIkon(asli);
+            try { sessionStorage.setItem(SIMPAN, String(asli)); } catch (err) { /* tidak wajib */ }
+        }
+        gambar(asli < 0 ? null : pusat(asli));
     });
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', awal); else awal();
