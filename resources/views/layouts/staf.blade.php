@@ -170,14 +170,14 @@
     </main>
 
     <nav class="bawah" aria-label="Menu cepat">
-        <svg class="bawah-latar" aria-hidden="true" focusable="false"><path d="" fill="#fff"/></svg>
+        <svg class="bawah-latar" aria-hidden="true" focusable="false"><path class="bawah-lekuk" d="" fill="#F4F6F9"/><path class="bawah-putih" d="" fill="#fff"/></svg>
         <span class="bawah-bola" aria-hidden="true"></span>
         @foreach ($tab as [$rute, $label, $ikon, $pola])
             <a href="{{ route($rute) }}" class="bawah-a {{ request()->routeIs($pola) ? 'aktif' : '' }}" @if (request()->routeIs($pola)) aria-current="page" @endif>
-                <x-ikon :nama="$ikon" :ukuran="25" /><span>{{ $label }}</span>
+                <x-ikon :nama="$ikon" :ukuran="23" /><span>{{ $label }}</span>
             </a>
         @endforeach
-        <button type="button" class="bawah-a" id="bawahMenu" aria-label="Buka semua menu"><x-ikon nama="menu" :ukuran="25" /><span>Menu</span></button>
+        <button type="button" class="bawah-a" id="bawahMenu" aria-label="Buka semua menu"><x-ikon nama="menu" :ukuran="23" /><span>Menu</span></button>
     </nav>
 </div>
 @endsection

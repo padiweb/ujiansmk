@@ -8,15 +8,17 @@
 
     var bar = document.querySelector('nav.bawah');
     if (!bar) return;
-    var jalur = bar.querySelector('.bawah-latar path');
+    var jalur = bar.querySelector('.bawah-putih');
+    var lekuk = bar.querySelector('.bawah-lekuk');
     var bola = bar.querySelector('.bawah-bola');
-    if (!jalur || !bola) return;
+    if (!jalur || !lekuk || !bola) return;
 
     var item = Array.prototype.slice.call(bar.querySelectorAll('.bawah-a'));
     var gerak = !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-    var KEDALAMAN = 37;   // kedalaman lekukan (px)
-    var LEBAR = 44;       // setengah lebar lekukan di tepi atas (px)
+    var KEDALAMAN = 34;   // kedalaman lekukan (px)
+    var LEBAR = 40;       // setengah lebar lekukan di tepi atas (px)
+    var TURUN = 800;      // bilah digambar jauh ke bawah agar tidak pernah ada celah di bawahnya, berapa pun tinggi bilah
     var SIMPAN = 'bawah-idx';
 
     var x = null;         // pusat lekukan saat ini (px dari kiri); null = tanpa lekukan
@@ -29,18 +31,26 @@
         return r.left - b.left + r.width / 2;
     }
 
+    function lengkung(px) {
+        return 'C' + (px - 28) + ',0 ' + (px - 30) + ',' + KEDALAMAN + ' ' + px + ',' + KEDALAMAN +
+            'C' + (px + 30) + ',' + KEDALAMAN + ' ' + (px + 28) + ',0 ' + (px + LEBAR) + ',0';
+    }
+
     function bentuk(px) {
-        var W = bar.clientWidth, T = bar.clientHeight;
-        if (px === null) return 'M-20,0H' + (W + 20) + 'V' + T + 'H-20Z';
-        return 'M-20,0H' + (px - LEBAR) +
-            'C' + (px - 30) + ',0 ' + (px - 33) + ',' + KEDALAMAN + ' ' + px + ',' + KEDALAMAN +
-            'C' + (px + 33) + ',' + KEDALAMAN + ' ' + (px + 30) + ',0 ' + (px + LEBAR) + ',0' +
-            'H' + (W + 20) + 'V' + T + 'H-20Z';
+        var W = bar.clientWidth;
+        if (px === null) return 'M-20,0H' + (W + 20) + 'V' + TURUN + 'H-20Z';
+        return 'M-20,0H' + (px - LEBAR) + lengkung(px) + 'H' + (W + 20) + 'V' + TURUN + 'H-20Z';
+    }
+
+    // Isi lekukan dengan warna latar halaman agar isi halaman yang bergulir di belakang tidak tembus pandang.
+    function isiLekuk(px) {
+        return px === null ? '' : 'M' + (px - LEBAR) + ',0' + lengkung(px) + 'Z';
     }
 
     function gambar(px) {
         x = px;
         jalur.setAttribute('d', bentuk(px));
+        lekuk.setAttribute('d', isiLekuk(px));
         if (px === null) { bola.classList.add('tanpa'); return; }
         bola.classList.remove('tanpa');
         bola.style.transform = 'translate3d(' + px + 'px,0,0)';
@@ -51,8 +61,8 @@
         var s = item[i] && item[i].querySelector('svg');
         if (!s) return;
         var salin = s.cloneNode(true);
-        salin.setAttribute('width', '27');
-        salin.setAttribute('height', '27');
+        salin.setAttribute('width', '24');
+        salin.setAttribute('height', '24');
         salin.setAttribute('stroke-width', '2.2');
         bola.appendChild(salin);
     }
