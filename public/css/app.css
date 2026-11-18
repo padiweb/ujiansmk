@@ -1395,3 +1395,45 @@ a.lencana-pengguna:hover { border-color: var(--biru-garis); box-shadow: 0 2px 8p
     .bawah-a svg { width: 22px; height: 22px; }
     .fab-hp, .fab-bank, .fab-grup, .tombol-simpan { bottom: calc(var(--tinggi-bawah) + 12px + env(safe-area-inset-bottom)); }
 }
+
+/* Desktop dan tablet: ukuran keseluruhan diperkecil dan dipadatkan (huruf berbasis rem ikut mengecil) */
+html { font-size: 14px; }
+@media (min-width: 993px) {
+    :root { --sisi-lebar: 232px; --sisi-mini: 60px; --tinggi-atas: 54px; --radius: 12px; }
+    .utama { padding: calc(var(--tinggi-atas) + 18px) 22px 40px; }
+    .atas { padding: 0 22px; }
+    .sisi-kepala { padding: 0 10px; }
+    .sisi-badan { padding: 8px 8px; }
+    .sisi-seksi { margin: 12px 6px 6px; }
+    .sisi-a { padding: 8px 11px; gap: 10px; margin-bottom: 2px; border-radius: 9px; font-size: .9rem; }
+
+    .kartu { padding: 15px 18px; margin-top: 14px; }
+    .formulir { padding: 18px 20px 16px; }
+    .formulir .aksi-form { margin-top: 16px; padding-top: 14px; }
+    .kepala-halaman { margin-bottom: 14px; }
+    .judul-halaman { font-size: 1.3rem; }
+    .bidang { margin-bottom: 14px; }
+    .bidang input:not([type=checkbox]):not([type=radio]):not([type=file]), .bidang select, .bidang textarea,
+    .saring input, .saring select, .formulir input[type=file] { padding: 8px 12px; }
+    .tombol { padding: 9px 16px; }
+    .tombol.kecil { padding: 6px 12px; }
+    .tombol.tombol-ikon { width: 30px; height: 30px; }
+    .tombol-pita { padding: 5px 13px; }
+
+    .tabel th { padding: 8px 12px; }
+    .tabel td { padding: 8px 12px; }
+    .db-panel .tabel td, .db-panel .tabel th { padding: 8px 12px; }
+    .db-panel > header { padding: 9px 14px; }
+    .bar-saring { padding: 10px 14px; margin-bottom: 12px; gap: 12px; }
+    .saring { padding: 9px 12px; margin-bottom: 12px; }
+
+    .db-atas { padding: 15px 20px; margin-bottom: 14px; }
+    .pita-info { padding: 14px 18px 16px; margin-bottom: 12px; }
+    .pita-atas { margin-bottom: 12px; }
+    .db-angka { gap: 10px; margin-bottom: 14px; }
+    .db-kotak { padding: 10px 8px; }
+    .db-kotak b { font-size: 1.6rem; }
+    .db-pintas a { padding: 7px 10px; }
+    .db-jadwal { padding: 9px 14px; }
+    .tombol-simpan { right: 22px; bottom: 20px; padding: 10px 20px; }
+}
