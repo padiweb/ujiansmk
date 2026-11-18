@@ -1437,3 +1437,13 @@ html { font-size: 14px; }
     .db-jadwal { padding: 9px 14px; }
     .tombol-simpan { right: 22px; bottom: 20px; padding: 10px 20px; }
 }
+
+/* Gelembung pemuat: bila halaman tujuan belum tiba, bola bilah bawah menampilkan cincin berputar */
+@media (max-width: 768px) {
+    .bawah-bola.memuat svg { visibility: hidden; }
+    .bawah-bola.memuat::after {
+        content: ''; position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; box-sizing: border-box;
+        border-radius: 50%; border: 3px solid rgba(255, 255, 255, .32); border-top-color: #fff; animation: bola-putar .7s linear infinite;
+    }
+    @keyframes bola-putar { to { transform: rotate(360deg); } }
+}

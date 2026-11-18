@@ -23,6 +23,7 @@
 
     var x = null;         // pusat lekukan saat ini (px dari kiri); null = tanpa lekukan
     var animasi = 0;
+    var pemuat = 0;       // pengatur waktu penanda "memuat"
 
     function pusat(i) {
         var r = item[i].getBoundingClientRect();
@@ -124,6 +125,9 @@
             if (lama >= 0) item[lama].classList.remove('aktif');
             el.classList.add('aktif');
             geser(x, pusat(i), i, 260, null);
+            // Bila halaman tujuan belum tiba dalam sekejap, bola berubah menjadi gelembung pemuat sampai halaman berpindah.
+            clearTimeout(pemuat);
+            pemuat = setTimeout(function () { bola.classList.add('memuat'); }, 140);
         });
     });
 
@@ -137,6 +141,8 @@
     });
     window.addEventListener('pageshow', function (e) {
         if (!e.persisted) return;
+        clearTimeout(pemuat);
+        bola.classList.remove('memuat');
         // Kembali ke halaman ini lewat tombol kembali: pulihkan tab aktif menurut halaman ini.
         item.forEach(function (el, i) { el.classList.toggle('aktif', i === asli); });
         if (asli >= 0) {
