@@ -1438,12 +1438,23 @@ html { font-size: 14px; }
     .tombol-simpan { right: 22px; bottom: 20px; padding: 10px 20px; }
 }
 
-/* Gelembung pemuat: bila halaman tujuan belum tiba, bola bilah bawah menampilkan cincin berputar */
+/* Gelembung pemuat di tengah halaman: muncul bila halaman tujuan belum tiba setelah tab bawah diketuk */
+.muat-halaman { display: none; }
 @media (max-width: 768px) {
-    .bawah-bola.memuat svg { visibility: hidden; }
-    .bawah-bola.memuat::after {
-        content: ''; position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; box-sizing: border-box;
-        border-radius: 50%; border: 3px solid rgba(255, 255, 255, .32); border-top-color: #fff; animation: bola-putar .7s linear infinite;
+    .muat-halaman {
+        display: flex; position: fixed; inset: 0; z-index: 870; align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+        background: rgba(244, 246, 249, .55); pointer-events: none; opacity: 0; visibility: hidden;
+        padding-bottom: 70px; transition: opacity .18s ease, visibility 0s linear .18s;
     }
-    @keyframes bola-putar { to { transform: rotate(360deg); } }
+    .muat-halaman.tampil { opacity: 1; visibility: visible; transition: opacity .18s ease; }
+    .muat-gelembung {
+        position: relative; width: 58px; height: 58px; border-radius: 50%; background: #fff;
+        box-shadow: 0 10px 26px rgba(42, 71, 209, .22), 0 1px 0 rgba(255, 255, 255, .9) inset;
+    }
+    .muat-gelembung::after {
+        content: ''; position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; box-sizing: border-box;
+        border-radius: 50%; border: 3px solid #DCE4FF; border-top-color: #3960FB; animation: muat-putar .75s linear infinite;
+    }
+    .muat-teks { font-size: .78rem; font-weight: 700; color: #2A47D1; letter-spacing: .02em; }
+    @keyframes muat-putar { to { transform: rotate(360deg); } }
 }

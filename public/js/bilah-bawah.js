@@ -89,6 +89,28 @@
         animasi = requestAnimationFrame(langkah);
     }
 
+    // Gelembung pemuat di tengah halaman (bukan di bilah): lingkaran putih berisi cincin biru yang berputar.
+    var muat = null;
+    function tampilMuat() {
+        if (!muat) {
+            muat = document.createElement('div');
+            muat.className = 'muat-halaman';
+            muat.setAttribute('role', 'status');
+            muat.setAttribute('aria-live', 'polite');
+            var gelembung = document.createElement('span');
+            gelembung.className = 'muat-gelembung';
+            gelembung.setAttribute('aria-hidden', 'true');
+            var teks = document.createElement('span');
+            teks.className = 'muat-teks';
+            teks.textContent = 'Memuat halaman';
+            muat.appendChild(gelembung);
+            muat.appendChild(teks);
+            document.body.appendChild(muat);
+        }
+        muat.classList.add('tampil');
+    }
+    function sembunyiMuat() { if (muat) muat.classList.remove('tampil'); }
+
     function indeksAktif() {
         for (var i = 0; i < item.length; i++) if (item[i].classList.contains('aktif')) return i;
         return -1;
@@ -125,9 +147,9 @@
             if (lama >= 0) item[lama].classList.remove('aktif');
             el.classList.add('aktif');
             geser(x, pusat(i), i, 260, null);
-            // Bila halaman tujuan belum tiba dalam sekejap, bola berubah menjadi gelembung pemuat sampai halaman berpindah.
+            // Bila halaman tujuan belum tiba dalam sekejap, gelembung pemuat muncul di tengah halaman sampai halaman berpindah.
             clearTimeout(pemuat);
-            pemuat = setTimeout(function () { bola.classList.add('memuat'); }, 140);
+            pemuat = setTimeout(tampilMuat, 140);
         });
     });
 
@@ -142,7 +164,7 @@
     window.addEventListener('pageshow', function (e) {
         if (!e.persisted) return;
         clearTimeout(pemuat);
-        bola.classList.remove('memuat');
+        sembunyiMuat();
         // Kembali ke halaman ini lewat tombol kembali: pulihkan tab aktif menurut halaman ini.
         item.forEach(function (el, i) { el.classList.toggle('aktif', i === asli); });
         if (asli >= 0) {
