@@ -62,7 +62,7 @@ class BankGuruLainTest extends TestCase
         $this->bank($rina, $this->mapel('Sejarah', 'SEJ'), 0, $this->aktif); // kosong: tidak tampil
 
         $html = $this->actingAs($saya, 'web')->get(route('staf.bank-soal.index'))->assertOk()
-            ->assertSee('Sudah dibuat guru lain')->assertSee('Bu Rina')->assertSee('Biologi')->getContent();
+            ->assertSee('Bank soal guru lain')->assertSee('Bu Rina')->assertSee('Biologi')->getContent();
 
         $this->assertStringNotContainsString('Fisika', $html);
         $this->assertStringNotContainsString('Kimia', $html);
@@ -84,14 +84,14 @@ class BankGuruLainTest extends TestCase
         $this->bank($rina, $bio, 3, $this->aktif); // guru lain sudah
 
         $html = $this->actingAs($saya, 'web')->get(route('staf.bank-soal.index'))->assertOk()
-            ->assertSee('Bank yang belum Anda buat')->getContent();
+            ->assertSee('Bank soal yang belum Anda buat')->getContent();
 
-        $awal = strpos($html, 'bank-ingat-daftar');
+        $awal = strpos($html, 'bank-info-daftar');
         $pengingat = substr($html, $awal, strpos($html, 'padding-bottom:80px') - $awal);
         $this->assertStringContainsString('Biologi', $pengingat);
-        $this->assertStringContainsString('guru lain sudah membuat', $pengingat);
+        $this->assertStringContainsString('sudah dibuat oleh Bu Rina', $pengingat);
         $this->assertStringContainsString('IPA Terapan', $pengingat);
-        $this->assertStringContainsString('belum ada', $pengingat);
+        $this->assertStringContainsString('belum ada yang membuat', $pengingat);
         $this->assertStringNotContainsString('Matematika', $pengingat); // sudah dibuat sendiri
         // Bank milik sendiri tidak muncul di tabel "guru lain".
         $this->assertStringNotContainsString('Guru Saya</td>', $html);
@@ -106,11 +106,11 @@ class BankGuruLainTest extends TestCase
         $this->bank($rina, $bio, 3, $this->aktif);
 
         $this->actingAs(User::factory()->admin()->create(), 'web')->get(route('staf.bank-soal.index'))->assertOk()
-            ->assertDontSee('Sudah dibuat guru lain')->assertDontSee('Bank yang belum Anda buat');
+            ->assertDontSee('Bank soal guru lain')->assertDontSee('Bank soal yang belum Anda buat');
 
         $this->aktif->update(['aktif' => false]);
         $this->actingAs($saya, 'web')->get(route('staf.bank-soal.index'))->assertOk()
-            ->assertDontSee('Sudah dibuat guru lain')->assertDontSee('Bank yang belum Anda buat');
+            ->assertDontSee('Bank soal guru lain')->assertDontSee('Bank soal yang belum Anda buat');
     }
 
     public function test_guru_tetap_tidak_bisa_membuka_bank_guru_lain(): void

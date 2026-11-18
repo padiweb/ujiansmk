@@ -30,17 +30,16 @@
 @endunless
 
 @if ($belumDibuat->isNotEmpty() && ! filled(request('q')))
-    <div class="kartu bank-ingat">
-        <h2 class="judul-kartu">Bank yang belum Anda buat</h2>
-        <p class="sub" style="margin:0 0 10px">Untuk kegiatan ujian yang sedang aktif. @if ($belumDibuat->contains('sudahAda', true))Sebagian sudah dibuat guru lain; giliran Anda.@endif</p>
-        <div class="bank-ingat-daftar">
+    <div class="kartu bank-info">
+        <h2 class="judul-kartu">Bank soal yang belum Anda buat</h2>
+        <ul class="bank-info-daftar">
             @foreach ($belumDibuat as $m)
-                <a class="bank-ingat-butir" href="{{ route('staf.bank-soal.create') }}">
-                    <span><strong>{{ $m['mapel'] }}</strong> · Kelas {{ $m['tingkat'] }}</span>
-                    @if ($m['sudahAda'])<span class="lencana pucat">guru lain sudah membuat</span>@else<span class="lencana kuning">belum ada</span>@endif
-                </a>
+                <li>
+                    <a href="{{ route('staf.bank-soal.create') }}">{{ $m['mapel'] }}, Kelas {{ $m['tingkat'] }}</a>
+                    <span>{{ $m['oleh'] ? 'sudah dibuat oleh '.implode(', ', $m['oleh']) : 'belum ada yang membuat' }}</span>
+                </li>
             @endforeach
-        </div>
+        </ul>
     </div>
 @endif
 
@@ -78,18 +77,20 @@
 </div>
 
 @if ($bankLain->isNotEmpty() && ! filled(request('q')))
-    <div class="db-panel" style="margin:6px 0 90px">
-        <header><h3>Sudah dibuat guru lain</h3><small>{{ $bankLain->count() }} bank · kegiatan aktif</small></header>
+    <div class="kartu bank-info" style="margin-bottom:90px">
+        <h2 class="judul-kartu">Bank soal guru lain</h2>
+        @php $banyakKegiatan = $bankLain->pluck('kegiatan_id')->unique()->count() > 1; @endphp
         <div class="gulir">
-            <table class="tabel tabel-daftar padat-lain">
-                <thead><tr><th>Mata pelajaran</th><th>Kelas</th><th>Penyusun</th><th class="kanan">Soal</th></tr></thead>
+            <table class="tabel tabel-baris bank-info-tabel">
+                <thead><tr><th>Mata pelajaran</th><th>Kelas</th><th>Guru</th>@if ($banyakKegiatan)<th>Kegiatan</th>@endif<th class="kanan">Jumlah soal</th></tr></thead>
                 <tbody>
                     @foreach ($bankLain as $b)
                         <tr>
-                            <td><strong>{{ $b->mapel->nama }}</strong><small class="bantuan" style="margin:0">{{ $b->kegiatan->nama }}</small></td>
+                            <td>{{ $b->mapel->nama }}</td>
                             <td>{{ $b->tingkat }}</td>
                             <td>{{ $b->pembuat->nama }}</td>
-                            <td class="kanan">{{ $b->jumlah_pg + $b->jumlah_esai }}<small class="bantuan" style="margin:0">{{ $b->jumlah_pg }} PG · {{ $b->jumlah_esai }} esai</small></td>
+                            @if ($banyakKegiatan)<td>{{ $b->kegiatan->nama }}</td>@endif
+                            <td class="kanan">{{ $b->jumlah_pg + $b->jumlah_esai }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -97,6 +98,5 @@
         </div>
     </div>
 @endif
-
 <a class="fab-bank" href="{{ route('staf.bank-soal.create') }}"><span class="fab-ikon"><x-ikon nama="tambah" :ukuran="16" /></span><span class="fab-label">Bank Baru</span></a>
 @endsection

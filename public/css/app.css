@@ -1371,11 +1371,17 @@ a.lencana-pengguna:hover { border-color: var(--biru-garis); box-shadow: 0 2px 8p
 .lencana-pengguna .avatar { position: relative; }
 .lencana-pengguna .avatar img { position: absolute; inset: 0; z-index: 1; }
 
-/* Bank soal: pengingat bank yang belum dibuat dan daftar bank guru lain */
-.bank-ingat { margin-bottom: 16px; }
-.bank-ingat-daftar { display: flex; flex-wrap: wrap; gap: 8px; }
-.bank-ingat-butir { display: inline-flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--garis); border-radius: 12px; background: #FAFBFF; color: var(--teks); text-decoration: none; font-size: .86rem; }
-.bank-ingat-butir:hover { border-color: var(--biru-garis); background: var(--biru-muda); }
+/* Bank soal: keterangan bank yang belum dibuat dan bank guru lain (sederhana, seperti tabel biasa) */
+.bank-info { margin-bottom: 14px; }
+.bank-info .judul-kartu { margin-bottom: 8px; }
+.bank-info-daftar { list-style: none; margin: 0; padding: 0; }
+.bank-info-daftar li { display: flex; justify-content: space-between; gap: 16px; padding: 7px 0; border-top: 1px solid var(--garis-lembut); font-size: .92rem; }
+.bank-info-daftar li:first-child { border-top: 0; }
+.bank-info-daftar a { font-weight: 600; }
+.bank-info-daftar span { color: var(--teks-3); text-align: right; }
+.bank-info-tabel td, .bank-info-tabel th { padding-left: 0; }
+.bank-info-tabel td.kanan, .bank-info-tabel th.kanan { padding-right: 0; }
+@media (max-width: 768px) { .bank-info-daftar li { flex-direction: column; gap: 1px; } .bank-info-daftar span { text-align: left; } }
 
 /* HP: ukuran keseluruhan diperkecil (huruf dan jarak yang berbasis rem ikut mengecil) dan bilah bawah dirapatkan, menempel di tepi bawah */
 @media (max-width: 768px) {

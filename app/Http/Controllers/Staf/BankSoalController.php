@@ -84,7 +84,7 @@ class BankSoalController extends Controller
                 ->map(fn ($g) => [
                     'mapel' => $g->first()->mapel->nama, 'tingkat' => $g->first()->kelas->tingkat,
                     'mapel_id' => $g->first()->mapel_id,
-                    'sudahAda' => $lain->contains(fn ($b) => $b->mapel_id === $g->first()->mapel_id && $b->tingkat === $g->first()->kelas->tingkat),
+                    'oleh' => $lain->filter(fn ($b) => $b->mapel_id === $g->first()->mapel_id && $b->tingkat === $g->first()->kelas->tingkat)->pluck('pembuat.nama')->unique()->sort()->values()->all(),
                 ])->sortBy([['mapel', 'asc'], ['tingkat', 'asc']])->values()
             : collect();
 
