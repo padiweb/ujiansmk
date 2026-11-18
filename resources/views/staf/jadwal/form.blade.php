@@ -8,6 +8,11 @@
     $bankDipilih = collect(old('bank_ids', $j?->bank->pluck('bank_soal_id')->all() ?? []))->map(fn ($v) => (int) $v)->all();
     $rinciBank = $j?->bank->keyBy('bank_soal_id') ?? collect();
     $kegiatanAwal = (int) old('kegiatan_id', $j?->kegiatan_id);
+    $tingkatAwal = old('tingkat', $j?->kelas->first()?->tingkat);
+    $awalBank = $daftarBank->whereIn('id', $bankDipilih)->map(fn ($b) => [
+        'id' => $b->id, 'nama' => $b->nama, 'pembuat' => $b->pembuat?->nama, 'pg' => $b->pg_siap, 'esai' => $b->esai_siap,
+        'jumlah_pg' => old("jumlah_pg.{$b->id}", $rinciBank[$b->id]->jumlah_pg ?? ''), 'jumlah_esai' => old("jumlah_esai.{$b->id}", $rinciBank[$b->id]->jumlah_esai ?? ''),
+    ])->values();
     $kegiatanLama = $j?->kegiatan && ! $daftarKegiatan->contains('id', $j->kegiatan_id) ? $j->kegiatan : null; // kegiatan yang kini tidak aktif
 @endphp
 
@@ -45,17 +50,26 @@
             @error('mapel_id') <small class="galat-bidang">{{ $message }}</small> @enderror
         </div>
 
-        <fieldset class="opsi-blok @error('kelas_ids') salah @enderror">
-            <legend>Kelas peserta <span class="wajib">*</span></legend>
-            <small class="bantuan" style="margin:0 0 8px">Hanya kelas dari tahun ajaran semester yang dipilih yang tampil.</small>
-            @foreach ($daftarKelas as $k)
-                <label class="centang" data-tahun="{{ $k->tahun_ajaran_id }}" data-kelas>
-                    <input type="checkbox" name="kelas_ids[]" value="{{ $k->id }}" @checked(in_array($k->id, $kelasDipilih, true))>
-                    {{ $k->nama }} <small class="bantuan" style="margin:0">Kelas {{ $k->tingkat }} · {{ $k->tahunAjaran->nama }}</small>
-                </label>
-            @endforeach
+        <div class="bidang @error('kelas_ids') salah @enderror">
+            <label for="tingkat">Kelas peserta <span class="wajib">*</span></label>
+            <select id="tingkat" name="tingkat" required>
+                <option value="">— Pilih —</option>
+                @foreach (\App\Models\Kelas::TINGKAT as $t)
+                    <option value="{{ $t }}" @selected($tingkatAwal === $t)>Kelas {{ $t }}</option>
+                @endforeach
+            </select>
+            <small class="bantuan">Semua kelas pada tingkat ini ikut sebagai peserta.</small>
             @error('kelas_ids') <small class="galat-bidang">{{ $message }}</small> @enderror
-        </fieldset>
+            <details class="kelas-tertentu" @if ($kelasDipilih) open @endif>
+                <summary>Hanya kelas tertentu (opsional)</summary>
+                @foreach ($daftarKelas as $k)
+                    <label class="centang" data-tahun="{{ $k->tahun_ajaran_id }}" data-tingkat="{{ $k->tingkat }}" data-kelas>
+                        <input type="checkbox" name="kelas_ids[]" value="{{ $k->id }}" @checked(in_array($k->id, $kelasDipilih, true))>
+                        {{ $k->nama }}
+                    </label>
+                @endforeach
+            </details>
+        </div>
 
         <div class="bidang @error('mulai_pada') salah @enderror">
             <label for="mulai_pada">Dibuka pada <span class="wajib">*</span></label>
@@ -87,23 +101,9 @@
         </div>
 
         <fieldset class="opsi-blok @error('bank_ids') salah @enderror">
-            <legend>Bank soal <span class="wajib">*</span></legend>
-            <small class="bantuan" style="margin:0 0 8px">Hanya bank untuk mata pelajaran yang dipilih. Bila ada beberapa guru pengampu, pilih bank tiap guru: soal masing-masing otomatis hanya untuk kelas yang diajarnya.</small>
-            @foreach ($daftarBank as $b)
-                <div class="baris-bank" data-mapel="{{ $b->mapel_id }}" data-bank>
-                    <label class="centang">
-                        <input type="checkbox" name="bank_ids[]" value="{{ $b->id }}" @checked(in_array($b->id, $bankDipilih, true))>
-                        <span><strong>{{ $b->nama }}</strong> <small class="bantuan" style="margin:0">Kelas {{ $b->tingkat }} · {{ $b->pembuat->nama }} · siap: {{ $b->pg_siap }} PG, {{ $b->esai_siap }} esai</small></span>
-                    </label>
-                    <div class="jumlah-bank">
-                        <input type="number" min="1" max="500" name="jumlah_pg[{{ $b->id }}]" placeholder="PG" aria-label="Jumlah PG dari {{ $b->nama }}"
-                               value="{{ old("jumlah_pg.{$b->id}", $rinciBank[$b->id]->jumlah_pg ?? '') }}">
-                        <input type="number" min="1" max="500" name="jumlah_esai[{{ $b->id }}]" placeholder="Esai" aria-label="Jumlah esai dari {{ $b->nama }}"
-                               value="{{ old("jumlah_esai.{$b->id}", $rinciBank[$b->id]->jumlah_esai ?? '') }}">
-                    </div>
-                </div>
-            @endforeach
-            @if ($daftarBank->isEmpty()) <small class="bantuan">Belum ada bank soal. Buat dulu di menu Bank Soal.</small> @endif
+            <legend>Bank soal yang dipakai</legend>
+            <small class="bantuan" style="margin:0 0 8px">Terisi otomatis dari bank guru pengampu mata pelajaran dan tingkat yang dipilih. Hilangkan centang bila ada bank yang tidak dipakai. Jumlah soal boleh dikosongkan (semua soal siap dipakai).</small>
+            <div id="bankDaftar" aria-live="polite"></div>
             @error('bank_ids') <small class="galat-bidang">{{ $message }}</small> @enderror
         </fieldset>
 
@@ -146,23 +146,74 @@
 @push('skrip')
 <script>
     (function () {
-        var periode = document.getElementById('kegiatan_id'), mapel = document.getElementById('mapel_id');
+        var kegiatan = document.getElementById('kegiatan_id'), mapel = document.getElementById('mapel_id'), tingkat = document.getElementById('tingkat');
+        var daftar = document.getElementById('bankDaftar'), awal = @json($awalBank), urut = 0;
+        var alamat = @json(route('staf.jadwal.bank-otomatis'));
+
+        function pesan(teks) {
+            daftar.textContent = '';
+            var p = document.createElement('small');
+            p.className = 'bantuan';
+            p.textContent = teks;
+            daftar.appendChild(p);
+        }
+
+        function gambar(isi) {
+            daftar.textContent = '';
+            if (!isi.length) { pesan('Belum ada bank soal yang siap untuk mata pelajaran dan tingkat ini. Minta guru pengampu membuatnya di menu Bank Soal.'); return; }
+            isi.forEach(function (b) {
+                var baris = document.createElement('div'); baris.className = 'baris-bank';
+                var label = document.createElement('label'); label.className = 'centang';
+                var cek = document.createElement('input'); cek.type = 'checkbox'; cek.name = 'bank_ids[]'; cek.value = b.id; cek.checked = true;
+                var teks = document.createElement('span');
+                var judul = document.createElement('strong'); judul.textContent = b.nama;
+                var rinci = document.createElement('small'); rinci.className = 'bantuan'; rinci.style.margin = '0';
+                rinci.textContent = ' ' + (b.pembuat || '') + ' · siap: ' + b.pg + ' PG, ' + b.esai + ' esai';
+                teks.appendChild(judul); teks.appendChild(rinci); label.appendChild(cek); label.appendChild(teks);
+                var jumlah = document.createElement('div'); jumlah.className = 'jumlah-bank';
+                [['jumlah_pg', 'PG'], ['jumlah_esai', 'Esai']].forEach(function (f) {
+                    var i = document.createElement('input'); i.type = 'number'; i.min = 1; i.max = 500; i.name = f[0] + '[' + b.id + ']'; i.placeholder = f[1];
+                    i.setAttribute('aria-label', 'Jumlah ' + f[1] + ' dari ' + b.nama);
+                    if (b[f[0]] !== undefined && b[f[0]] !== null) i.value = b[f[0]];
+                    jumlah.appendChild(i);
+                });
+                baris.appendChild(label); baris.appendChild(jumlah); daftar.appendChild(baris);
+            });
+        }
+
+        function kelasDipilih() {
+            return Array.prototype.filter.call(document.querySelectorAll('[data-kelas] input:checked'), function (c) { return !c.closest('[data-kelas]').hidden; }).map(function (c) { return c.value; });
+        }
+
+        function muat() {
+            if (!kegiatan.value || !mapel.value || !tingkat.value) { pesan('Pilih kegiatan, mata pelajaran, dan kelas peserta dulu. Bank soal akan terisi otomatis.'); return; }
+            var q = new URLSearchParams({ kegiatan_id: kegiatan.value, mapel_id: mapel.value, tingkat: tingkat.value });
+            kelasDipilih().forEach(function (k) { q.append('kelas_ids[]', k); });
+            var saya = ++urut;
+            pesan('Mencari bank soal…');
+            fetch(alamat + '?' + q.toString(), { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+                .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+                .then(function (isi) { if (saya === urut) gambar(isi); })
+                .catch(function () { if (saya === urut) pesan('Bank soal tidak dapat dimuat. Muat ulang halaman ini.'); });
+        }
+
         function saring() {
-            var tahun = periode.selectedOptions[0] ? periode.selectedOptions[0].dataset.tahun : '';
+            var tahun = kegiatan.selectedOptions[0] ? kegiatan.selectedOptions[0].dataset.tahun : '';
             document.querySelectorAll('[data-kelas]').forEach(function (el) {
-                var cocok = !tahun || el.dataset.tahun === tahun;
+                var cocok = (!tahun || el.dataset.tahun === tahun) && (!tingkat.value || el.dataset.tingkat === tingkat.value);
                 el.hidden = !cocok;
                 if (!cocok) el.querySelector('input').checked = false;
             });
-            document.querySelectorAll('[data-bank]').forEach(function (el) {
-                var cocok = !mapel.value || el.dataset.mapel === mapel.value;
-                el.hidden = !cocok;
-                if (!cocok) el.querySelector('input[type=checkbox]').checked = false;
-            });
         }
-        periode.addEventListener('change', saring);
-        mapel.addEventListener('change', saring);
+
+        function berubah() { saring(); muat(); }
+        kegiatan.addEventListener('change', berubah);
+        mapel.addEventListener('change', berubah);
+        tingkat.addEventListener('change', berubah);
+        document.querySelectorAll('[data-kelas] input').forEach(function (c) { c.addEventListener('change', muat); });
+
         saring();
+        if (awal.length) gambar(awal); else muat();
     })();
 </script>
 @endpush

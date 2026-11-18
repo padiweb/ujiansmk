@@ -86,6 +86,57 @@ class JadwalUjianTest extends TestCase
         return JadwalUjian::latest('id')->first();
     }
 
+    public function test_peserta_dipilih_per_tingkat_dan_semua_kelas_tingkat_itu_ikut(): void
+    {
+        $kelasA2 = Kelas::create(['tahun_ajaran_id' => $this->tahun->id, 'tingkat' => 'X', 'nama' => 'X B']);
+        $lama = TahunAjaran::create(['nama' => '2024/2025', 'aktif' => false]);
+        $kelasLama = Kelas::create(['tahun_ajaran_id' => $lama->id, 'tingkat' => 'X', 'nama' => 'X Lama']);
+
+        $jadwal = $this->buat(['kelas_ids' => null, 'tingkat' => 'X']);
+
+        $this->assertEqualsCanonicalizing([$this->kelasA->id, $kelasA2->id], $jadwal->kelas()->pluck('kelas.id')->all());
+        $this->assertNotContains($kelasLama->id, $jadwal->kelas()->pluck('kelas.id')->all());
+    }
+
+    public function test_tingkat_tanpa_kelas_pada_tahun_kegiatan_ditolak(): void
+    {
+        $this->actingAs($this->admin, 'web')->post('/staf/jadwal-ujian', $this->data(['kelas_ids' => null, 'tingkat' => 'XII']))
+            ->assertSessionHasErrors('kelas_ids');
+    }
+
+    public function test_bank_otomatis_hanya_bank_pengampu_yang_siap_dan_sesuai_kegiatan(): void
+    {
+        $guru = User::factory()->create(['nama' => 'Bu Mat']);
+        $lain = User::factory()->create(['nama' => 'Pak Lain']);
+        \App\Models\Pengampu::create(['guru_id' => $guru->id, 'mapel_id' => $this->mtk->id, 'kelas_id' => $this->kelasA->id]);
+        $mk = fn ($pemilik, $nama, $kegiatan) => BankSoal::create(['mapel_id' => $this->mtk->id, 'tingkat' => 'X', 'nama' => $nama, 'kegiatan_id' => $kegiatan?->id, 'jumlah_opsi_bawaan' => 4, 'dibuat_oleh' => $pemilik->id]);
+
+        $umum = $mk($guru, 'Umum Bu Mat', null);
+        $khusus = $mk($guru, 'Khusus UTS Bu Mat', $this->kegiatan);
+        $bukanPengampu = $mk($lain, 'Bank Pak Lain', $this->kegiatan);
+        $kosong = $mk($guru, 'Kosong', $this->kegiatan);
+        $kegiatanLain = KegiatanUjian::create(['periode_id' => $this->periode->id, 'nama' => 'UAS', 'aktif' => true]);
+        $untukLain = $mk($guru, 'Untuk UAS', $kegiatanLain);
+        foreach ([$umum, $khusus, $bukanPengampu, $untukLain] as $b) {
+            $this->soal('pg', 'siap', $b);
+        }
+        $this->soal('pg', 'draf', $kosong);
+
+        $nama = collect($this->actingAs($this->admin, 'web')->getJson(route('staf.jadwal.bank-otomatis', [
+            'kegiatan_id' => $this->kegiatan->id, 'mapel_id' => $this->mtk->id, 'tingkat' => 'X',
+        ]))->assertOk()->json())->pluck('nama')->all();
+
+        // Bank umum Bu Mat tersingkir karena ia punya bank khusus kegiatan ini; bank admin lama (tanpa soal) tidak ikut.
+        $this->assertSame(['Khusus UTS Bu Mat'], $nama);
+        $this->assertNotContains($bukanPengampu->nama, $nama);
+    }
+
+    public function test_form_jadwal_memakai_dropdown_tingkat(): void
+    {
+        $this->actingAs($this->admin, 'web')->get('/staf/jadwal-ujian/tambah')->assertOk()
+            ->assertSee('name="tingkat"', false)->assertSee('Kelas XII')->assertSee('Bank soal yang dipakai');
+    }
+
     // ── Akses ───────────────────────────────────────────────────────────────
 
     public function test_hanya_admin_yang_mengelola_jadwal(): void

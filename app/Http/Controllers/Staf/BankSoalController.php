@@ -36,6 +36,17 @@ class BankSoalController extends Controller
             $kueri->where(fn ($w) => $w->where('nama', 'like', $like)->orWhereHas('mapel', fn ($m) => $m->where('nama', 'like', $like)));
         }
 
+        // Bawaan: hanya bank pada kegiatan ujian yang aktif. Bank semester lama dan bank umum dapat dipilih lewat saringan.
+        $daftarKegiatan = \App\Models\KegiatanUjian::with('periode.tahunAjaran')->orderByDesc('aktif')->orderByDesc('periode_id')->orderBy('nama')->get();
+        $kegiatan = (string) $request->query('kegiatan', '');
+        match (true) {
+            $kegiatan === 'semua' => null,
+            $kegiatan === 'umum' => $kueri->whereNull('kegiatan_id'),
+            ctype_digit($kegiatan) && $daftarKegiatan->contains('id', (int) $kegiatan) => $kueri->where('kegiatan_id', (int) $kegiatan),
+            default => $kueri->whereIn('kegiatan_id', $daftarKegiatan->where('aktif', true)->pluck('id')),
+        };
+        $tersembunyi = (clone $this->kueriDasar($user))->count();
+
         $banks = $kueri->get();
         [$bankLain, $belumDibuat] = $this->dariGuruLain($user);
 
@@ -45,7 +56,15 @@ class BankSoalController extends Controller
             'belumDibuat' => $belumDibuat,
             'perTingkat' => collect(Kelas::TINGKAT)->mapWithKeys(fn ($t) => [$t => $banks->where('tingkat', $t)->values()]),
             'daftarMapel' => Mapel::orderBy('nama')->pluck('nama', 'id'),
+            'daftarKegiatan' => $daftarKegiatan,
+            'kegiatanDipilih' => $kegiatan,
+            'jumlahSemua' => $tersembunyi,
         ]);
+    }
+
+    private function kueriDasar(User $user)
+    {
+        return BankSoal::query()->dapatDilihat($user);
     }
 
     /**

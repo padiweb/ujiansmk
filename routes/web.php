@@ -278,6 +278,7 @@ Route::prefix('staf')->group(function () {
         Route::prefix('jadwal-ujian')->name('staf.jadwal.')->group(function () {
             Route::get('/', [JadwalUjianController::class, 'index'])->name('index');
             Route::get('/tambah', [JadwalUjianController::class, 'create'])->name('create');
+            Route::get('/bank-otomatis', [JadwalUjianController::class, 'bankOtomatis'])->name('bank-otomatis');
             Route::post('/', [JadwalUjianController::class, 'store'])->name('store');
             Route::prefix('{jadwal}')->whereNumber('jadwal')->group(function () {
                 Route::get('/', [JadwalUjianController::class, 'show'])->name('show');

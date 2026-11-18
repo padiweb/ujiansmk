@@ -17,9 +17,20 @@
         <x-ikon nama="cari" :ukuran="16" />
         <input type="search" name="q" value="{{ request('q') }}" placeholder="Cari mata pelajaran atau nama bank…" aria-label="Cari bank soal" autocomplete="off">
     </div>
+    <select name="kegiatan" class="bank-saring" aria-label="Kegiatan ujian" onchange="this.form.submit()">
+        <option value="" @selected($kegiatanDipilih === '')>Kegiatan ujian aktif</option>
+        @foreach ($daftarKegiatan as $k)
+            <option value="{{ $k->id }}" @selected($kegiatanDipilih === (string) $k->id)>{{ $k->nama }} · {{ $k->periode->label() }}@unless ($k->aktif) (tidak aktif)@endunless</option>
+        @endforeach
+        <option value="umum" @selected($kegiatanDipilih === 'umum')>Bank umum (tanpa kegiatan)</option>
+        <option value="semua" @selected($kegiatanDipilih === 'semua')>Semua bank</option>
+    </select>
     <button class="tombol kecil" type="submit">Cari</button>
-    @if (filled(request('q')))<a class="tombol kecil garis" href="{{ route('staf.bank-soal.index') }}">Reset</a>@endif
+    @if (filled(request('q')) || $kegiatanDipilih !== '')<a class="tombol kecil garis" href="{{ route('staf.bank-soal.index') }}">Reset</a>@endif
 </form>
+@if ($kegiatanDipilih === '' && $jumlahSemua > $banks->count())
+    <p class="bank-catatan">{{ $jumlahSemua - $banks->count() }} bank lain (semester lama atau bank umum) disembunyikan. Pilih kegiatan atau "Semua bank" pada saringan untuk melihatnya.</p>
+@endif
 
 @unless (filled(request('q')))
     <div class="bank-chip-baris">

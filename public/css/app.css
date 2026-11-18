@@ -1487,3 +1487,10 @@ html { font-size: 14px; }
         flex: 1 0 100%; justify-content: flex-start; margin-top: 6px; padding-top: 9px; border-top: 1px solid var(--garis-lembut);
     }
 }
+
+.kelas-tertentu { margin-top: 10px; font-size: .93rem; }
+.kelas-tertentu summary { cursor: pointer; color: var(--biru, #1d4ed8); padding: 4px 0; }
+.kelas-tertentu .centang { display: block; margin: 6px 0 0; }
+
+.bank-saring { padding: 9px 12px; font: inherit; border: 1px solid #D1D5DB; border-radius: var(--radius-kecil); background: var(--putih); max-width: 100%; }
+.bank-catatan { margin: -6px 0 14px; font-size: .88rem; color: var(--teks-3); }

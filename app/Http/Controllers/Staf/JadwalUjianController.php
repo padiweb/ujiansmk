@@ -202,8 +202,29 @@ class JadwalUjianController extends Controller
         ];
     }
 
+    /** Usulan bank soal untuk mapel + tingkat pada satu kegiatan (dipanggil form saat pilihan berubah). */
+    public function bankOtomatis(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $d = $request->validate([
+            'kegiatan_id' => ['required', 'integer'], 'mapel_id' => ['required', 'integer'],
+            'tingkat' => ['required', Rule::in(Kelas::TINGKAT)],
+            'kelas_ids' => ['nullable', 'array'], 'kelas_ids.*' => ['integer'],
+        ]);
+
+        $layanan = app(\App\Services\LayananBankPerKelas::class);
+        $kelas = $d['kelas_ids'] ?? [] ?: $layanan->kelasTingkat((int) $d['kegiatan_id'], $d['tingkat']);
+
+        return response()->json($layanan->otomatis((int) $d['kegiatan_id'], (int) $d['mapel_id'], $d['tingkat'], $kelas)
+            ->map(fn ($b) => ['id' => $b->id, 'nama' => $b->nama, 'pembuat' => $b->pembuat?->nama, 'pg' => $b->pg_siap, 'esai' => $b->esai_siap])->all());
+    }
+
     private function validasiLengkap(Request $request, ?JadwalUjian $jadwal = null): array
     {
+        // Peserta dipilih per tingkat (X/XI/XII): semua kelas tingkat itu pada tahun ajaran kegiatan, kecuali kelas dipilih satu per satu.
+        if (! $request->filled('kelas_ids') && in_array($request->input('tingkat'), Kelas::TINGKAT, true) && $request->filled('kegiatan_id')) {
+            $request->merge(['kelas_ids' => app(\App\Services\LayananBankPerKelas::class)->kelasTingkat((int) $request->input('kegiatan_id'), $request->input('tingkat'))]);
+        }
+
         $aturan = [
             'kegiatan_id' => ['required', Rule::exists('kegiatan_ujian', 'id')],
             'mapel_id' => ['required', Rule::exists('mapel', 'id')],
@@ -230,7 +251,7 @@ class JadwalUjianController extends Controller
         $v = Validator::make($request->all(), $aturan, [
             'tutup_pada.after' => 'Waktu tutup harus setelah waktu mulai.',
             'min_kumpul_menit.lt' => 'Waktu minimal sebelum mengumpulkan harus lebih kecil dari durasi pengerjaan.',
-            'kelas_ids.required' => 'Pilih minimal satu kelas peserta.',
+            'kelas_ids.required' => 'Pilih kelas peserta. Pastikan tingkat itu punya kelas pada tahun ajaran kegiatan.',
             'bank_ids.required' => 'Pilih minimal satu bank soal.',
         ], [
             'kegiatan_id' => 'Kegiatan', 'mapel_id' => 'Mata pelajaran', 'durasi_menit' => 'Durasi', 'min_kumpul_menit' => 'Waktu minimal mengumpulkan',

@@ -794,7 +794,7 @@ class SinkronEduwebTest extends TestCase
     {
         $this->pasangKredensial();
         $admin = $this->admin();
-        $admin->forceFill(['eduweb_id' => 2, 'username' => 'siti.aminah'])->saveQuietly();
+        $admin->forceFill(['eduweb_id' => 999, 'username' => 'siti.aminah'])->saveQuietly(); // terhubung ke id yang bukan kepala sekolah di EduWeb
         $sebelum = $admin->fresh()->password;
 
         $this->sinkron();
@@ -850,6 +850,38 @@ class SinkronEduwebTest extends TestCase
         $this->pasangEdu();
         $this->sinkron();
         $this->assertSame('siti.aminah', User::where('eduweb_id', 2)->value('username'));
+    }
+
+    public function test_kepala_sekolah_eduweb_menjadi_admin_dan_kembali_guru_bila_jabatan_berakhir(): void
+    {
+        $this->sinkron(); // mula-mula tercatat sebagai guru biasa
+        $kepsek = User::where('eduweb_id', 2)->first();
+        $this->assertSame(User::GURU, $kepsek->role);
+
+        $this->edu['teachers'][0]['role'] = 'kepala_sekolah';
+        $this->pasangEdu();
+        $h = $this->sinkron();
+
+        $this->assertSame(User::ADMIN, $kepsek->fresh()->role);
+        $this->assertStringContainsString('kepala sekolah di EduWeb', implode(' ', $h->peringatan));
+        $this->assertSame(User::GURU, User::where('eduweb_id', 4)->value('role'));
+
+        // Jabatan berakhir: akun yang terhubung kembali menjadi guru.
+        $this->edu['teachers'][0]['role'] = 'guru';
+        $this->pasangEdu();
+        $this->sinkron();
+        $this->assertSame(User::GURU, $kepsek->fresh()->role);
+    }
+
+    public function test_admin_lokal_tidak_pernah_diubah_peran_oleh_sinkron(): void
+    {
+        $admin = User::factory()->admin()->create(['username' => '198001']);
+        $this->edu['teachers'][0]['role'] = 'guru';
+        $this->pasangEdu();
+        $this->sinkron();
+
+        $this->assertSame(User::ADMIN, $admin->fresh()->role);
+        $this->assertNull($admin->fresh()->eduweb_id);
     }
 
     public function test_foto_guru_dan_siswa_diambil_dari_photo_path_eduweb_dan_jalur_buruk_dibuang(): void

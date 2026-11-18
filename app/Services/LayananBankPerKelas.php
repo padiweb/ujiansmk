@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BankSoal;
+use App\Models\KegiatanUjian;
 use App\Models\Kelas;
 use App\Models\Pengampu;
 use App\Models\User;
@@ -54,6 +55,41 @@ class LayananBankPerKelas
         }
 
         return $hasil;
+    }
+
+    /** Semua kelas pada tingkat tertentu di tahun ajaran milik kegiatan itu. */
+    public function kelasTingkat(int $kegiatanId, string $tingkat): array
+    {
+        $tahun = KegiatanUjian::with('periode:id,tahun_ajaran_id')->find($kegiatanId)?->periode?->tahun_ajaran_id;
+
+        return $tahun ? Kelas::where('tahun_ajaran_id', $tahun)->where('tingkat', $tingkat)->pluck('id')->map(fn ($i) => (int) $i)->all() : [];
+    }
+
+    /**
+     * Bank soal yang dipakai otomatis untuk mapel + tingkat pada satu kegiatan: bank yang berisi soal siap, milik guru pengampu mapel itu
+     * di kelas peserta (atau milik admin), dan terkait kegiatan ini atau bank umum. Bila seorang guru punya bank untuk kegiatan ini,
+     * bank umumnya tidak ikut dipakai.
+     *
+     * @param  list<int|string>  $kelasIds
+     * @return \Illuminate\Support\Collection<int,BankSoal>
+     */
+    public function otomatis(int $kegiatanId, int $mapelId, string $tingkat, array $kelasIds): \Illuminate\Support\Collection
+    {
+        $guruPengampu = Pengampu::where('mapel_id', $mapelId)->whereIn('kelas_id', array_map('intval', $kelasIds))->pluck('guru_id')->unique();
+
+        $bank = BankSoal::with('pembuat:id,nama,role')
+            ->where('mapel_id', $mapelId)->where('tingkat', $tingkat)
+            ->where(fn ($q) => $q->where('kegiatan_id', $kegiatanId)->orWhereNull('kegiatan_id'))
+            ->withCount([
+                'soal as pg_siap' => fn ($q) => $q->where('tipe', 'pg')->where('status', 'siap'),
+                'soal as esai_siap' => fn ($q) => $q->where('tipe', 'esai')->where('status', 'siap'),
+            ])->orderBy('nama')->get()
+            ->filter(fn ($b) => $b->pg_siap + $b->esai_siap > 0)
+            ->filter(fn ($b) => $b->pembuat?->role === User::ADMIN || $guruPengampu->isEmpty() || $guruPengampu->contains($b->dibuat_oleh));
+
+        $punyaKegiatan = $bank->where('kegiatan_id', $kegiatanId)->pluck('dibuat_oleh')->unique();
+
+        return $bank->reject(fn ($b) => $b->kegiatan_id === null && $punyaKegiatan->contains($b->dibuat_oleh))->values();
     }
 
     /** Kelas yang memakai bank tertentu, sebagai teks untuk tampilan. */

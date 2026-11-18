@@ -74,8 +74,28 @@ class BankSoalTest extends TestCase
         $this->bank($a)->update(['nama' => 'Milik A']);
         $this->bank($b)->update(['nama' => 'Milik B']);
 
-        $this->actingAs($a, 'web')->get('/staf/bank-soal')->assertSee('Milik A')->assertDontSee('Milik B');
-        $this->actingAs(User::factory()->admin()->create(), 'web')->get('/staf/bank-soal')->assertSee('Milik A')->assertSee('Milik B');
+        $this->actingAs($a, 'web')->get('/staf/bank-soal?kegiatan=semua')->assertSee('Milik A')->assertDontSee('Milik B');
+        $this->actingAs(User::factory()->admin()->create(), 'web')->get('/staf/bank-soal?kegiatan=semua')->assertSee('Milik A')->assertSee('Milik B');
+    }
+
+    public function test_daftar_bank_bawaannya_hanya_kegiatan_aktif_dan_bisa_disaring(): void
+    {
+        $tahun = \App\Models\TahunAjaran::create(['nama' => '2026/2027', 'aktif' => true]);
+        $lama = \App\Models\Periode::create(['tahun_ajaran_id' => $tahun->id, 'semester' => 'genap', 'tipe' => 'reguler', 'aktif' => false]);
+        $baru = \App\Models\Periode::create(['tahun_ajaran_id' => $tahun->id, 'semester' => 'ganjil', 'tipe' => 'reguler', 'aktif' => true]);
+        $kLama = \App\Models\KegiatanUjian::create(['periode_id' => $lama->id, 'nama' => 'Asesmen Lama', 'aktif' => false]);
+        $kBaru = \App\Models\KegiatanUjian::create(['periode_id' => $baru->id, 'nama' => 'Asesmen Baru', 'aktif' => true]);
+        $a = User::factory()->create();
+        $this->bank($a)->update(['nama' => 'Bank Semester Lama', 'kegiatan_id' => $kLama->id]);
+        $this->bank($a)->update(['nama' => 'Bank Umum Migrasi']);
+        $this->bank($a)->update(['nama' => 'Bank Kegiatan Baru', 'kegiatan_id' => $kBaru->id]);
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin, 'web')->get('/staf/bank-soal')->assertSee('Bank Kegiatan Baru')
+            ->assertDontSee('Bank Semester Lama')->assertDontSee('Bank Umum Migrasi')->assertSee('2 bank lain');
+        $this->get('/staf/bank-soal?kegiatan='.$kLama->id)->assertSee('Bank Semester Lama')->assertDontSee('Bank Kegiatan Baru');
+        $this->get('/staf/bank-soal?kegiatan=umum')->assertSee('Bank Umum Migrasi')->assertDontSee('Bank Semester Lama');
+        $this->get('/staf/bank-soal?kegiatan=semua')->assertSee('Bank Semester Lama')->assertSee('Bank Umum Migrasi')->assertSee('Bank Kegiatan Baru');
     }
 
     public function test_guru_tidak_bisa_membuka_mengubah_atau_menghapus_bank_guru_lain(): void

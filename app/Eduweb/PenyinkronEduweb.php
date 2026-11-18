@@ -427,11 +427,20 @@ class PenyinkronEduweb
         }
     }
 
+    /** @var list<int> id EduWeb kepala sekolah pada sinkron ini */
+    private array $idKepsek = [];
+
     private function guru(array $baris, HasilSinkron $h): void
     {
         foreach ($baris as $r) {
             $nama = mb_substr(trim((string) ($r['name'] ?? '')), 0, 255);
             $aktif = (bool) ($r['is_active'] ?? false) && ! ($r['deleted'] ?? false);
+            // Kepala sekolah di EduWeb menjadi admin di sini (bukan guru). Tanpa kunci "role" (EduWeb lama), peran tidak diubah.
+            $kepsek = ($r['role'] ?? null) === 'kepala_sekolah';
+            $adaPeran = array_key_exists('role', $r);
+            if ($kepsek) {
+                $this->idKepsek[] = (int) $r['id']; // satu-satunya admin yang boleh menerima sandi EduWeb
+            }
             // Nama pengguna EduWeb dipakai bila ada; bila belum, NIP lalu NIY (perilaku lama).
             $ident = $this->bersihkanUsername((string) ($r['username'] ?? '')) ?: $this->bersihkanUsername((string) ($r['nip'] ?? '')) ?: $this->bersihkanUsername((string) ($r['niy'] ?? ''));
 
@@ -447,13 +456,20 @@ class PenyinkronEduweb
                 }
             }
 
-            if ($u && $u->role === User::ADMIN) {
-                $h->dilewati('guru', "Guru \"{$nama}\" cocok dengan akun admin lokal; akun admin tidak pernah diubah oleh sinkron.");
+            if ($u && $u->role === User::ADMIN && ! $u->eduweb_id) {
+                $h->dilewati('guru', "Guru \"{$nama}\" cocok dengan akun admin lokal; akun admin lokal tidak pernah diubah oleh sinkron.");
                 continue;
             }
 
             if ($u) {
                 $nilai = ['eduweb_id' => $r['id'], 'nama' => $nama, 'aktif' => $aktif, 'foto_eduweb' => FotoEduweb::bersihkan($r['photo_path'] ?? null)];
+                if ($kepsek && $u->role !== User::ADMIN) {
+                    $nilai['role'] = User::ADMIN;
+                    $h->peringatan("\"{$nama}\" adalah kepala sekolah di EduWeb dan kini menjadi admin di aplikasi ujian.");
+                } elseif (! $kepsek && $adaPeran && $u->role === User::ADMIN) {
+                    $nilai['role'] = User::GURU; // hanya akun yang terhubung ke EduWeb; admin lokal tidak pernah sampai sini
+                    $h->peringatan("\"{$nama}\" bukan lagi kepala sekolah di EduWeb, peran di aplikasi ujian dikembalikan menjadi guru.");
+                }
                 if ($ident !== '' && mb_strtolower($ident) !== mb_strtolower($u->username)) {
                     if ($this->usernameDipakai(User::class, $ident, $u->id)) {
                         $h->peringatan("Guru \"{$nama}\": nama pengguna EduWeb \"{$ident}\" sudah dipakai akun lain di sini, nama pengguna lokal tidak diubah.");
@@ -465,7 +481,7 @@ class PenyinkronEduweb
             } elseif ($aktif) {
                 $username = $this->usernameBebas($ident !== '' ? $ident : (Str::slug($nama, '.') ?: 'guru'.$r['id']));
                 $hashEdu = $this->hashKredensial('teacher', (int) $r['id']);
-                $u = new User(['eduweb_id' => $r['id'], 'nama' => $nama, 'username' => $username, 'role' => User::GURU, 'aktif' => true, 'foto_eduweb' => FotoEduweb::bersihkan($r['photo_path'] ?? null)]);
+                $u = new User(['eduweb_id' => $r['id'], 'nama' => $nama, 'username' => $username, 'role' => $kepsek ? User::ADMIN : User::GURU, 'aktif' => true, 'foto_eduweb' => FotoEduweb::bersihkan($r['photo_path'] ?? null)]);
                 if ($hashEdu) {
                     $this->pasangHash($u, $hashEdu, $hashEdu)->saveQuietly(); // hash EduWeb: login sama dengan EduWeb
                 } else {
@@ -687,7 +703,7 @@ class PenyinkronEduweb
         foreach (['student' => Siswa::class, 'teacher' => User::class] as $peran => $model) {
             foreach (array_chunk($kredensial[$peran] ?? [], 500, true) as $potong) {
                 $akun = $model::whereIn('eduweb_id', array_keys($potong))
-                    ->when($model === User::class, fn ($q) => $q->where('role', '!=', User::ADMIN))
+                    ->when($model === User::class, fn ($q) => $q->where(fn ($w) => $w->where('role', '!=', User::ADMIN)->orWhereIn('eduweb_id', $this->idKepsek)))
                     ->get()->keyBy('eduweb_id');
 
                 foreach ($potong as $idEdu => $r) {
