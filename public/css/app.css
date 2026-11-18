@@ -1444,7 +1444,7 @@ html { font-size: 14px; }
     .muat-halaman {
         display: flex; position: fixed; inset: 0; z-index: 870; align-items: center; justify-content: center; flex-direction: column; gap: 12px;
         background: rgba(244, 246, 249, .55); pointer-events: none; opacity: 0; visibility: hidden;
-        padding-bottom: 70px; transition: opacity .18s ease, visibility 0s linear .18s;
+        padding-bottom: 60px; transition: opacity .18s ease, visibility 0s linear .18s;
     }
     .muat-halaman.tampil { opacity: 1; visibility: visible; transition: opacity .18s ease; }
     .muat-gelembung {
@@ -1455,6 +1455,5 @@ html { font-size: 14px; }
         content: ''; position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; box-sizing: border-box;
         border-radius: 50%; border: 3px solid #DCE4FF; border-top-color: #3960FB; animation: muat-putar .75s linear infinite;
     }
-    .muat-teks { font-size: .78rem; font-weight: 700; color: #2A47D1; letter-spacing: .02em; }
     @keyframes muat-putar { to { transform: rotate(360deg); } }
 }

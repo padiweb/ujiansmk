@@ -97,14 +97,11 @@
             muat.className = 'muat-halaman';
             muat.setAttribute('role', 'status');
             muat.setAttribute('aria-live', 'polite');
+            muat.setAttribute('aria-label', 'Memuat halaman'); // hanya untuk pembaca layar, tidak tampil
             var gelembung = document.createElement('span');
             gelembung.className = 'muat-gelembung';
             gelembung.setAttribute('aria-hidden', 'true');
-            var teks = document.createElement('span');
-            teks.className = 'muat-teks';
-            teks.textContent = 'Memuat halaman';
             muat.appendChild(gelembung);
-            muat.appendChild(teks);
             document.body.appendChild(muat);
         }
         muat.classList.add('tampil');
