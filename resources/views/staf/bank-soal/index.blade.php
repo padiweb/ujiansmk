@@ -29,6 +29,21 @@
     </div>
 @endunless
 
+@if ($belumDibuat->isNotEmpty() && ! filled(request('q')))
+    <div class="kartu bank-ingat">
+        <h2 class="judul-kartu">Bank yang belum Anda buat</h2>
+        <p class="sub" style="margin:0 0 10px">Untuk kegiatan ujian yang sedang aktif. @if ($belumDibuat->contains('sudahAda', true))Sebagian sudah dibuat guru lain; giliran Anda.@endif</p>
+        <div class="bank-ingat-daftar">
+            @foreach ($belumDibuat as $m)
+                <a class="bank-ingat-butir" href="{{ route('staf.bank-soal.create') }}">
+                    <span><strong>{{ $m['mapel'] }}</strong> · Kelas {{ $m['tingkat'] }}</span>
+                    @if ($m['sudahAda'])<span class="lencana pucat">guru lain sudah membuat</span>@else<span class="lencana kuning">belum ada</span>@endif
+                </a>
+            @endforeach
+        </div>
+    </div>
+@endif
+
 <div style="padding-bottom:80px">
 @foreach ($perTingkat as $tingkat => $daftar)
     <div class="bank-bagian">
@@ -61,6 +76,27 @@
     @endif
 @endforeach
 </div>
+
+@if ($bankLain->isNotEmpty() && ! filled(request('q')))
+    <div class="db-panel" style="margin:6px 0 90px">
+        <header><h3>Sudah dibuat guru lain</h3><small>{{ $bankLain->count() }} bank · kegiatan aktif</small></header>
+        <div class="gulir">
+            <table class="tabel tabel-daftar padat-lain">
+                <thead><tr><th>Mata pelajaran</th><th>Kelas</th><th>Penyusun</th><th class="kanan">Soal</th></tr></thead>
+                <tbody>
+                    @foreach ($bankLain as $b)
+                        <tr>
+                            <td><strong>{{ $b->mapel->nama }}</strong><small class="bantuan" style="margin:0">{{ $b->kegiatan->nama }}</small></td>
+                            <td>{{ $b->tingkat }}</td>
+                            <td>{{ $b->pembuat->nama }}</td>
+                            <td class="kanan">{{ $b->jumlah_pg + $b->jumlah_esai }}<small class="bantuan" style="margin:0">{{ $b->jumlah_pg }} PG · {{ $b->jumlah_esai }} esai</small></td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+@endif
 
 <a class="fab-bank" href="{{ route('staf.bank-soal.create') }}"><span class="fab-ikon"><x-ikon nama="tambah" :ukuran="16" /></span><span class="fab-label">Bank Baru</span></a>
 @endsection

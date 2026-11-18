@@ -1370,3 +1370,9 @@ a.lencana-pengguna:hover { border-color: var(--biru-garis); box-shadow: 0 2px 8p
 .profil-foto-kecil img { position: absolute; inset: 0; z-index: 1; }
 .lencana-pengguna .avatar { position: relative; }
 .lencana-pengguna .avatar img { position: absolute; inset: 0; z-index: 1; }
+
+/* Bank soal: pengingat bank yang belum dibuat dan daftar bank guru lain */
+.bank-ingat { margin-bottom: 16px; }
+.bank-ingat-daftar { display: flex; flex-wrap: wrap; gap: 8px; }
+.bank-ingat-butir { display: inline-flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--garis); border-radius: 12px; background: #FAFBFF; color: var(--teks); text-decoration: none; font-size: .86rem; }
+.bank-ingat-butir:hover { border-color: var(--biru-garis); background: var(--biru-muda); }

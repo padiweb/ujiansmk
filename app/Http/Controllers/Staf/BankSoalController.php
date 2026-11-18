@@ -37,12 +37,58 @@ class BankSoalController extends Controller
         }
 
         $banks = $kueri->get();
+        [$bankLain, $belumDibuat] = $this->dariGuruLain($user);
 
         return view('staf.bank-soal.index', [
             'banks' => $banks,
+            'bankLain' => $bankLain,
+            'belumDibuat' => $belumDibuat,
             'perTingkat' => collect(Kelas::TINGKAT)->mapWithKeys(fn ($t) => [$t => $banks->where('tingkat', $t)->values()]),
             'daftarMapel' => Mapel::orderBy('nama')->pluck('nama', 'id'),
         ]);
+    }
+
+    /**
+     * Pemacu semangat untuk guru: bank soal guru lain pada kegiatan ujian yang AKTIF (hanya ringkasan: mapel, kelas, penyusun,
+     * jumlah soal; isi soal tidak dibuka), dan mapel/kelas ampuan guru ini yang belum punya bank berisi soal pada kegiatan itu.
+     *
+     * @return array{0:\Illuminate\Support\Collection,1:\Illuminate\Support\Collection}
+     */
+    private function dariGuruLain(User $user): array
+    {
+        if ($user->role !== User::GURU) {
+            return [collect(), collect()];
+        }
+
+        $kegiatanAktif = \App\Models\KegiatanUjian::where('aktif', true)->pluck('id');
+        if ($kegiatanAktif->isEmpty()) {
+            return [collect(), collect()];
+        }
+
+        $semua = BankSoal::query()->whereIn('kegiatan_id', $kegiatanAktif)->with('mapel:id,nama', 'pembuat:id,nama', 'kegiatan:id,nama')
+            ->withCount([
+                'soal as jumlah_pg' => fn ($q) => $q->where('tipe', Soal::PG),
+                'soal as jumlah_esai' => fn ($q) => $q->where('tipe', Soal::ESAI),
+            ])->get()->filter(fn ($b) => $b->jumlah_pg + $b->jumlah_esai > 0);
+
+        $lain = $semua->where('dibuat_oleh', '!=', $user->id)
+            ->sortBy([fn ($a, $b) => strcasecmp($a->mapel->nama, $b->mapel->nama), fn ($a, $b) => $a->tingkat <=> $b->tingkat])->values();
+
+        $punya = $semua->where('dibuat_oleh', $user->id)->map(fn ($b) => $b->mapel_id.'|'.$b->tingkat)->flip();
+        $tahun = \App\Models\TahunAjaran::aktif();
+        $belum = $tahun
+            ? \App\Models\Pengampu::with('mapel:id,nama', 'kelas:id,nama,tingkat,tahun_ajaran_id')
+                ->where('guru_id', $user->id)->whereHas('kelas', fn ($k) => $k->where('tahun_ajaran_id', $tahun->id))->whereHas('mapel')->get()
+                ->groupBy(fn ($p) => $p->mapel_id.'|'.$p->kelas->tingkat)
+                ->reject(fn ($g, $kunci) => $punya->has($kunci))
+                ->map(fn ($g) => [
+                    'mapel' => $g->first()->mapel->nama, 'tingkat' => $g->first()->kelas->tingkat,
+                    'mapel_id' => $g->first()->mapel_id,
+                    'sudahAda' => $lain->contains(fn ($b) => $b->mapel_id === $g->first()->mapel_id && $b->tingkat === $g->first()->kelas->tingkat),
+                ])->sortBy([['mapel', 'asc'], ['tingkat', 'asc']])->values()
+            : collect();
+
+        return [$lain, $belum];
     }
 
     public function create(Request $request): View
