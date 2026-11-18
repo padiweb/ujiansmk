@@ -25,7 +25,7 @@
     }
 
     function pasang() {
-        Array.prototype.forEach.call(document.querySelectorAll('table.tabel-kartu'), function (tabel) {
+        Array.prototype.forEach.call(document.querySelectorAll('table.tabel-kartu, table.tabel-baris'), function (tabel) {
             tandai(tabel);
             var badan = tabel.tBodies[0];
             if (badan && window.MutationObserver) {

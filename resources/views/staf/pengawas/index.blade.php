@@ -17,7 +17,7 @@
 <div class="kartu tanpa-padding">
     <h2 class="judul-kartu" style="padding:16px 20px 0">Pengawas ({{ $pengawas->count() }})</h2>
     <div class="gulir">
-        <table class="tabel">
+        <table class="tabel tabel-baris">
             <thead><tr><th class="no">No</th><th>Nama</th><th>Nama pengguna</th><th>Sumber</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($pengawas as $p)
@@ -53,7 +53,7 @@
 <div class="kartu tanpa-padding">
     <h2 class="judul-kartu" style="padding:16px 20px 0">Guru</h2>
     <div class="gulir">
-        <table class="tabel">
+        <table class="tabel tabel-baris">
             <thead><tr><th>Nama</th><th>Nama pengguna</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($guru as $g)

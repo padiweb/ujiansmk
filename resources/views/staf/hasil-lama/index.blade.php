@@ -50,7 +50,7 @@
 
 <div class="kartu tanpa-padding">
     <div class="gulir">
-        <table class="tabel tabel-daftar">
+        <table class="tabel tabel-daftar tabel-baris">
             <thead>
                 <tr><th class="no">No</th><th>Siswa</th><th>Kelas</th><th>Ujian</th><th>Semester</th><th class="kanan">Benar</th><th class="kanan">Salah</th><th class="kanan">Nilai PG</th><th class="kanan">Nilai Esai</th><th class="kanan">Nilai Akhir</th><th>Selesai</th></tr>
             </thead>

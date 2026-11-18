@@ -133,7 +133,7 @@
         @else
             <div class="db-panel">
                 <div class="gulir">
-                    <table class="tabel tabel-daftar">
+                    <table class="tabel tabel-daftar tabel-baris">
                         <thead><tr><th class="no">No</th><th>Bacaan</th><th>Dipakai</th><th class="kanan">Aksi</th></tr></thead>
                         <tbody>
                             @foreach ($daftarBacaan as $b)

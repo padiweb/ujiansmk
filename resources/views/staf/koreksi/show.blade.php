@@ -18,7 +18,7 @@
 <div class="db-panel">
     <header><h3>Soal Esai</h3><small>{{ count($soal) }} soal</small></header>
     <div class="gulir">
-        <table class="tabel">
+        <table class="tabel tabel-baris">
             <thead><tr><th class="no">No</th><th>Soal esai</th><th>Bobot</th><th>Kemajuan</th><th>Kosong</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($soal as $s)

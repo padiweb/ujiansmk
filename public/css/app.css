@@ -1457,3 +1457,27 @@ html { font-size: 14px; }
     }
     @keyframes muat-putar { to { transform: rotate(360deg); } }
 }
+
+/* HP: tabel daftar menjadi baris ringkas. Judul (mapel, nama, kegiatan) memakai lebar penuh, keterangan lain berderet di bawahnya, tombol aksi di baris sendiri. */
+@media (max-width: 768px) {
+    .gulir:has(.tabel-baris) { overflow-x: visible; }
+    .tabel.tabel-baris, .tabel.tabel-baris tbody { display: block; width: 100%; }
+    .tabel.tabel-baris thead { display: none; }
+    .tabel.tabel-baris tbody tr { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 11px 14px; border-bottom: 1px solid var(--garis-lembut); background: transparent; }
+    .tabel.tabel-baris tbody tr:last-child { border-bottom: 0; }
+    .tabel.tabel-baris td, .db-panel .tabel.tabel-baris td {
+        display: inline-flex; align-items: center; gap: 5px; width: auto; padding: 0; border: 0; text-align: left; white-space: normal;
+        font-size: .86rem; color: var(--teks-2);
+    }
+    .tabel.tabel-baris td::before { content: attr(data-label) ':'; color: var(--teks-3); font-size: .74rem; font-weight: 600; flex: none; }
+    .tabel.tabel-baris td[data-label=""]::before, .tabel.tabel-baris td.sel-judul::before, .tabel.tabel-baris td.kanan::before, .tabel.tabel-baris td.kosong::before { content: none; }
+    .tabel.tabel-baris td.no { display: none; }
+    .tabel.tabel-baris td.sel-judul, .db-panel .tabel.tabel-baris td.sel-judul {
+        display: block; flex: 1 0 100%; margin-bottom: 2px; font-size: 1rem; font-weight: 700; line-height: 1.35; color: var(--teks);
+    }
+    .tabel.tabel-baris td.sel-judul small { display: block; margin-top: 1px; font-weight: 500; }
+    .tabel.tabel-baris td.kosong, .db-panel .tabel.tabel-baris td.kosong { display: block; flex: 1 0 100%; text-align: center; padding: 26px 8px; }
+    .tabel.tabel-baris td.kanan, .db-panel .tabel.tabel-baris td.kanan {
+        flex: 1 0 100%; justify-content: flex-start; margin-top: 6px; padding-top: 9px; border-top: 1px solid var(--garis-lembut);
+    }
+}

@@ -31,7 +31,7 @@
 
 <div class="kartu tanpa-padding">
     <div class="gulir">
-        <table class="tabel">
+        <table class="tabel tabel-baris">
             <thead><tr><th class="no">No</th><th>Kegiatan</th><th>Semester</th><th>Jadwal</th><th>Rapor</th><th>Status</th><th class="kanan">Aksi</th></tr></thead>
             <tbody>
                 @forelse ($kegiatan as $k)

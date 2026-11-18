@@ -25,7 +25,7 @@
 <div class="db-panel">
     <header><h3>{{ $admin ? 'Daftar Kelas Ajar' : 'Daftar Kelas Ajar Anda' }}</h3><small>{{ count($pasangan) }} kelas</small></header>
     <div class="gulir">
-        <table class="tabel tabel-daftar">
+        <table class="tabel tabel-daftar tabel-baris">
             <thead>
                 <tr>
                     <th class="no">No</th><th>Mata Pelajaran</th><th>Kelas</th>@if ($admin)<th>Guru</th>@endif<th>Jumlah Siswa</th><th>Status Input</th><th class="kanan">Aksi</th>

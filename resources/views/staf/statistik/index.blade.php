@@ -79,7 +79,7 @@
     <div class="db-panel">
         <header><h3>Rata-rata per Mata Pelajaran</h3><small>{{ count($perMapel) }} mapel</small></header>
         <div class="gulir">
-            <table class="tabel tabel-daftar">
+            <table class="tabel tabel-daftar tabel-baris">
                 <thead><tr><th>Mata Pelajaran</th><th>KKM</th><th>Siswa</th><th>Tuntas</th><th>Tertinggi</th><th>Terendah</th><th class="kanan">Rata-rata</th></tr></thead>
                 <tbody>
                     @foreach ($perMapel as $m)

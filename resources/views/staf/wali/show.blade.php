@@ -54,7 +54,7 @@
 <div class="db-panel" style="margin-bottom:16px">
     <header><h3>Kelengkapan Nilai Mata Pelajaran</h3><small>{{ count($mapel) }} mapel</small></header>
     <div class="gulir">
-        <table class="tabel">
+        <table class="tabel tabel-baris">
             <thead><tr><th>Mata Pelajaran</th><th>Guru</th><th>Nilai Lengkap</th><th>Status</th></tr></thead>
             <tbody>
                 @forelse ($mapel as $m)
