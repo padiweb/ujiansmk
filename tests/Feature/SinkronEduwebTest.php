@@ -852,6 +852,25 @@ class SinkronEduwebTest extends TestCase
         $this->assertSame('siti.aminah', User::where('eduweb_id', 2)->value('username'));
     }
 
+    public function test_foto_guru_dan_siswa_diambil_dari_photo_path_eduweb_dan_jalur_buruk_dibuang(): void
+    {
+        $this->edu['teachers'][0]['photo_path'] = 'photos/guru/siti.jpg';
+        $this->edu['teachers'][1]['photo_path'] = 'photos/../../.env'; // mencurigakan: tidak disimpan
+        $this->edu['students'][0]['photo_path'] = 'photos/siswa/ani.png';
+        $this->pasangEdu();
+        $this->sinkron();
+
+        $this->assertSame('photos/guru/siti.jpg', User::where('eduweb_id', 2)->value('foto_eduweb'));
+        $this->assertNull(User::where('eduweb_id', 4)->value('foto_eduweb'));
+        $this->assertSame('photos/siswa/ani.png', Siswa::where('eduweb_id', 6)->value('foto_eduweb'));
+
+        // Foto dihapus di EduWeb: ikut terhapus di sini.
+        $this->edu['teachers'][0]['photo_path'] = null;
+        $this->pasangEdu();
+        $this->sinkron();
+        $this->assertNull(User::where('eduweb_id', 2)->value('foto_eduweb'));
+    }
+
     // ── Kejadian perubahan data master dan sandi ────────────────────────────
 
     private function kejadianBaru(int $id, string $tipe, array $payload): array

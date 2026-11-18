@@ -2,6 +2,7 @@
 
 namespace App\Eduweb;
 
+use App\Support\FotoEduweb;
 use App\Models\AuditLog;
 use App\Models\Jurusan;
 use App\Models\Kelas;
@@ -452,7 +453,7 @@ class PenyinkronEduweb
             }
 
             if ($u) {
-                $nilai = ['eduweb_id' => $r['id'], 'nama' => $nama, 'aktif' => $aktif];
+                $nilai = ['eduweb_id' => $r['id'], 'nama' => $nama, 'aktif' => $aktif, 'foto_eduweb' => FotoEduweb::bersihkan($r['photo_path'] ?? null)];
                 if ($ident !== '' && mb_strtolower($ident) !== mb_strtolower($u->username)) {
                     if ($this->usernameDipakai(User::class, $ident, $u->id)) {
                         $h->peringatan("Guru \"{$nama}\": nama pengguna EduWeb \"{$ident}\" sudah dipakai akun lain di sini, nama pengguna lokal tidak diubah.");
@@ -464,7 +465,7 @@ class PenyinkronEduweb
             } elseif ($aktif) {
                 $username = $this->usernameBebas($ident !== '' ? $ident : (Str::slug($nama, '.') ?: 'guru'.$r['id']));
                 $hashEdu = $this->hashKredensial('teacher', (int) $r['id']);
-                $u = new User(['eduweb_id' => $r['id'], 'nama' => $nama, 'username' => $username, 'role' => User::GURU, 'aktif' => true]);
+                $u = new User(['eduweb_id' => $r['id'], 'nama' => $nama, 'username' => $username, 'role' => User::GURU, 'aktif' => true, 'foto_eduweb' => FotoEduweb::bersihkan($r['photo_path'] ?? null)]);
                 if ($hashEdu) {
                     $this->pasangHash($u, $hashEdu, $hashEdu)->saveQuietly(); // hash EduWeb: login sama dengan EduWeb
                 } else {
@@ -519,6 +520,7 @@ class PenyinkronEduweb
                 'nis' => $nis ?: null, 'nama' => $nama, 'jenis_kelamin' => in_array($r['gender'] ?? null, ['L', 'P'], true) ? $r['gender'] : null,
                 'tempat_lahir' => isset($r['birth_place']) ? mb_substr((string) $r['birth_place'], 0, 60) : null,
                 'tgl_lahir' => $r['birth_date'] ?? null, 'status' => $status,
+                'foto_eduweb' => FotoEduweb::bersihkan($r['photo_path'] ?? null),
             ];
 
             $s = isset($adaDiLokal[$r['id']]) ? Siswa::find($adaDiLokal[$r['id']]) : null;

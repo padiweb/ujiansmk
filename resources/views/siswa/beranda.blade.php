@@ -19,9 +19,17 @@
         <div class="pesan-salah" role="alert"><x-ikon nama="peringatan" :ukuran="18" /><span>{{ session('gagal') }}</span></div>
     @endif
 
-    <div class="kartu" style="margin-top:0">
-        <h2 class="judul-kartu" style="font-size:1.2rem">Halo, {{ $siswa->nama }}</h2>
-        <p class="sub" style="color:var(--teks-3)">NISN {{ $siswa->nisn }}</p>
+    <div class="kartu siswa-sapa" style="margin-top:0">
+        <span class="profil-foto profil-foto-kecil">
+            @if ($fotoSiswa = $siswa->fotoUrl())
+                <img src="{{ $fotoSiswa }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">
+            @endif
+            <span class="profil-inisial">{{ mb_strtoupper(mb_substr($siswa->nama, 0, 1)) }}</span>
+        </span>
+        <div>
+            <h2 class="judul-kartu" style="font-size:1.2rem">Halo, {{ $siswa->nama }}</h2>
+            <p class="sub" style="color:var(--teks-3)">NISN {{ $siswa->nisn }}</p>
+        </div>
     </div>
 
     @if ($rapor->isNotEmpty())

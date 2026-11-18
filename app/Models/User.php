@@ -22,7 +22,7 @@ class User extends Authenticatable
 
     protected $table = 'users';
 
-    protected $fillable = ['eduweb_id', 'nama', 'username', 'foto', 'password', 'eduweb_hash_sandi', 'role', 'aktif', 'bisa_mengawasi', 'login_terakhir'];
+    protected $fillable = ['eduweb_id', 'nama', 'username', 'foto', 'foto_eduweb', 'password', 'eduweb_hash_sandi', 'role', 'aktif', 'bisa_mengawasi', 'login_terakhir'];
 
     protected $hidden = ['password', 'eduweb_hash_sandi', 'remember_token'];
 
@@ -45,5 +45,24 @@ class User extends Authenticatable
     public function punyaPeran(string ...$peran): bool
     {
         return in_array($this->role, $peran, true);
+    }
+
+    /**
+     * Alamat foto profil untuk tampilan: foto yang diunggah sendiri lebih diutamakan, lalu foto dari EduWeb; null bila tidak ada.
+     * Foto unggahan disajikan lewat rute terautentikasi, foto EduWeb langsung dari server EduWeb.
+     */
+    public function fotoUrl(): ?string
+    {
+        if ($this->foto) {
+            return route('staf.profil.foto', ['v' => substr(md5($this->foto), 0, 8)]);
+        }
+
+        return \App\Support\FotoEduweb::url($this->foto_eduweb);
+    }
+
+    /** Apakah foto yang tampil berasal dari EduWeb (bukan unggahan sendiri). */
+    public function fotoDariEduweb(): bool
+    {
+        return ! $this->foto && \App\Support\FotoEduweb::url($this->foto_eduweb) !== null;
     }
 }

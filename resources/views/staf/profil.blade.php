@@ -5,8 +5,8 @@
 <div class="kartu profil-kartu">
     <div class="profil-atas">
         <span class="profil-foto">
-            @if ($pengguna->foto)
-                <img src="{{ route('staf.profil.foto', ['v' => substr(md5($pengguna->foto), 0, 8)]) }}" alt="Foto profil {{ $pengguna->nama }}" id="profilPratinjau">
+            @if ($fotoSaya = $pengguna->fotoUrl())
+                <img src="{{ $fotoSaya }}" alt="Foto profil {{ $pengguna->nama }}" id="profilPratinjau" referrerpolicy="no-referrer">
             @else
                 <span class="profil-inisial" id="profilInisial">{{ mb_strtoupper(mb_substr($pengguna->nama, 0, 1)) }}</span>
                 <img src="" alt="" id="profilPratinjau" hidden>
@@ -15,6 +15,7 @@
         <div>
             <h2 class="profil-nama">{{ $pengguna->nama }}</h2>
             <p class="profil-sub"><span class="lencana">{{ $pengguna->role }}</span> <span>{{ $pengguna->username }}</span></p>
+            @if ($pengguna->fotoDariEduweb())<p class="bantuan" style="margin:6px 0 0">Foto ini diambil dari EduWeb. Unggah foto di bawah untuk menggantinya di sini saja.</p>@endif
         </div>
     </div>
 

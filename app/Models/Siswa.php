@@ -16,7 +16,7 @@ class Siswa extends Authenticatable
 
     protected $fillable = [
         'eduweb_id', 'nisn', 'username', 'eduweb_hash_sandi', 'nis', 'nama', 'jenis_kelamin', 'tempat_lahir',
-        'tgl_lahir', 'nama_wali', 'no_peserta_us', 'status', 'password',
+        'tgl_lahir', 'nama_wali', 'no_peserta_us', 'status', 'password', 'foto_eduweb',
     ];
 
     protected $hidden = ['password', 'eduweb_hash_sandi', 'remember_token'];
@@ -37,5 +37,10 @@ class Siswa extends Authenticatable
     public function aktif(): bool
     {
         return $this->status === 'aktif';
+    }
+    /** Foto siswa dari EduWeb (alamat penuh), atau null bila belum ada. */
+    public function fotoUrl(): ?string
+    {
+        return \App\Support\FotoEduweb::url($this->foto_eduweb);
     }
 }

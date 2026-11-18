@@ -143,10 +143,9 @@
         </div>
         <a class="lencana-pengguna" href="{{ route('staf.profil') }}" title="{{ $pengguna->nama }}: buka profil" aria-label="Profil {{ $pengguna->nama }}">
             <span class="avatar">
-                @if ($pengguna->foto)
-                    <img src="{{ route('staf.profil.foto', ['v' => substr(md5($pengguna->foto), 0, 8)]) }}" alt="" width="28" height="28">
-                @else
-                    {{ mb_strtoupper(mb_substr($pengguna->nama, 0, 1)) }}
+                {{ mb_strtoupper(mb_substr($pengguna->nama, 0, 1)) }}
+                @if ($fotoAtas = $pengguna->fotoUrl())
+                    <img src="{{ $fotoAtas }}" alt="" width="28" height="28" referrerpolicy="no-referrer" onerror="this.remove()">
                 @endif
             </span>
             <span class="nama">{{ $pengguna->nama }}</span>

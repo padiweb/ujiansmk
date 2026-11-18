@@ -1361,3 +1361,12 @@ a.lencana-pengguna:hover { border-color: var(--biru-garis); box-shadow: 0 2px 8p
 .profil-sub { display: flex; align-items: center; gap: 8px; margin: 6px 0 0; color: var(--teks-3); font-size: .86rem; }
 .profil-form { border-top: 1px solid var(--garis-lembut); padding-top: 16px; }
 .profil-hapus { margin-top: 12px; }
+
+/* Sapaan siswa dengan foto dari EduWeb (huruf awal tampil di bawah foto, jadi tetap terlihat bila gambar gagal dimuat) */
+.siswa-sapa { display: flex; align-items: center; gap: 14px; }
+.siswa-sapa .judul-kartu, .siswa-sapa .sub { margin: 0; }
+.profil-foto-kecil { position: relative; width: 56px; height: 56px; box-shadow: 0 4px 12px rgba(42, 71, 209, .22); }
+.profil-foto-kecil .profil-inisial { font-size: 1.3rem; }
+.profil-foto-kecil img { position: absolute; inset: 0; z-index: 1; }
+.lencana-pengguna .avatar { position: relative; }
+.lencana-pengguna .avatar img { position: absolute; inset: 0; z-index: 1; }
