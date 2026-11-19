@@ -1495,3 +1495,8 @@ html { font-size: 14px; }
 .bank-saring { padding: 9px 12px; font: inherit; border: 1px solid #D1D5DB; border-radius: var(--radius-kecil); background: var(--putih); max-width: 100%; }
 .bank-catatan { margin: -6px 0 14px; font-size: .88rem; color: var(--teks-3); }
 .login-tautan a + a { margin-left: 16px; }
+
+.pasang { margin-top: 18px; font-size: .88rem; color: var(--teks-3); text-align: left; }
+.pasang summary { cursor: pointer; font-weight: 600; color: var(--biru); text-align: center; }
+.pasang ol { margin: 10px 0 0; padding-left: 20px; line-height: 1.55; }
+.pasang button { margin-top: 10px; }
