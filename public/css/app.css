@@ -1494,3 +1494,4 @@ html { font-size: 14px; }
 
 .bank-saring { padding: 9px 12px; font: inherit; border: 1px solid #D1D5DB; border-radius: var(--radius-kecil); background: var(--putih); max-width: 100%; }
 .bank-catatan { margin: -6px 0 14px; font-size: .88rem; color: var(--teks-3); }
+.login-tautan a + a { margin-left: 16px; }

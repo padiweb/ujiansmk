@@ -34,6 +34,7 @@
 
         <div class="login-tautan">
             <a href="{{ route('staf.masuk') }}">Login Admin, Guru, Pengawas</a>
+            <a href="{{ route('privasi') }}">Kebijakan privasi</a>
         </div>
     </form>
 </div>

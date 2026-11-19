@@ -45,6 +45,9 @@ Route::redirect('/admin', '/staf/masuk');
 Route::redirect('/admin/login.php', '/staf/masuk');
 Route::redirect('/admin/index.php', '/staf/masuk');
 
+// Halaman publik: dibutuhkan Google Play untuk aplikasi Android.
+Route::view('/kebijakan-privasi', 'kebijakan-privasi')->name('privasi');
+
 // ── Siswa (login: NISN + kata sandi) ─────────────────────────────────────────
 Route::middleware('guest:siswa')->group(function () {
     Route::get('/', [MasukSiswaController::class, 'tampil'])->name('siswa.masuk');
