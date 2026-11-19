@@ -116,4 +116,32 @@ class RaporSiswaTampilTest extends TestCase
 
         $this->actingAs($this->siswa[0], 'siswa')->get('/rapor/'.$this->periode->id)->assertNotFound();
     }
+    public function test_siswa_mengunduh_rapor_final_sebagai_pdf_dan_yang_belum_final_ditolak(): void
+    {
+        $this->periode->update(['tampil_siswa' => true]);
+        $this->actingAs($this->siswa[0], 'siswa')->get("/rapor/{$this->periode->id}/pdf")->assertNotFound(); // belum final
+
+        $this->actingAs($this->wali, 'web');
+        $this->finalkan();
+
+        $r = $this->actingAs($this->siswa[0], 'siswa')->get("/rapor/{$this->periode->id}/pdf")->assertOk();
+        $this->assertSame('application/pdf', $r->headers->get('Content-Type'));
+        $this->assertStringContainsString('attachment; filename="Rapor_', $r->headers->get('Content-Disposition'));
+        $this->assertStringStartsWith('%PDF', $r->getContent());
+        $this->assertDatabaseHas('audit_log', ['aksi' => 'rapor.unduh']);
+
+        $this->get('/beranda')->assertSee('Unduh PDF');
+        $this->get("/rapor/{$this->periode->id}")->assertSee('Unduh PDF rapor');
+    }
+
+    public function test_pdf_rapor_mengikuti_pembukaan_semester_dan_tamu_ditolak(): void
+    {
+        $this->actingAs($this->wali, 'web');
+        $this->finalkan();
+        $this->periode->update(['tampil_siswa' => false]);
+
+        $this->actingAs($this->siswa[0], 'siswa')->get("/rapor/{$this->periode->id}/pdf")->assertNotFound();
+        auth('siswa')->logout();
+        $this->get("/rapor/{$this->periode->id}/pdf")->assertRedirect();
+    }
 }

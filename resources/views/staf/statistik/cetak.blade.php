@@ -14,7 +14,7 @@
 <div class="lembar">
     @include('staf.kelulusan.kepala')
     <div class="judul">DAFTAR PERINGKAT SISWA</div>
-    <div class="nomor">Kelas {{ $kelas->nama }} · {{ $periode->label() }}</div>
+    <div class="nomor">Kelas {{ $kelas->nama }} · {{ $label }}</div>
     <table class="tn" style="margin-top:10px">
         <thead><tr><th style="width:8%">Rank</th><th>Nama Siswa</th><th style="width:20%">NISN</th><th style="width:14%">Mapel</th><th style="width:16%">Rata-rata</th></tr></thead>
         <tbody>

@@ -187,4 +187,43 @@ class RekapNilaiTest extends TestCase
         $this->actingAs($this->siswa[0], 'siswa')->post("/staf/rekap/{$this->jadwal->id}/tampilkan")->assertRedirect();
         $this->assertSame('ditahan', $this->jadwal->fresh()->tampilkan_hasil);
     }
+    public function test_rekap_memberi_peringkat_berbagi_nilai_dan_melewati_yang_belum_dinilai(): void
+    {
+        $a = $this->selesaikan(0, 'Jawaban A');
+        $b = $this->selesaikan(1, 'Jawaban B', benar: false);
+        $c = $this->selesaikan(2, 'Jawaban C');
+        $this->nilaiEsai($a, 100);   // 100
+        $this->nilaiEsai($c, 100);   // 100 (sama dengan siswa 0)
+        // siswa 1: esai belum dikoreksi -> tanpa peringkat
+
+        $layanan = app(\App\Services\LayananRekap::class);
+        $d = $layanan->data($this->jadwal->fresh()->load('mapel'));
+        $per = collect($d['baris'])->mapWithKeys(fn ($r) => [$r['sesi_id'] => $r['peringkat']]);
+        $this->assertSame(1, $per[$a->id]);
+        $this->assertSame(1, $per[$c->id]);
+        $this->assertNull($per[$b->id]);
+        $this->assertFalse($d['banyak_kelas']);
+
+        // Urut peringkat: yang berperingkat lebih dulu, yang belum dinilai di akhir.
+        $u = $layanan->data($this->jadwal->fresh()->load('mapel'), null, 'peringkat');
+        $this->assertSame('peringkat', $u['urut']);
+        $this->assertNull(collect($u['baris'])->last()['peringkat']);
+
+        $this->actingAs($this->guru, 'web')->get("/staf/rekap/{$this->jadwal->id}?urut=peringkat")->assertOk()->assertSee('Rank');
+        $this->get("/staf/rekap/{$this->jadwal->id}/cetak")->assertOk()->assertSee('Rank');
+
+        $kepala = IOFactory::load($this->unduhEkspor())->getActiveSheet()->rangeToArray('A4:P4')[0];
+        $this->assertContains('Peringkat', $kepala);
+        $this->assertContains('Peringkat kelas', $kepala);
+    }
+
+    private function unduhEkspor(): string
+    {
+        $r = $this->actingAs($this->guru, 'web')->get("/staf/rekap/{$this->jadwal->id}/ekspor");
+        $r->assertOk();
+        $berkas = tempnam(sys_get_temp_dir(), 'rk').'.xlsx';
+        file_put_contents($berkas, $r->streamedContent());
+
+        return $berkas;
+    }
 }

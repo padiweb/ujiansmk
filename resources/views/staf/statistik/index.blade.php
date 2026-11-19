@@ -5,19 +5,37 @@
 <div class="kepala-halaman">
     <div>
         <h1 class="judul-halaman">Statistik Nilai</h1>
-        <p class="sub">Semester: {{ $periode?->label() ?? '–' }}</p>
+        <p class="sub">{{ $keterangan }}</p>
     </div>
 </div>
 
 <form class="bar-saring" method="GET" action="{{ route('staf.statistik.index') }}">
     <div class="bar-isi">
-        <label for="f-periode">Semester</label>
-        <select id="f-periode" name="periode" onchange="this.form.kelas.value='';this.form.submit()">
-            @foreach ($daftarPeriode as $p)
-                <option value="{{ $p->id }}" @selected($periode?->id === $p->id)>{{ $p->label() }}@if ($p->aktif) (aktif)@endif</option>
-            @endforeach
+        <label for="f-jenis">Jenis</label>
+        <select id="f-jenis" name="jenis" onchange="this.form.kelas.value='';this.form.submit()">
+            <option value="rapor" @selected($jenis === 'rapor')>Nilai rapor semester</option>
+            <option value="us" @selected($jenis === 'us')>Ujian Sekolah (kelas XII)</option>
         </select>
     </div>
+    @if ($jenis === 'us')
+        <div class="bar-isi">
+            <label for="f-tahun">Tahun ajaran</label>
+            <select id="f-tahun" name="tahun" onchange="this.form.kelas.value='';this.form.submit()">
+                @foreach ($daftarTahun as $t)
+                    <option value="{{ $t->id }}" @selected($tahun?->id === $t->id)>{{ $t->nama }}@if ($t->aktif) (aktif)@endif</option>
+                @endforeach
+            </select>
+        </div>
+    @else
+        <div class="bar-isi">
+            <label for="f-periode">Semester</label>
+            <select id="f-periode" name="periode" onchange="this.form.kelas.value='';this.form.submit()">
+                @foreach ($daftarPeriode as $p)
+                    <option value="{{ $p->id }}" @selected($periode?->id === $p->id)>{{ $p->label() }}@if ($p->aktif) (aktif)@endif</option>
+                @endforeach
+            </select>
+        </div>
+    @endif
     <div class="bar-isi">
         <label for="f-kelas">Kelas</label>
         <select id="f-kelas" name="kelas" onchange="this.form.submit()">
@@ -30,7 +48,7 @@
 </form>
 
 @if ($siswa->isEmpty())
-    <div class="kartu kosong-kartu">Belum ada nilai rapor pada semester ini.</div>
+    <div class="kartu kosong-kartu">{{ $jenis === 'us' ? 'Belum ada nilai (rapor atau Ujian Sekolah) siswa kelas XII pada tahun ajaran ini.' : 'Belum ada nilai rapor pada semester ini.' }}</div>
 @else
     <div class="db-angka rata">
         <div class="db-kotak biru"><b>{{ $siswa->count() }}</b><span>Siswa bernilai</span></div>
@@ -43,7 +61,7 @@
         <div class="db-panel" style="margin-bottom:16px">
             <header>
                 <h3>Peringkat {{ $kelasNama[$id] ?? 'Kelas' }}</h3>
-                <a href="{{ route('staf.statistik.cetak', ['kelas' => $id, 'periode' => $periode->id]) }}" data-cetak>Cetak</a>
+                <a href="{{ route('staf.statistik.cetak', ['kelas' => $id] + $cetakParam) }}" data-cetak>Cetak</a>
             </header>
             <div class="gulir">
                 <table class="tabel tabel-daftar">
@@ -76,6 +94,7 @@
         @endforeach
     @endunless
 
+    @if ($jenis === 'rapor')
     <div class="db-panel">
         <header><h3>Rata-rata per Mata Pelajaran</h3><small>{{ count($perMapel) }} mapel</small></header>
         <div class="gulir">
@@ -89,5 +108,6 @@
             </table>
         </div>
     </div>
+    @endif
 @endif
 @endsection

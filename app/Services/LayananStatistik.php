@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Kelas;
 use App\Models\Periode;
+use App\Models\TahunAjaran;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -26,6 +28,34 @@ class LayananStatistik
 
                 return $r;
             });
+    }
+
+    /**
+     * Peringkat Ujian Sekolah: siswa kelas XII pada satu tahun ajaran, diurutkan menurut rata-rata nilai akhir transkrip
+     * (rata-rata semester rapor dan nilai US per mapel, rumus yang sama dengan transkrip dan SKL). Bentuk baris sama dengan siswa().
+     *
+     * @return Collection<int,object{siswa_id:int,nama:string,nisn:?string,kelas_id:int,kelas:string,tingkat:string,rata:float,mapel:int}>
+     */
+    public function siswaUs(TahunAjaran $tahun): Collection
+    {
+        $transkrip = app(LayananTranskrip::class);
+        $baris = collect();
+
+        foreach (Kelas::where('tahun_ajaran_id', $tahun->id)->where('tingkat', 'XII')->orderBy('nama')->get() as $kelas) {
+            foreach ($transkrip->siswa($kelas) as $siswa) {
+                $t = $transkrip->susun($siswa);
+                if ($t['rata_semua'] === null) {
+                    continue;
+                }
+                $baris->push((object) [
+                    'siswa_id' => $siswa->id, 'nama' => $siswa->nama, 'nisn' => $siswa->nisn, 'kelas_id' => $kelas->id,
+                    'kelas' => $kelas->nama, 'tingkat' => $kelas->tingkat, 'rata' => (float) $t['rata_semua'],
+                    'mapel' => collect($t['kelompok'])->flatten(1)->count(),
+                ]);
+            }
+        }
+
+        return $baris->sortBy([['rata', 'desc'], ['nama', 'asc']])->values();
     }
 
     /** @return Collection<int,Collection> kelas_id => siswa terurut peringkat (dengan properti peringkat) */

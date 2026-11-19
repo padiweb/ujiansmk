@@ -69,4 +69,53 @@ class StatistikTest extends TestCase
 
         $this->actingAs(User::factory()->create(), 'web')->get('/staf/statistik')->assertForbidden();
     }
+    /** @return array{0:\App\Models\Kelas,1:\App\Models\Kelas,2:array<int,Siswa>} */
+    private function kelasXii(): array
+    {
+        $tahun = $this->kelas->tahunAjaran;
+        $a = Kelas::create(['tahun_ajaran_id' => $tahun->id, 'tingkat' => 'XII', 'nama' => 'XII A']);
+        $b = Kelas::create(['tahun_ajaran_id' => $tahun->id, 'tingkat' => 'XII', 'nama' => 'XII B']);
+        $s = [];
+        foreach ([[$a, 'Andi', 80, 70], [$a, 'Budi', 90, 90], [$b, 'Citra', 95, 85], [$b, 'Dewi', null, null]] as $i => [$k, $nama, $na, $us]) {
+            $x = Siswa::factory()->create(['nama' => $nama]);
+            $x->kelas()->attach($k->id, ['status' => 'aktif']);
+            if ($na !== null) {
+                $this->nilai($x, $k, $this->mtk, $na);
+                \App\Models\NilaiUs::create(['siswa_id' => $x->id, 'mapel_id' => $this->mtk->id, 'nilai' => $us, 'masuk_xii2' => false]);
+            }
+            $s[$i] = $x;
+        }
+
+        return [$a, $b, $s];
+    }
+
+    public function test_peringkat_ujian_sekolah_xii_memakai_rata_rata_transkrip_dan_melewati_siswa_tanpa_nilai(): void
+    {
+        [$a, $b] = $this->kelasXii();
+        $layanan = app(LayananStatistik::class);
+        $siswa = $layanan->siswaUs($this->kelas->tahunAjaran);
+
+        // Rata-rata transkrip = rata-rata semester rapor (slot terisi) per mapel: Matematika hanya 1 semester, jadi NA itu sendiri.
+        $this->assertSame(['Citra', 'Budi', 'Andi'], $siswa->pluck('nama')->all());
+        $this->assertSame([95.0, 90.0, 80.0], $siswa->pluck('rata')->all());
+        $this->assertNotContains('Dewi', $siswa->pluck('nama')->all());
+        $this->assertSame([1, 2], $layanan->perKelas($siswa)[$a->id]->pluck('peringkat')->all());
+        $this->assertSame(['XII'], $layanan->perTingkat($siswa)->keys()->all());
+    }
+
+    public function test_halaman_dan_cetak_peringkat_ujian_sekolah(): void
+    {
+        [$a, $b] = $this->kelasXii();
+        $tahun = $this->kelas->tahunAjaran;
+        $this->actingAs($this->admin, 'web');
+
+        $this->get("/staf/statistik?jenis=us&tahun={$tahun->id}")->assertOk()
+            ->assertSee('Ujian Sekolah kelas XII')->assertSee('Peringkat XII A')->assertSee('Peringkat XII B')->assertSee('Juara Paralel Kelas XII')
+            ->assertDontSee('Rata-rata per Mata Pelajaran')->assertDontSee('Peringkat X A');
+        $this->get("/staf/statistik?jenis=us&tahun={$tahun->id}&kelas={$b->id}")->assertOk()->assertSee('Peringkat XII B')->assertDontSee('Peringkat XII A');
+        $this->get("/staf/statistik/cetak/{$a->id}?jenis=us&tahun={$tahun->id}")->assertOk()->assertSee('DAFTAR PERINGKAT SISWA')->assertSee('Ujian Sekolah')->assertSee('Budi');
+
+        // Kelas X tidak bisa dicetak sebagai peringkat US.
+        $this->get("/staf/statistik/cetak/{$this->kelas->id}?jenis=us&tahun={$tahun->id}")->assertNotFound();
+    }
 }

@@ -32,12 +32,12 @@
     <p class="sub"><strong>Rekap nilai: {{ $j->nama }}</strong> · {{ $j->mapel->nama }} · Kelas {{ $kelasPilihan }} · KKM {{ $kkm }} · {{ $j->mulai_pada->format('d/m/Y') }}</p>
 
     <table>
-        <thead><tr><th class="n">No</th><th>Nama</th><th>NISN</th><th>Kelas</th><th class="n">PG</th><th class="n">Esai</th><th class="n">Akhir</th><th>Keterangan</th></tr></thead>
+        <thead><tr><th class="n">No</th><th>Nama</th><th>NISN</th><th>Kelas</th><th class="n">PG</th><th class="n">Esai</th><th class="n">Akhir</th><th class="n">Rank</th>@if ($banyak_kelas)<th class="n">Rank kelas</th>@endif<th>Keterangan</th></tr></thead>
         <tbody>
             @foreach ($baris as $i => $b)
                 <tr>
                     <td class="n">{{ $i + 1 }}</td><td>{{ $b['nama'] }}</td><td>{{ $b['nisn'] }}</td><td>{{ $b['kelas'] }}</td>
-                    <td class="n">{{ $nm($b['skor_pg']) }}</td><td class="n">{{ $nm($b['skor_esai']) }}</td><td class="n"><strong>{{ $nm($b['skor_akhir']) }}</strong></td><td>{{ $b['keterangan'] }}</td>
+                    <td class="n">{{ $nm($b['skor_pg']) }}</td><td class="n">{{ $nm($b['skor_esai']) }}</td><td class="n"><strong>{{ $nm($b['skor_akhir']) }}</strong></td><td class="n">{{ $b['peringkat'] ?? '-' }}</td>@if ($banyak_kelas)<td class="n">{{ $b['peringkat_kelas'] ?? '-' }}</td>@endif<td>{{ $b['keterangan'] }}</td>
                 </tr>
             @endforeach
         </tbody>

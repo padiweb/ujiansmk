@@ -35,38 +35,38 @@ class RekapController extends Controller
             'j' => $jadwal->load('mapel'),
             'kelasPilihan' => $jadwal->kelas()->whereIn('kelas.id', $kelas)->orderBy('nama')->pluck('nama')->implode(', '),
             'kelasId' => $request->query('kelas'),
-        ] + $this->rekap->data($jadwal, $kelas));
+        ] + $this->rekap->data($jadwal, $kelas, $this->urutan($request)));
     }
 
     public function cetak(Request $request, JadwalUjian $jadwal): View
     {
         $kelas = $this->izinkan($request, $jadwal);
 
-        return view('staf.rekap.cetak', ['j' => $jadwal->load('mapel'), 'kelasPilihan' => $jadwal->kelas()->whereIn('kelas.id', $kelas)->orderBy('nama')->pluck('nama')->implode(', ')] + $this->rekap->data($jadwal, $kelas));
+        return view('staf.rekap.cetak', ['j' => $jadwal->load('mapel'), 'kelasPilihan' => $jadwal->kelas()->whereIn('kelas.id', $kelas)->orderBy('nama')->pluck('nama')->implode(', ')] + $this->rekap->data($jadwal, $kelas, $this->urutan($request)));
     }
 
     public function ekspor(Request $request, JadwalUjian $jadwal): StreamedResponse
     {
         $kelas = $this->izinkan($request, $jadwal);
-        $data = $this->rekap->data($jadwal, $kelas);
+        $data = $this->rekap->data($jadwal, $kelas, $this->urutan($request));
 
         $buku = new Spreadsheet;
         $lembar = $buku->getActiveSheet()->setTitle('Rekap nilai');
         $judul = [['Rekap nilai: '.$jadwal->nama], [$jadwal->mapel->nama.' · KKM '.$data['kkm']], []];
-        $kepala = ['No', 'Nama', 'NISN', 'Kelas', 'Ruang', 'Status', 'Benar', 'Salah', 'Kosong', 'Skor PG', 'Skor esai', 'Skor akhir', 'Keterangan', 'Pelanggaran'];
+        $kepala = ['No', 'Nama', 'NISN', 'Kelas', 'Ruang', 'Status', 'Benar', 'Salah', 'Kosong', 'Skor PG', 'Skor esai', 'Skor akhir', 'Peringkat', 'Peringkat kelas', 'Keterangan', 'Pelanggaran'];
 
         $this->tulis($lembar, array_merge($judul, [$kepala]));
         $r = count($judul) + 2;
         foreach ($data['baris'] as $i => $b) {
             $this->tulis($lembar, [[
                 $i + 1, $b['nama'], (string) $b['nisn'], $b['kelas'], $b['ruang'] ?? '', $this->namaStatus($b['status']),
-                $b['benar'], $b['salah'], $b['kosong'], $b['skor_pg'], $b['skor_esai'], $b['skor_akhir'], $b['keterangan'], $b['pelanggaran'],
+                $b['benar'], $b['salah'], $b['kosong'], $b['skor_pg'], $b['skor_esai'], $b['skor_akhir'], $b['peringkat'] ?? '', $b['peringkat_kelas'] ?? '', $b['keterangan'], $b['pelanggaran'],
             ]], $r++);
         }
-        foreach (range('A', 'N') as $k) {
+        foreach (range('A', 'P') as $k) {
             $lembar->getColumnDimension($k)->setAutoSize(true);
         }
-        $lembar->getStyle('A4:N4')->getFont()->setBold(true);
+        $lembar->getStyle('A4:P4')->getFont()->setBold(true);
 
         $nama = 'rekap-'.preg_replace('/[^A-Za-z0-9]+/', '-', $jadwal->nama).'.xlsx';
 
@@ -74,6 +74,12 @@ class RekapController extends Controller
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control' => 'no-store',
         ]);
+    }
+
+    /** Urutan daftar: menurut nama (bawaan) atau peringkat nilai. */
+    private function urutan(Request $request): string
+    {
+        return $request->query('urut') === 'peringkat' ? 'peringkat' : 'nama';
     }
 
     public function kunci(Request $request, JadwalUjian $jadwal): RedirectResponse

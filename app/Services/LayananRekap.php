@@ -18,7 +18,7 @@ class LayananRekap
      * @param  list<int>|null  $kelas  batasi ke kelas-kelas ini (null = semua peserta jadwal)
      * @return array{baris: list<array<string,mixed>>, ringkasan: array<string,mixed>, kkm:int, kunci: array<string,mixed>}
      */
-    public function data(JadwalUjian $jadwal, ?array $kelas = null): array
+    public function data(JadwalUjian $jadwal, ?array $kelas = null, string $urut = 'nama'): array
     {
         $this->sesi->sapuKedaluwarsa(); // sesi yang waktunya habis ditutup dan dinilai dulu (tanpa cron)
 
@@ -62,6 +62,7 @@ class LayananRekap
                 'keterangan' => $keterangan,
             ];
         })->sortBy([['kelas', 'asc'], ['nama', 'asc']])->values()->all();
+        $baris = $this->beriPeringkat($baris, $urut === 'peringkat');
 
         $nilai = array_values(array_filter(array_column($baris, 'skor_akhir'), fn ($n) => $n !== null));
         $hitung = fn (string $k) => count(array_filter($baris, fn ($b) => $b['keterangan'] === $k));
@@ -75,6 +76,8 @@ class LayananRekap
                 'oleh' => $kunci->first()?->pengunci?->nama,
             ],
             'baris' => $baris,
+            'banyak_kelas' => count(array_unique(array_column($baris, 'kelas'))) > 1,
+            'urut' => $urut === 'peringkat' ? 'peringkat' : 'nama',
             'ringkasan' => [
                 'peserta' => count($baris),
                 'selesai' => count(array_filter($baris, fn ($b) => $b['status'] === SesiUjian::SELESAI)),
@@ -157,4 +160,52 @@ class LayananRekap
         $jadwal->update(['tampilkan_hasil' => 'langsung']);
         AuditLog::catat('rekap.tampilkan', "jadwal {$jadwal->id}", $pelaku);
     }
-}
+
+    /**
+     * Peringkat menurut skor akhir (nilai sama berbagi peringkat: 1, 2, 2, 4): "peringkat" di antara semua peserta yang tampil
+     * dan "peringkat_kelas" di dalam kelasnya. Peserta tanpa nilai akhir atau yang esainya belum dikoreksi tidak diberi peringkat.
+     *
+     * @param  list<array<string,mixed>>  $baris
+     * @return list<array<string,mixed>>
+     */
+    private function beriPeringkat(array $baris, bool $urutPeringkat): array
+    {
+        $layak = fn (array $b) => $b['skor_akhir'] !== null && $b['keterangan'] !== 'Belum dikoreksi';
+        $ranking = function (array $indeks) use ($baris): array {
+            usort($indeks, fn ($a, $b) => $baris[$b]['skor_akhir'] <=> $baris[$a]['skor_akhir']);
+            $hasil = [];
+            $prev = null;
+            $rank = 0;
+            foreach ($indeks as $n => $i) {
+                if ($prev === null || $baris[$i]['skor_akhir'] !== $prev) {
+                    $rank = $n + 1;
+                }
+                $prev = $baris[$i]['skor_akhir'];
+                $hasil[$i] = $rank;
+            }
+
+            return $hasil;
+        };
+
+        $semua = array_keys(array_filter($baris, $layak));
+        $umum = $ranking($semua);
+        $perKelas = [];
+        foreach ($semua as $i) {
+            $perKelas[$baris[$i]['kelas']][] = $i;
+        }
+        $kelasRank = [];
+        foreach ($perKelas as $indeks) {
+            $kelasRank += $ranking($indeks);
+        }
+        foreach ($baris as $i => &$b) {
+            $b['peringkat'] = $umum[$i] ?? null;
+            $b['peringkat_kelas'] = $kelasRank[$i] ?? null;
+        }
+        unset($b);
+
+        if ($urutPeringkat) {
+            usort($baris, fn ($a, $b) => [$a['peringkat'] ?? PHP_INT_MAX, $a['nama']] <=> [$b['peringkat'] ?? PHP_INT_MAX, $b['nama']]);
+        }
+
+        return $baris;
+    }}

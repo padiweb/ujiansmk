@@ -41,7 +41,7 @@
                         @foreach ($rapor as $r)
                             <tr>
                                 <td><strong>{{ $r->periode->label() }}</strong><br><small class="bantuan" style="margin:0">{{ $r->kelas_nama }}</small></td>
-                                <td class="kanan"><a class="tombol kecil garis" href="{{ route('siswa.rapor', $r->periode_id) }}">Lihat rapor</a></td>
+                                <td class="kanan"><a class="tombol kecil garis" href="{{ route('siswa.rapor', $r->periode_id) }}">Lihat rapor</a> <a class="tombol kecil" href="{{ route('siswa.rapor.pdf', $r->periode_id) }}">Unduh PDF</a></td>
                             </tr>
                         @endforeach
                     </tbody>

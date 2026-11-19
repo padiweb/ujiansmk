@@ -64,10 +64,16 @@
 </div>
 
 <div class="db-panel">
-    <header><h3>Daftar Nilai Siswa</h3><small>{{ count($baris) }} siswa</small></header>
+    <header>
+        <h3>Daftar Nilai Siswa</h3>
+        <small>{{ count($baris) }} siswa · urutkan:
+            <a href="{{ route('staf.rekap.show', array_filter([$j, 'kelas' => $kelasId])) }}" @if ($urut === 'nama') style="font-weight:700" @endif>Nama</a> |
+            <a href="{{ route('staf.rekap.show', array_filter([$j, 'kelas' => $kelasId, 'urut' => 'peringkat'])) }}" @if ($urut === 'peringkat') style="font-weight:700" @endif>Peringkat</a>
+        </small>
+    </header>
     <div class="gulir">
         <table class="tabel tabel-baris">
-            <thead><tr><th class="no">No</th><th>Nama</th><th>Kelas</th><th>Status</th><th>B / S / K</th><th>PG</th><th>Esai</th><th>Akhir</th><th>Keterangan</th></tr></thead>
+            <thead><tr><th class="no">No</th><th>Nama</th><th>Kelas</th><th>Status</th><th>B / S / K</th><th>PG</th><th>Esai</th><th>Akhir</th><th>Rank</th>@if ($banyak_kelas)<th>Rank kelas</th>@endif<th>Keterangan</th></tr></thead>
             <tbody>
                 @forelse ($baris as $i => $b)
                     <tr class="{{ in_array($b['keterangan'], ['Belum tuntas', 'Belum dikoreksi'], true) ? 'mon-langgar' : (in_array($b['status'], ['belum'], true) ? 'mon-redup' : '') }}">
@@ -79,10 +85,12 @@
                         <td>{{ $nm($b['skor_pg']) }}</td>
                         <td>{{ $nm($b['skor_esai']) }}</td>
                         <td><strong>{{ $nm($b['skor_akhir']) }}</strong></td>
+                        <td>{{ $b['peringkat'] ?? '—' }}</td>
+                        @if ($banyak_kelas)<td>{{ $b['peringkat_kelas'] ?? '—' }}</td>@endif
                         <td>{{ $b['keterangan'] }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="9" class="kosong">Belum ada peserta.</td></tr>
+                    <tr><td colspan="11" class="kosong">Belum ada peserta.</td></tr>
                 @endforelse
             </tbody>
         </table>

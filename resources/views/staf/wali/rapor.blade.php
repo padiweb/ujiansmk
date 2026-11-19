@@ -30,7 +30,7 @@ tr { page-break-inside: avoid; }
 </style>
 </head>
 <body data-rapor="1">
-@unless ($word)
+@unless ($word || ($pdf ?? false))
     <div class="alat tanpa-cetak">
         <button type="button" onclick="window.print()">Cetak</button>
         <button type="button" class="garis" onclick="window.close()">Tutup</button>

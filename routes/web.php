@@ -66,6 +66,7 @@ Route::middleware('auth:siswa')->group(function () {
         Route::get('/hasil', [UjianController::class, 'hasil'])->name('hasil');
     });
     Route::get('/rapor/{periode}', [RaporSiswaController::class, 'show'])->whereNumber('periode')->name('siswa.rapor');
+    Route::get('/rapor/{periode}/pdf', [RaporSiswaController::class, 'pdf'])->whereNumber('periode')->middleware('throttle:10,1')->name('siswa.rapor.pdf');
     Route::post('/keluar', [MasukSiswaController::class, 'keluar'])->name('siswa.keluar');
 });
 

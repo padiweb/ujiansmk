@@ -24,6 +24,7 @@
     <div class="kartu" style="margin-top:0">
         <h2 class="judul-kartu" style="font-size:1.2rem">Rapor {{ $l['semester'] === 'Genap' ? 'Semester Genap' : 'Semester Gasal' }} · {{ $l['tahun_ajaran'] }}</h2>
         <p class="sub" style="color:var(--teks-3)">{{ $siswa->nama }} · NISN {{ $siswa->nisn }} · Kelas {{ $l['kelas'] }}</p>
+        <p style="margin-top:12px"><a class="tombol kecil" href="{{ route('siswa.rapor.pdf', $periode) }}">Unduh PDF rapor</a></p>
     </div>
 
     <h2 class="judul-bagian">Nilai mata pelajaran</h2>
