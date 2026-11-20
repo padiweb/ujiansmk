@@ -104,6 +104,74 @@ class DenahController extends Controller
         return redirect()->route('staf.ruang.index')->with('berhasil', 'Ruang berhasil dihapus.'.($dilepas > 0 ? " {$dilepas} siswa dilepas dari ruang (data siswa tetap ada)." : ''));
     }
 
+    // ── Isi ruang otomatis ───────────────────────────────────────────────────
+
+    public function otomatis(Request $request): View
+    {
+        return $this->tampilOtomatis($request, null);
+    }
+
+    public function otomatisProses(Request $request): View|RedirectResponse
+    {
+        $denah = $this->layanan->utama($request->user('web'));
+        $data = $request->validate([
+            'kelas_ids' => ['required', 'array', 'min:1'],
+            'kelas_ids.*' => ['integer', Rule::exists('kelas', 'id')->where('tahun_ajaran_id', $this->tahunId($denah))],
+            'aksi' => ['required', Rule::in(['pratinjau', 'terapkan'])],
+        ], ['kelas_ids.required' => 'Pilih minimal satu kelas.'], ['kelas_ids' => 'Kelas']);
+        $kelasIds = array_map('intval', $data['kelas_ids']);
+        $ulang = $request->boolean('ulang');
+        $pecah = $request->boolean('pecah');
+
+        if ($data['aksi'] === 'pratinjau') {
+            return $this->tampilOtomatis($request, $this->layanan->rencanaOtomatis($denah, $kelasIds, $ulang, $pecah));
+        }
+
+        try {
+            $h = $this->layanan->isiOtomatis($denah, $kelasIds, $ulang, $pecah, $request->user('web'));
+        } catch (KesalahanJadwal $e) {
+            return back()->withInput()->with('gagal', $e->getMessage());
+        }
+
+        $pesan = "{$h['ditempatkan']} siswa ditempatkan ke ruang.";
+        if ($h['sisa_total'] > 0) {
+            return redirect()->route('staf.ruang.index')->with('catatan', "{$pesan} {$h['sisa_total']} siswa belum mendapat tempat karena kursi tidak cukup; tambah ruang atau kapasitasnya, lalu jalankan lagi.");
+        }
+
+        return redirect()->route('staf.ruang.index')->with('berhasil', $pesan);
+    }
+
+    /** @param  array<string,mixed>|null  $rencana */
+    private function tampilOtomatis(Request $request, ?array $rencana): View
+    {
+        $denah = $this->layanan->utama($request->user('web'));
+        $tahunId = $this->tahunId($denah);
+        $sudah = DenahPenempatan::where('denah_id', $denah->id)->pluck('siswa_id');
+
+        $kelas = Kelas::where('tahun_ajaran_id', $tahunId)->orderBy('tingkat')->orderBy('nama')->get();
+        $hitung = DB::table('keanggotaan_kelas as k')->join('siswa as s', 's.id', '=', 'k.siswa_id')
+            ->where('k.status', 'aktif')->where('s.status', 'aktif')->whereIn('k.kelas_id', $kelas->pluck('id'))
+            ->select('k.kelas_id', DB::raw('count(distinct s.id) as total'),
+                DB::raw('count(distinct case when s.id in ('.($sudah->isEmpty() ? '0' : $sudah->map(fn ($v) => (int) $v)->implode(',')).') then null else s.id end) as belum'))
+            ->groupBy('k.kelas_id')->get()->keyBy('kelas_id');
+        $kelas = $kelas->filter(fn ($k) => ($hitung[$k->id]->total ?? 0) > 0)->each(function ($k) use ($hitung) {
+            $k->total = (int) $hitung[$k->id]->total;
+            $k->belum = (int) $hitung[$k->id]->belum;
+        })->values();
+
+        $ada = $request->isMethod('post');
+
+        return view('staf.denah.otomatis', [
+            'kelas' => $kelas,
+            'rencana' => $rencana,
+            'dipilih' => $ada ? array_map('intval', (array) $request->input('kelas_ids', [])) : $kelas->pluck('id')->all(),
+            'ulang' => $ada ? $request->boolean('ulang') : false,
+            'pecah' => $ada ? $request->boolean('pecah') : true,
+            'jumlahRuang' => Ruang::count(),
+            'kapasitasTotal' => (int) Ruang::sum('kapasitas'),
+        ]);
+    }
+
     /** Masukkan satu atau beberapa kelas sekaligus ke ruang ini. */
     public function masukkanKelas(Request $request, Ruang $ruang): RedirectResponse
     {

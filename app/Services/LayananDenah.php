@@ -230,6 +230,170 @@ class LayananDenah
         return $hasil;
     }
 
+
+    /**
+     * Rencana pengisian ruang otomatis (tidak menyimpan apa pun). Kelas diurutkan tingkat lalu nama dan diisikan ruang demi ruang
+     * (urutan ruang menurut nama), dengan prinsip: satu kelas utuh dalam satu ruang bila bisa. Di tiap ruang, kelas pertama yang tersisa
+     * menjadi "jangkar"; sisa kursi diisi kelas utuh terbesar yang muat (ruang biasa bisa memuat 3 kelas atau lebih, tingkat boleh campur).
+     * Bila tidak ada kelas utuh yang muat, kelas berikutnya dipecah dan sisanya masuk ruang berikutnya. Ruang "Campur tingkat" tetap
+     * mematuhi batas 50% per tingkat. Siswa yang tidak mendapat tempat tercatat sebagai sisa.
+     *
+     * @param  list<int>  $kelasIds
+     * @param  bool  $ulang  kosongkan penempatan sekarang lebih dulu (bila tidak: hanya siswa yang belum punya ruang, mengisi kursi yang masih kosong)
+     * @param  bool  $pecah  boleh memecah satu kelas ke dua ruang untuk mengisi kursi tersisa
+     * @return array{ruang:list<array<string,mixed>>,sisa:list<array<string,mixed>>,ditempatkan:int,sisa_total:int}
+     */
+    public function rencanaOtomatis(Denah $denah, array $kelasIds, bool $ulang = false, bool $pecah = true): array
+    {
+        $tahun = $this->tahunId($denah);
+        $kelas = Kelas::where('tahun_ajaran_id', $tahun)->whereIn('id', array_map('intval', $kelasIds))->orderBy('tingkat')->orderBy('nama')->get();
+
+        $sudahAda = $ulang ? collect() : DenahPenempatan::where('denah_id', $denah->id)->pluck('siswa_id');
+        $antrean = []; // kelas_id => ['kelas' => Kelas, 'siswa' => list<int>]
+        $terlihat = [];
+        foreach ($kelas as $k) {
+            $ids = DB::table('keanggotaan_kelas as a')->join('siswa as s', 's.id', '=', 'a.siswa_id')
+                ->where('a.kelas_id', $k->id)->where('a.status', 'aktif')->where('s.status', 'aktif')
+                ->whereNotIn('s.id', $sudahAda)->orderBy('s.nama')->pluck('s.id')->map(fn ($v) => (int) $v)
+                ->reject(fn ($v) => isset($terlihat[$v]))->values()->all();
+            foreach ($ids as $v) {
+                $terlihat[$v] = true;
+            }
+            if ($ids !== []) {
+                $antrean[$k->id] = ['kelas' => $k, 'siswa' => $ids];
+            }
+        }
+
+        $ruangUrut = Ruang::all()->sortBy('nama', SORT_NATURAL | SORT_FLAG_CASE)->values();
+        $baris = DenahRuang::where('denah_id', $denah->id)->get()->keyBy('ruang_id');
+        $rencana = [];
+        $ditempatkan = 0;
+        $dipecah = []; // kelas_id yang sudah terbagi ke lebih dari satu ruang
+
+        foreach ($ruangUrut as $ruang) {
+            $dr = $baris[$ruang->id] ?? null;
+            $kap = $dr ? $dr->kapasitas() : (int) $ruang->kapasitas;
+            $awal = $ulang ? 0 : DenahPenempatan::where('denah_id', $denah->id)->where('ruang_id', $ruang->id)->count();
+            $bebas = $kap - $awal;
+            $porsi = $ruang->campur ? $ruang->porsiTingkat($kap) : PHP_INT_MAX;
+            $pakai = $ulang || ! $ruang->campur ? [] : $this->komposisiTingkat($denah, $ruang);
+            $tambah = [];
+
+            while ($bebas > 0) {
+                $izin = fn (array $q) => min($bebas, $porsi === PHP_INT_MAX ? $bebas : $porsi - ($pakai[$q['kelas']->tingkat] ?? 0));
+                $kandidat = array_filter($antrean, fn ($q) => $q['siswa'] !== [] && $izin($q) > 0);
+                if ($kandidat === []) {
+                    break;
+                }
+
+                $muat = fn (array $q) => count($q['siswa']) <= $izin($q);
+                $tidakPernahMuat = fn (array $q) => count($q['siswa']) > min($kap, $porsi);
+                $pilih = null;
+
+                if ($tambah === []) {
+                    // Jangkar: kelas pertama menurut urutan.
+                    foreach ($kandidat as $id => $q) {
+                        if ($muat($q) || $pecah || $tidakPernahMuat($q)) {
+                            $pilih = $id;
+                            break;
+                        }
+                    }
+                } else {
+                    // Kelas utuh terbesar yang muat (sama besar: yang lebih dulu menurut urutan).
+                    $terbaik = -1;
+                    foreach ($kandidat as $id => $q) {
+                        if ($muat($q) && count($q['siswa']) > $terbaik) {
+                            $terbaik = count($q['siswa']);
+                            $pilih = $id;
+                        }
+                    }
+                    if ($pilih === null && $pecah) {
+                        $pilih = array_key_first($kandidat); // tak ada yang utuh: pecah kelas berikutnya
+                    }
+                }
+
+                if ($pilih === null) {
+                    break;
+                }
+
+                $q = $antrean[$pilih];
+                $sebelum = count($q['siswa']);
+                $n = min($sebelum, $izin($q));
+                $ambil = array_splice($antrean[$pilih]['siswa'], 0, $n);
+                $utuh = $n === $sebelum && ! isset($dipecah[$pilih]);
+                if ($n < $sebelum) {
+                    $dipecah[$pilih] = true;
+                }
+                $tambah[] = ['kelas_id' => $q['kelas']->id, 'nama' => $q['kelas']->nama, 'tingkat' => $q['kelas']->tingkat, 'jumlah' => $n, 'utuh' => $utuh, 'siswa' => $ambil];
+                $pakai[$q['kelas']->tingkat] = ($pakai[$q['kelas']->tingkat] ?? 0) + $n;
+                $bebas -= $n;
+                $ditempatkan += $n;
+            }
+
+            $rencana[] = ['ruang' => $ruang, 'kapasitas' => $kap, 'awal' => $awal, 'tambah' => $tambah, 'terisi' => $awal + array_sum(array_column($tambah, 'jumlah'))];
+        }
+
+        $sisa = [];
+        foreach ($antrean as $q) {
+            if ($q['siswa'] !== []) {
+                $sisa[] = ['kelas_id' => $q['kelas']->id, 'nama' => $q['kelas']->nama, 'tingkat' => $q['kelas']->tingkat, 'jumlah' => count($q['siswa'])];
+            }
+        }
+
+        return ['ruang' => $rencana, 'sisa' => $sisa, 'ditempatkan' => $ditempatkan, 'sisa_total' => array_sum(array_column($sisa, 'jumlah'))];
+    }
+
+    /**
+     * Terapkan rencana otomatis ke denah (dihitung ulang saat diterapkan, jadi selalu sesuai data terbaru).
+     *
+     * @param  list<int>  $kelasIds
+     * @return array{ditempatkan:int,sisa_total:int}
+     *
+     * @throws KesalahanJadwal
+     */
+    public function isiOtomatis(Denah $denah, array $kelasIds, bool $ulang, bool $pecah, ?User $pelaku = null): array
+    {
+        if ($ulang && SesiUjian::where('status', SesiUjian::BERLANGSUNG)->whereIn('jadwal_id', $denah->jadwal()->where('status', JadwalUjian::AKTIF)->select('id'))->exists()) {
+            throw new KesalahanJadwal('Ada ujian yang sedang berlangsung. Penempatan tidak dapat dikosongkan dan diatur ulang sekarang; pilih "hanya siswa yang belum punya ruang" atau tunggu ujian selesai.');
+        }
+
+        $rencana = $this->rencanaOtomatis($denah, $kelasIds, $ulang, $pecah);
+        if ($rencana['ditempatkan'] === 0 && ! $ulang) {
+            throw new KesalahanJadwal('Tidak ada siswa yang bisa ditempatkan: semua siswa pada kelas terpilih sudah punya ruang, atau tidak ada kursi yang tersisa.');
+        }
+
+        DB::transaction(function () use ($denah, $rencana, $ulang) {
+            if ($ulang) {
+                DenahPenempatan::where('denah_id', $denah->id)->delete();
+            }
+            foreach ($rencana['ruang'] as $p) {
+                if ($p['tambah'] === []) {
+                    continue;
+                }
+                $ruang = $p['ruang'];
+                $dr = DenahRuang::where('denah_id', $denah->id)->where('ruang_id', $ruang->id)->first() ?? $this->selaraskan($denah, $ruang);
+                $isi = $p['awal'];
+                foreach ($p['tambah'] as $g) {
+                    foreach ($g['siswa'] as $siswaId) {
+                        [$meja, $posisi] = $dr->tempatKe($isi++);
+                        DenahPenempatan::create(['denah_id' => $denah->id, 'siswa_id' => $siswaId, 'ruang_id' => $ruang->id, 'meja' => $meja, 'posisi' => $posisi]);
+                    }
+                }
+                if ($ruang->campur) {
+                    $this->selaraskan($denah, $ruang); // susun selang-seling antar tingkat
+                }
+            }
+        });
+
+        $this->perbaruiJadwal($denah);
+        $this->ikatJadwalUtama($denah);
+        if ($pelaku) {
+            AuditLog::catat('ruang.isi_otomatis', "{$rencana['ditempatkan']} siswa ditempatkan, {$rencana['sisa_total']} sisa".($ulang ? ' (diatur ulang)' : ''), $pelaku);
+        }
+
+        return ['ditempatkan' => $rencana['ditempatkan'], 'sisa_total' => $rencana['sisa_total']];
+    }
+
     /** Keluarkan semua siswa satu kelas dari ruang ini. @return int jumlah siswa yang dikeluarkan */
     public function keluarkanKelas(Denah $denah, Ruang $ruang, Kelas $kelas, ?User $pelaku = null): int
     {

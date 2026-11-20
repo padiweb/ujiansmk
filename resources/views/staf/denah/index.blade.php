@@ -8,12 +8,13 @@
         <p class="sub">{{ $ruang->count() }} ruang · {{ number_format($jumlah, 0, ',', '.') }} siswa sudah punya ruang</p>
     </div>
     <div class="aksi-halaman">
+        <a class="tombol kecil garis" href="{{ route('staf.ruang.otomatis') }}">Isi otomatis</a>
         <a class="tombol kecil" href="{{ route('staf.ruang.create') }}"><x-ikon nama="tambah" :ukuran="16" />Tambah</a>
     </div>
 </div>
 
 @if ($belumPunyaRuang > 0)
-    <div class="pesan-salah" role="status"><x-ikon nama="peringatan" :ukuran="18" /><span>{{ number_format($belumPunyaRuang, 0, ',', '.') }} siswa aktif belum punya ruang. Masukkan kelasnya lewat tautan Siswa pada ruang yang dituju.</span></div>
+    <div class="pesan-salah" role="status"><x-ikon nama="peringatan" :ukuran="18" /><span>{{ number_format($belumPunyaRuang, 0, ',', '.') }} siswa aktif belum punya ruang. Masukkan kelasnya lewat tautan Siswa pada ruang yang dituju, atau pakai <a href="{{ route('staf.ruang.otomatis') }}">Isi otomatis</a>.</span></div>
 @endif
 
 <div class="kartu tanpa-padding">
